@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP Seating - Wedding Details</title>
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Vue 3 (CDN) -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- Phosphor Icons (CDN) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- SheetJS (CDN) for Excel Import -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+        rel="stylesheet">
+
+    <script>
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            alert('Error: ' + msg + '\nLínea: ' + lineNo + '\nArchivo: ' + url);
+            return false;
+        };
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            crimson: '#C42745',
+                            beige: '#F4ECE8',
+                            pink: '#F6D8D9',
+                            magenta: '#F61D57',
+                            dark: '#1A1A1A',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Work Sans', sans-serif;
+        }
+
+        .slide-enter-active,
+        .slide-leave-active {
+            transition: all 0.3s ease;
+        }
+
+        .slide-enter-from,
+        .slide-leave-to {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.2s ease;
+        }
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+        }
+    </style>
+</head>
+
+<body class="bg-brand-beige min-h-screen text-brand-dark font-sans">
+
+    <div id="app" class="p-4 md:p-6 max-w-[1600px] mx-auto flex flex-col">
+
+        <!-- TOP HEADER -->
+        <header class="mb-10 border-b border-brand-pink/30 pb-8 shrink-0">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-baseline gap-6 py-4">
+                <div class="flex items-center gap-6">
+                    <button @click="backToDashboard"
+                        class="w-12 h-12 flex items-center justify-center border border-brand-pink text-brand-dark hover:bg-brand-crimson hover:text-white transition-all">
+                        <i class="ph ph-arrow-left text-xl"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-4xl font-serif font-bold text-brand-dark tracking-tight">{{
+                            currentProject?.coupleName }}</h2>
+                        <p class="font-script text-2xl text-brand-crimson">{{ formatDate(currentProject?.weddingDate) }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Guest link display -->
+                <div class="flex flex-col items-end gap-2 w-full md:w-auto">
+                    <span class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest">Link para
+                        Invitados</span>
+                    <div class="flex flex-col sm:flex-row gap-2 w-full max-w-md">
+                        <input type="text" :value="getGuestPortalLink()" readonly
+                            class="flex-1 bg-white border border-brand-pink px-4 py-3 text-sm font-mono text-brand-dark truncate outline-none shadow-inner">
+                        <button @click="copyLink"
+                            class="bg-brand-crimson hover:bg-brand-dark text-white px-8 py-3 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest transition-all shadow-lg active:scale-95 shrink-0 border border-brand-crimson">
+                            <i class="ph ph-copy text-lg"></i> Copiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Tabs -->
+            <div
+                class="flex flex-col md:flex-row justify-between items-center bg-brand-beige p-1 border border-brand-pink mt-4 shadow-inner">
+                <div class="flex w-full md:w-auto gap-1">
+                    <button @click="currentView = 'seating'"
+                        class="flex-1 md:w-56 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
+                        :class="currentView === 'seating' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4 border-r border-brand-pink/30'">
+                        Plan de Mesas
+                    </button>
+                    <button @click="currentView = 'guests'"
+                        class="flex-1 md:w-56 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
+                        :class="currentView === 'guests' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4'">
+                        Lista de Invitados
+                    </button>
+                </div>
+                <div class="flex gap-4 p-2 items-center">
+                    <button @click="handleExport"
+                        class="text-brand-dark text-[10px] font-bold uppercase tracking-widest border-b border-brand-crimson hover:text-brand-crimson transition-all">Exportar
+                        Excel</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- SUMMARY STATS BAR -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12 shrink-0">
+            <div class="bg-white border-b-4 border-brand-crimson p-6 shadow-sm">
+                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Capacidad Mesas</p>
+                <p class="text-3xl font-serif font-bold text-brand-dark">{{ totalCapacity }}</p>
+            </div>
+            <div class="bg-white border-b-4 border-brand-pink p-6 shadow-sm">
+                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Asignados</p>
+                <div class="flex items-baseline gap-2">
+                    <p class="text-3xl font-serif font-bold text-brand-dark">{{ assignedGuestsCount }}</p>
+                    <p class="text-xs text-brand-dark/40 font-bold">/ {{ totalGuestsInvited }}</p>
+                </div>
+            </div>
+            <div class="bg-white border-b-4 border-brand-crimson p-6 shadow-sm">
+                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Sin Respuesta</p>
+                <div class="flex items-baseline gap-2">
+                    <p class="text-3xl font-serif font-bold text-brand-magenta">{{ notRespondedCount }}</p>
+                    <p class="text-xs text-brand-dark/40 font-bold">/ {{ totalGuestsInvited }}</p>
+                </div>
+            </div>
+            <div class="bg-white border-b-4 border-brand-pink p-6 shadow-sm">
+                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Confirmados / Totales
+                </p>
+                <div class="flex items-baseline gap-2">
+                    <p class="text-3xl font-serif font-bold text-brand-dark">{{ confirmedGuestsCount }}</p>
+                    <p class="text-xs text-brand-dark/40 font-bold">/ {{ totalGuestsInvited }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 1: SEATING PLAN -->
+        <div v-if="currentView === 'seating'" class="grid grid-cols-1 lg:grid-cols-12 gap-12 flex-1 min-h-0">
+
+            <!-- LEFT COLUMN: TABLES -->
+            <div class="lg:col-span-8 pr-2">
+                <div class="flex justify-between items-center mb-10">
+                    <h2 class="text-2xl font-serif font-bold text-brand-dark">Distribución de Mesas</h2>
+                    <div class="flex gap-4">
+                        <button @click="openTableModal()"
+                            class="bg-brand-crimson hover:bg-brand-dark text-white px-10 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all shadow-lg">
+                            Nueva Mesa
+                        </button>
+                    </div>
+                </div>
+                <div class="flex gap-3 items-center">
+                    <div
+                        class="text-sm text-brand-dark/50 font-medium bg-white px-4 py-2 border border-brand-pink shadow-sm">
+                        Capacidad Total: <span class="text-brand-dark font-bold">{{ totalCapacity }}</span>
+                    </div>
+                </div>
+
+                <div v-if="tables.length === 0"
+                    class="bg-white border-2 border-dashed border-brand-pink p-12 text-center">
+                    <div
+                        class="w-20 h-20 bg-brand-beige rounded-full flex items-center justify-center mx-auto mb-6 text-brand-crimson/20">
+                        <i class="ph-duotone ph-table text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-serif font-bold text-brand-dark mb-2">No hay mesas creadas</h3>
+                    <p
+                        class="text-[10px] font-bold text-brand-dark/40 uppercase tracking-[0.2em] mb-8 max-w-xs mx-auto">
+                        Comienza creando tu primera mesa para organizar a los invitados.</p>
+                    <button @click="openTableModal"
+                        class="bg-brand-dark hover:bg-brand-crimson text-white px-10 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all shadow-lg">Crear
+                        Mesa</button>
+                </div>
+
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    <div v-for="table in tablesWithStats" :key="table.id"
+                        class="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 transition-all p-5 group relative overflow-hidden">
+                        <div
+                            class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-brand-pink/40 to-brand-beige rounded-bl-full -mr-8 -mt-8 opacity-40 transition-opacity group-hover:opacity-70">
+                        </div>
+
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="font-bold text-lg text-brand-dark tracking-tight">{{ table.name }}</h3>
+                                    <div class="flex gap-2 mt-2">
+                                        <span :class="getStatusBadgeClass(table)">
+                                            {{ table.guests_assigned }} / {{ table.capacity }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button @click="editTable(table)"
+                                        class="w-10 h-10 flex items-center justify-center text-brand-dark/40 hover:text-brand-crimson hover:bg-brand-pink/20 transition-all">
+                                        <i class="ph-bold ph-pencil-simple text-lg"></i>
+                                    </button>
+                                    <button @click="deleteTable(table.id)" :disabled="table.guests_assigned > 0"
+                                        class="w-10 h-10 flex items-center justify-center text-brand-dark/40 hover:text-brand-crimson hover:bg-brand-pink/20 transition-all disabled:opacity-10 disabled:cursor-not-allowed">
+                                        <i class="ph-bold ph-trash text-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="w-full bg-brand-pink/30 h-2 mb-4 overflow-hidden">
+                                <div class="h-full transition-all duration-500 ease-out"
+                                    :class="getProgressBarClass(table)"
+                                    :style="{ width: Math.min(table.occupancy_percentage, 100) + '%' }">
+                                </div>
+                            </div>
+
+                            <!-- Assigned Guests Avatar Stack -->
+                            <div class="flex -space-x-2 overflow-hidden py-1 h-8">
+                                <template v-for="(assignment, i) in getTableAssignments(table.id).slice(0, 5)"
+                                    :key="assignment.id">
+                                    <div class="inline-block h-6 w-6 ring-2 ring-white bg-brand-pink flex items-center justify-center text-[8px] font-bold text-brand-dark"
+                                        :title="getFullName(getGuestById(assignment.rsvp_id))">
+                                        {{ getGuestInitials(assignment.rsvp_id) }}
+                                    </div>
+                                </template>
+                                <div v-if="getTableAssignments(table.id).length > 5"
+                                    class="inline-block h-6 w-6 ring-2 ring-white bg-brand-beige flex items-center justify-center text-[8px] font-bold text-brand-dark">
+                                    +{{ getTableAssignments(table.id).length - 5 }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: ASSIGNMENT DASHBOARD -->
+            <div class="lg:col-span-4 h-full min-h-0 flex flex-col">
+                <div class="bg-white border border-brand-pink shadow-sm flex flex-col h-full overflow-hidden">
+                    <!-- Header -->
+                    <div class="p-8 border-b border-brand-pink/30 bg-brand-beige/30">
+                        <h2 class="text-2xl font-serif font-bold text-brand-dark mb-6">Asignación</h2>
+
+                        <div class="relative mb-6">
+                            <i
+                                class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" v-model="searchQuery" placeholder="BUSCAR INVITADO..."
+                                class="w-full pl-12 pr-4 py-3 bg-white border border-brand-pink outline-none transition-all placeholder:text-[9px] placeholder:font-bold placeholder:uppercase placeholder:tracking-widest text-brand-dark">
+                        </div>
+
+                        <div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                            <button @click="filter = 'all'"
+                                :class="filter === 'all' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
+                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Todos</button>
+                            <button @click="filter = 'pending'"
+                                :class="filter === 'pending' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
+                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Pendientes</button>
+                            <button @click="filter = 'assigned'"
+                                :class="filter === 'assigned' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
+                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Asignados</button>
+                        </div>
+                    </div>
+
+                    <!-- Guest List -->
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-brand-beige/20">
+                        <div v-for="guest in filteredGuests" :key="guest.id"
+                            class="bg-white p-4 border border-brand-pink shadow-sm hover:border-brand-crimson transition-all group">
+
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 flex items-center justify-center font-bold text-xs"
+                                        :class="getAvatarColor(guest.lastName || '')">
+                                        {{ getGuestInitials(guest.id) }}
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-brand-dark text-sm">{{ guest.lastName }}, {{
+                                            guest.firstName }}</div>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span
+                                                class="text-[10px] bg-brand-beige font-bold px-2 py-0.5 text-brand-dark/60 flex items-center gap-1 border border-brand-pink">
+                                                <i class="ph-fill ph-users"></i> {{ guest.guests_confirmed }}
+                                            </span>
+                                            <span v-if="guest.assignment"
+                                                class="text-[10px] text-brand-crimson font-bold bg-brand-pink/50 px-2 py-0.5 border border-brand-crimson/20 tracking-widest">ASIGNADO</span>
+                                            <span v-else
+                                                class="text-[10px] text-brand-magenta font-bold bg-brand-magenta/5 px-2 py-0.5 border border-brand-magenta/20 tracking-widest">PENDIENTE</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <select :value="guest.assignment?.table_id || ''"
+                                @change="assignGuest(guest.id, $event.target.value)"
+                                class="w-full text-xs font-bold uppercase tracking-widest py-3 px-4 border cursor-pointer transition-all appearance-none"
+                                :class="guest.assignment ? 'bg-brand-crimson text-white border-brand-crimson' : 'bg-white border-brand-pink text-brand-dark hover:border-brand-crimson placeholder:text-brand-dark/30'">
+                                <option value="">Asignar Mesa...</option>
+                                <template v-for="table in tablesWithStats" :key="table.id">
+                                    <option :value="table.id"
+                                        :disabled="table.is_full && table.id !== guest.assignment?.table_id"
+                                        class="bg-white text-brand-dark">
+                                        {{ table.name }} ({{ table.guests_assigned }}/{{ table.capacity }}) {{
+                                        table.is_full ? '- LLENA' : '' }}
+                                    </option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: GUEST MANAGEMENT (ADMIN) -->
+        <div v-if="currentView === 'guests'"
+            class="flex-1 flex flex-col min-h-0 bg-white border border-brand-pink shadow-sm overflow-hidden animate-fade-in">
+
+            <!-- Toolbar -->
+            <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-serif font-bold text-brand-dark">Gestionar Invitados</h2>
+                    <p class="text-xs font-bold text-brand-dark/40 uppercase tracking-widest mt-1">Agrega, edita o
+                        importa tu lista de invitados.</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <!-- Excel Export -->
+                    <button @click="handleExport"
+                        class="bg-brand-dark hover:bg-brand-crimson text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-md flex items-center gap-2">
+                        <i class="ph-bold ph-download-simple"></i> Exportar Excel
+                    </button>
+
+                    <!-- Excel Upload -->
+                    <div class="relative">
+                        <input type="file" ref="fileInput" @change="handleFileUpload" accept=".xlsx,.xls,.csv"
+                            class="hidden" />
+                        <button @click="$refs.fileInput.click()"
+                            class="bg-white border border-brand-pink hover:border-brand-crimson text-brand-dark px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-md flex items-center gap-2">
+                            <i class="ph-bold ph-microsoft-excel-logo text-green-600"></i> Importar Excel
+                        </button>
+                    </div>
+
+                    <!-- Add Manually -->
+                    <button @click="openGuestModal()"
+                        class="bg-brand-crimson hover:bg-brand-dark text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg flex items-center gap-2">
+                        <i class="ph-bold ph-plus"></i> Nuevo Invitado
+                    </button>
+                </div>
+            </div>
+
+            <!-- Guest Admin Table -->
+            <div class="flex-1 overflow-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-brand-beige sticky top-0 z-10">
+                        <tr>
+                            <th
+                                class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans bg-brand-beige/50">
+                                Invitado</th>
+                            <th
+                                class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans bg-brand-beige/50">
+                                Contacto</th>
+                            <th
+                                class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans bg-brand-beige/50">
+                                Dieta</th>
+                            <th
+                                class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans bg-brand-beige/50">
+                                Confirmados</th>
+                            <th
+                                class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans bg-brand-beige/50">
+                                Estado Mesa</th>
+                            <th
+                                class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans text-right bg-brand-beige/50">
+                                Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-brand-pink/30">
+                        <tr v-for="guest in guestsWithAssignments" :key="guest.id"
+                            class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-brand-dark">{{ guest.lastName }}, {{ guest.firstName }}</div>
+                                <!-- Show sub-guest names if they exist -->
+                                <div v-if="guest.sub_guests && guest.sub_guests.length > 0" class="mt-1 space-y-0.5">
+                                    <div v-for="sg in guest.sub_guests" :key="sg.id"
+                                        class="text-[9px] uppercase tracking-wider flex items-center gap-1.5"
+                                        :class="sg.status === 'Confirmed' ? 'text-green-600' : (sg.status === 'Declined' ? 'text-red-400 line-through' : 'text-slate-400')">
+                                        <i class="ph-fill"
+                                            :class="sg.status === 'Confirmed' ? 'ph-check-circle' : (sg.status === 'Declined' ? 'ph-x-circle' : 'ph-circle')"></i>
+                                        {{ getFullName(sg) || '(Sin nombre)' }}
+                                    </div>
+                                </div>
+                                <div v-if="guest.rsvp_status && (!guest.sub_guests || guest.sub_guests.length === 0)"
+                                    class="mt-1">
+                                    <span v-if="guest.rsvp_status === 'Confirmed'"
+                                        class="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-100 flex inline-flex items-center gap-1"><i
+                                            class="ph-bold ph-check"></i> Confirmed</span>
+                                    <span v-else-if="guest.rsvp_status === 'Declined'"
+                                        class="text-[10px] uppercase font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-100 flex inline-flex items-center gap-1"><i
+                                            class="ph-bold ph-x"></i> Declined</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                <div v-if="guest.email" class="flex items-center gap-2 mb-1"><i
+                                        class="ph-bold ph-envelope-simple text-slate-400"></i> {{ guest.email }}</div>
+                                <div v-if="guest.phone" class="flex items-center gap-2"><i
+                                        class="ph-bold ph-phone text-slate-400"></i> {{ guest.phone }}</div>
+                                <div v-if="!guest.email && !guest.phone" class="text-slate-400 italic">No contact info
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span v-if="guest.dietary && guest.dietary !== 'None'"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">
+                                    <i class="ph-bold ph-warning-circle"></i> {{ guest.dietary }}
+                                </span>
+                                <span v-else class="text-slate-400 text-sm">-</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-bold text-xs"
+                                    :class="getIndividualConfirmedCount(guest) > 0 ? 'bg-brand-crimson/10 text-brand-crimson' : 'bg-slate-100 text-slate-400'">
+                                    <i class="ph-fill ph-users"></i> {{ getIndividualConfirmedCount(guest) }} / {{
+                                    guest.guests_confirmed }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm font-sans">
+                                <span v-if="guest.assignment"
+                                    class="bg-brand-crimson/5 text-brand-crimson px-2 py-1 rounded-sm font-bold text-[10px] uppercase tracking-wider border border-brand-crimson/10">
+                                    MESA: {{ getTableName(guest.assignment.table_id) }}
+                                </span>
+                                <span v-else
+                                    class="bg-brand-beige text-brand-dark px-2 py-1 rounded-sm font-bold text-[10px] uppercase tracking-wider border border-brand-pink">
+                                    PENDIENTE
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right space-x-2">
+                                <button @click="editGuest(guest)"
+                                    class="text-brand-dark/40 hover:text-brand-crimson p-2 hover:bg-brand-pink/20 transition-all"
+                                    title="Editar">
+                                    <i class="ph-bold ph-pencil-simple text-xl"></i>
+                                </button>
+                                <button @click="deleteGuest(guest.id)"
+                                    class="text-brand-dark/40 hover:text-brand-crimson p-2 hover:bg-brand-pink/20 transition-all"
+                                    title="Eliminar">
+                                    <i class="ph-bold ph-trash text-xl"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr v-if="guests.length === 0">
+                            <td colspan="4" class="px-6 py-12 text-center text-slate-400">
+                                No guests found. Import an Excel file or add guests manually.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div
+                class="p-4 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 flex justify-between items-center">
+                <span>Total Guests: {{ totalGuests }}</span>
+                <span>Excel Format: Col A = Apellido, Col B = Nombre, Col C = Cantidad, Col D = Email, Col E = Tel, Col
+                    F = Dieta</span>
+            </div>
+        </div>
+
+
+        <!-- MODAL: TABLE FORM -->
+        <div v-if="showTableModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm"
+            @click.self="closeModal">
+            <div
+                class="bg-white rounded-none border border-brand-pink shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-fade-in">
+                <div class="px-6 py-5 border-b border-brand-pink flex justify-between items-center bg-brand-beige">
+                    <h3 class="font-serif text-xl text-brand-dark tracking-wide">{{ tableModalTitle }}</h3>
+                    <button @click="closeModal" class="text-brand-dark/40 hover:text-brand-crimson transition-colors"><i
+                            class="ph ph-x text-xl"></i></button>
+                </div>
+                <form @submit.prevent="saveTable" class="p-8 space-y-6">
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Nombre
+                            de
+                            Mesa</label>
+                        <input type="text" v-model="tableForm.name" placeholder="Ej: Amigos" required
+                            class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all font-sans text-sm">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Capacidad</label>
+                        <div class="flex items-center gap-4">
+                            <button type="button" @click="tableForm.capacity = Math.max(1, tableForm.capacity - 1)"
+                                class="w-12 h-12 rounded-none border border-brand-pink hover:bg-brand-crimson hover:text-white flex items-center justify-center text-brand-dark transition-colors"><i
+                                    class="ph ph-minus"></i></button>
+                            <input type="number" v-model.number="tableForm.capacity" min="1" required
+                                class="flex-1 text-center py-3 rounded-none border border-brand-pink font-serif text-xl outline-none focus:border-brand-crimson bg-white">
+                            <button type="button" @click="tableForm.capacity++"
+                                class="w-12 h-12 rounded-none border border-brand-pink hover:bg-brand-crimson hover:text-white flex items-center justify-center text-brand-dark transition-colors"><i
+                                    class="ph ph-plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="pt-4 flex gap-4">
+                        <button type="button" @click="closeModal"
+                            class="flex-1 py-4 bg-white border border-brand-pink text-brand-dark font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-beige transition-colors">Cancelar</button>
+                        <button type="submit"
+                            class="flex-1 py-4 bg-brand-crimson text-white font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-crimson/90 transition-colors shadow-lg shadow-brand-crimson/20">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL: GUEST FORM -->
+        <div v-if="showGuestModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm"
+            @click.self="closeGuestModal">
+            <div
+                class="bg-white rounded-none border border-brand-pink shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-fade-in">
+                <div class="px-6 py-5 border-b border-brand-pink flex justify-between items-center bg-brand-beige">
+                    <h3 class="font-serif text-xl text-brand-dark tracking-wide">{{ guestModalTitle }}</h3>
+                    <button @click="closeGuestModal"
+                        class="text-brand-dark/40 hover:text-brand-crimson transition-colors"><i
+                            class="ph ph-x text-xl"></i></button>
+                </div>
+                <form @submit.prevent="saveGuest" class="p-8 space-y-5">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Apellido</label>
+                            <input type="text" v-model="guestForm.lastName" placeholder="Doe" required
+                                class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all font-sans text-sm">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Nombre</label>
+                            <input type="text" v-model="guestForm.firstName" placeholder="John" required
+                                class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all font-sans text-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Email</label>
+                            <input type="email" v-model="guestForm.email" placeholder="john@example.com"
+                                class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all font-sans text-sm">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Teléfono</label>
+                            <input type="tel" v-model="guestForm.phone" placeholder="+1 234..."
+                                class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all font-sans text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Restricciones
+                            Alimentarias</label>
+                        <select v-model="guestForm.dietary"
+                            class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all bg-white font-sans text-sm">
+                            <option value="None">Ninguna</option>
+                            <option value="Celiaco">Celiaquía</option>
+                            <option value="Vegano">Vegano</option>
+                            <option value="Vegetariano">Vegetariano</option>
+                            <option value="Kosher">Kosher</option>
+                        </select>
+                    </div>
+                    <!-- GROUP MEMBERS (Sub-guests) -->
+                    <div class="border-t border-brand-pink pt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <label
+                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em]">Integrantes
+                                de la Invitación</label>
+                            <button type="button" @click="addSubGuest"
+                                class="text-brand-crimson text-[10px] font-bold uppercase tracking-widest hover:underline">+
+                                Agregar</button>
+                        </div>
+
+                        <div class="space-y-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                            <div v-for="(sg, idx) in guestForm.sub_guests" :key="idx"
+                                class="p-4 bg-brand-beige/30 border border-brand-pink relative group">
+                                <button v-if="idx > 0" type="button" @click="removeSubGuest(idx)"
+                                    class="absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-white border border-brand-pink rounded-full text-brand-dark/40 hover:text-brand-crimson hover:border-brand-crimson transition-all shadow-sm z-10">
+                                    <i class="ph-bold ph-trash text-xs"></i>
+                                </button>
+
+                                <div class="grid grid-cols-1 gap-3">
+                                    <div v-if="idx === 0">
+                                        <div
+                                            class="bg-brand-crimson/5 border border-brand-crimson/10 px-3 py-2 rounded">
+                                            <p
+                                                class="text-[8px] font-bold text-brand-crimson uppercase tracking-widest mb-1">
+                                                Integrante #1 (Invitado)</p>
+                                            <p class="text-xs font-bold text-brand-dark italic">{{
+                                                getFullName(guestForm) ||
+                                                'Completar nombres arriba...' }}</p>
+                                        </div>
+                                    </div>
+                                    <div v-else>
+                                        <label
+                                            class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Acompañante
+                                            #{{ idx }}</label>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <input type="text" v-model="sg.lastName" placeholder="Apellido..."
+                                                class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
+                                            <input type="text" v-model="sg.firstName" placeholder="Nombre..."
+                                                class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Estado</label>
+                                            <select v-model="sg.status"
+                                                class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson">
+                                                <option value="Pending">Por confirmar / Aún a definir</option>
+                                                <option value="Confirmed">Confirmado</option>
+                                                <option value="Declined">Cancelado</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Dieta</label>
+                                            <select v-model="sg.dietary"
+                                                class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson">
+                                                <option value="None">Normal</option>
+                                                <option value="Celiaco">Celíaco</option>
+                                                <option value="Vegano">Vegano</option>
+                                                <option value="Vegetariano">Vegetariano</option>
+                                                <option value="Kosher">Kosher</option>
+                                                <option value="Otro">Otro</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pt-4 flex gap-4">
+                        <button type="button" @click="closeGuestModal"
+                            class="flex-1 py-4 bg-white border border-brand-pink text-brand-dark font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-beige transition-colors">Cancelar</button>
+                        <button type="submit"
+                            class="flex-1 py-4 bg-brand-crimson text-white font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-crimson/90 transition-colors shadow-lg shadow-brand-crimson/20">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- TOAST -->
+        <transition name="slide">
+            <div v-if="toast.show"
+                class="fixed bottom-8 right-8 px-8 py-5 rounded-none border border-brand-pink shadow-2xl flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.2em] z-50 min-w-[320px]"
+                :class="toast.type === 'error' ? 'bg-rose-50 text-rose-800' : 'bg-brand-dark text-white'">
+                <i class="ph text-xl" :class="toast.type === 'error' ? 'ph-warning-circle' : 'ph-check-circle'"></i>
+                {{ toast.message }}
+            </div>
+        </transition>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, reactive, onMounted, watch } = Vue;
+
+        createApp({
+            setup() {
+                // PROJECT CONTEXT
+                const currentProjectId = ref(null);
+                const currentProject = ref(null);
+
+                // Get project ID from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const projectId = urlParams.get('project');
+
+                if (!projectId) {
+                    window.location.href = 'dashboard.html';
+                    return {};
+                }
+
+                // Load project data
+                const projects = JSON.parse(localStorage.getItem('rsvp_projects') || '[]');
+                const project = projects.find(p => p.id === projectId);
+
+                if (!project) {
+                    alert('Proyecto no encontrado');
+                    window.location.href = 'dashboard.html';
+                    return {};
+                }
+
+                currentProjectId.value = projectId;
+                currentProject.value = project;
+
+                // STATE
+                const currentView = ref('seating'); // 'seating' | 'guests'
+
+                // Load from LocalStorage with project-specific keys
+                const load = (key, fallback = []) => {
+                    try {
+                        const saved = localStorage.getItem(`project_${projectId}_${key}`);
+                        return saved ? JSON.parse(saved) : fallback;
+                    } catch (e) {
+                        console.error(`Error loading ${key}:`, e);
+                        return fallback;
+                    }
+                };
+
+                const tables = ref(load('tables'));
+                const guests = ref(load('guests'));
+                const assignments = ref(load('assignments'));
+
+                // Sync to LocalStorage with project-specific keys
+                watch(tables, (val) => localStorage.setItem(`project_${projectId}_tables`, JSON.stringify(val)), { deep: true });
+                watch(guests, (val) => localStorage.setItem(`project_${projectId}_guests`, JSON.stringify(val)), { deep: true });
+                watch(assignments, (val) => localStorage.setItem(`project_${projectId}_assignments`, JSON.stringify(val)), { deep: true });
+
+
+                // Add event listener for storage changes
+                window.addEventListener('storage', (e) => {
+                    if (e.key === `project_${projectId}_guests`) guests.value = JSON.parse(e.newValue);
+                });
+
+                // UI State
+                const searchQuery = ref('');
+                const filter = ref('all');
+                const showTableModal = ref(false);
+                const editingTable = ref(null);
+                const tableForm = reactive({ name: '', capacity: 8 });
+
+                const showGuestModal = ref(false);
+                const editingGuest = ref(null);
+                const guestForm = reactive({
+                    firstName: '',
+                    lastName: '',
+                    guests_confirmed: 1, // This is now 'guests_total' in intent
+                    email: '',
+                    phone: '',
+                    dietary: 'None',
+                    rsvp_status: 'Pending',
+                    sub_guests: []
+                });
+
+                const toast = reactive({ show: false, message: '', type: 'success' });
+
+                // Sync primary guest name
+                watch([() => guestForm.firstName, () => guestForm.lastName], ([newFirst, newLast]) => {
+                    if (guestForm.sub_guests && guestForm.sub_guests.length > 0) {
+                        guestForm.sub_guests[0].firstName = newFirst;
+                        guestForm.sub_guests[0].lastName = newLast;
+                    }
+                });
+
+                const tableModalTitle = computed(() => editingTable.value ? 'Editar Mesa' : 'Nueva Mesa');
+                const guestModalTitle = computed(() => editingGuest.value ? 'Editar Invitado' : 'Nuevo Invitado');
+
+                const assignmentsByTable = computed(() => {
+                    const map = {};
+                    assignments.value.forEach(a => {
+                        if (!map[a.table_id]) map[a.table_id] = [];
+                        map[a.table_id].push(a);
+                    });
+                    return map;
+                });
+
+                const tablesWithStats = computed(() => {
+                    return tables.value.map(table => {
+                        const tableAssignments = assignmentsByTable.value[table.id] || [];
+                        const guestsAssigned = tableAssignments.reduce((sum, a) => {
+                            const guest = guests.value.find(g => g.id === a.rsvp_id);
+                            if (!guest) return sum;
+                            // Count total invited spots for seating purposes
+                            return sum + (guest.guests_confirmed || 0);
+                        }, 0);
+                        const occupancyPercentage = (guestsAssigned / table.capacity) * 100;
+                        return { ...table, guests_assigned: guestsAssigned, occupancy_percentage: occupancyPercentage, is_full: guestsAssigned >= table.capacity };
+                    });
+                });
+
+                const guestsWithAssignments = computed(() => {
+                    return guests.value.map(guest => {
+                        const assignment = assignments.value.find(a => a.rsvp_id === guest.id);
+                        return { ...guest, assignment };
+                    }).sort((a, b) => {
+                        const lnA = (a.lastName || '').toLowerCase();
+                        const lnB = (b.lastName || '').toLowerCase();
+                        if (lnA !== lnB) return lnA.localeCompare(lnB);
+                        return (a.firstName || '').toLowerCase().localeCompare((b.firstName || '').toLowerCase());
+                    });
+                });
+
+                const filteredGuests = computed(() => {
+                    let result = guestsWithAssignments.value;
+                    if (filter.value === 'assigned') result = result.filter(g => g.assignment);
+                    if (filter.value === 'pending') result = result.filter(g => !g.assignment);
+                    if (searchQuery.value) {
+                        const q = searchQuery.value.toLowerCase();
+                        result = result.filter(g =>
+                            (g.firstName || '').toLowerCase().includes(q) ||
+                            (g.lastName || '').toLowerCase().includes(q)
+                        );
+                    }
+                    return result;
+                });
+
+                const confirmedGuestsCount = computed(() => guests.value.reduce((acc, g) => {
+                    if (g.sub_guests && g.sub_guests.length > 0) {
+                        return acc + g.sub_guests.filter(sg => sg.status === 'Confirmed').length;
+                    }
+                    return acc + (g.rsvp_status === 'Confirmed' ? (g.guests_confirmed || 0) : 0);
+                }, 0));
+
+                const assignedGuestsCount = computed(() => {
+                    return guestsWithAssignments.value
+                        .filter(g => g.assignment)
+                        .reduce((acc, g) => acc + (g.guests_confirmed || 0), 0);
+                });
+
+                const declinedGuestsCount = computed(() => guests.value.reduce((acc, g) => {
+                    if (g.sub_guests && g.sub_guests.length > 0) {
+                        return acc + g.sub_guests.filter(sg => sg.status === 'Declined').length;
+                    }
+                    return acc + (g.rsvp_status === 'Declined' ? (g.guests_confirmed || 0) : 0);
+                }, 0));
+
+                const notRespondedCount = computed(() => totalGuestsInvited.value - confirmedGuestsCount.value - declinedGuestsCount.value);
+
+                const totalCapacity = computed(() => tables.value.reduce((acc, t) => acc + t.capacity, 0));
+                const totalGuestsInvited = computed(() => guests.value.reduce((acc, g) => acc + (g.guests_confirmed || 0), 0));
+
+                const getIndividualConfirmedCount = (guest) => {
+                    if (guest.sub_guests && guest.sub_guests.length > 0) {
+                        return guest.sub_guests.filter(sg => sg.status === 'Confirmed').length;
+                    }
+                    return guest.rsvp_status === 'Confirmed' ? (guest.guests_confirmed || 0) : 0;
+                };
+
+                // METHODS - Table
+                const openTableModal = () => { editingTable.value = null; tableForm.name = ''; tableForm.capacity = 8; showTableModal.value = true; };
+                const editTable = (table) => { editingTable.value = table; tableForm.name = table.name; tableForm.capacity = table.capacity; showTableModal.value = true; };
+                const saveTable = () => {
+                    if (editingTable.value) {
+                        const idx = tables.value.findIndex(t => t.id === editingTable.value.id);
+                        if (idx !== -1) { tables.value[idx] = { ...tables.value[idx], ...tableForm }; showToast('Table updated'); }
+                    } else {
+                        tables.value.push({ id: Date.now().toString(), ...tableForm }); showToast('Table created');
+                    }
+                    closeModal();
+                };
+                const deleteTable = (id) => { if (confirm('Delete table?')) { tables.value = tables.value.filter(t => t.id !== id); showToast('Table deleted'); } };
+                const closeModal = () => { showTableModal.value = false; };
+
+                const openGuestModal = () => {
+                    editingGuest.value = null;
+                    Object.assign(guestForm, {
+                        firstName: '',
+                        lastName: '',
+                        guests_confirmed: 1,
+                        email: '',
+                        phone: '',
+                        dietary: 'None',
+                        rsvp_status: 'Pending',
+                        sub_guests: [{ firstName: '', lastName: '', status: 'Pending', dietary: 'None' }]
+                    });
+                    showGuestModal.value = true;
+                };
+
+                const addSubGuest = () => {
+                    // Sync member #1 always follows name fields
+                    if (guestForm.sub_guests.length > 0) {
+                        guestForm.sub_guests[0].firstName = guestForm.firstName;
+                        guestForm.sub_guests[0].lastName = guestForm.lastName;
+                    }
+                    guestForm.sub_guests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None' });
+                    guestForm.guests_confirmed = guestForm.sub_guests.length;
+                };
+
+                const removeSubGuest = (index) => {
+                    if (guestForm.sub_guests.length > 1) {
+                        guestForm.sub_guests.splice(index, 1);
+                        guestForm.guests_confirmed = guestForm.sub_guests.length;
+                    }
+                };
+
+                const saveGuest = () => {
+                    // Final sync before saving
+                    if (guestForm.sub_guests.length > 0) {
+                        guestForm.sub_guests[0].firstName = guestForm.firstName;
+                        guestForm.sub_guests[0].lastName = guestForm.lastName;
+                    }
+
+                    if (editingGuest.value) {
+                        const idx = guests.value.findIndex(g => g.id === editingGuest.value.id);
+                        if (idx !== -1) { guests.value[idx] = { ...guests.value[idx], ...guestForm }; showToast('Invitado actualizado'); }
+                    } else {
+                        guests.value.push({ id: Date.now().toString() + Math.random(), ...guestForm }); showToast('Invitado agregado');
+                    }
+                    closeGuestModal();
+                };
+
+                const editGuest = (guest) => {
+                    editingGuest.value = guest;
+
+                    // Basic split for legacy data if needed
+                    let fName = guest.firstName;
+                    let lName = guest.lastName;
+                    if (!fName && !lName && guest.name) {
+                        const parts = guest.name.trim().split(' ');
+                        fName = parts[0] || '';
+                        lName = parts.slice(1).join(' ') || '';
+                    }
+
+                    Object.assign(guestForm, {
+                        firstName: fName,
+                        lastName: lName,
+                        guests_confirmed: guest.guests_confirmed,
+                        email: guest.email || '',
+                        phone: guest.phone || '',
+                        dietary: guest.dietary || 'None',
+                        rsvp_status: guest.rsvp_status || 'Pending',
+                        sub_guests: (function () {
+                            let sg = [];
+                            if (guest.sub_guests && guest.sub_guests.length > 0) {
+                                sg = JSON.parse(JSON.stringify(guest.sub_guests));
+                                // Handle legacy sub_guests with 'name' property
+                                sg.forEach(item => {
+                                    if (item.name && !item.firstName && !item.lastName) {
+                                        const p = item.name.trim().split(' ');
+                                        item.firstName = p[0] || '';
+                                        item.lastName = p.slice(1).join(' ') || '';
+                                    }
+                                });
+                            } else {
+                                sg = [{ firstName: fName, lastName: lName, status: guest.rsvp_status || 'Pending', dietary: guest.dietary || 'None' }];
+                            }
+
+                            while (sg.length < (guest.guests_confirmed || 1)) {
+                                sg.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None' });
+                            }
+                            return sg;
+                        })()
+                    });
+                    showGuestModal.value = true;
+                };
+
+                const deleteGuest = (id) => {
+                    if (confirm('Delete guest?')) {
+                        guests.value = guests.value.filter(g => g.id !== id);
+                        assignments.value = assignments.value.filter(a => a.rsvp_id !== id);
+                        showToast('Guest deleted');
+                    }
+                };
+                const closeGuestModal = () => { showGuestModal.value = false; };
+
+                // METHODS - Assignments
+                const assignGuest = (guestId, tableId) => {
+                    assignments.value = assignments.value.filter(a => a.rsvp_id !== guestId); // Remove existing
+                    if (!tableId) { showToast('Assignment removed', 'success'); return; }
+                    assignments.value.push({ id: Date.now().toString(), table_id: tableId, rsvp_id: guestId });
+                    showToast('Assigned successfully');
+                };
+
+                // METHODS - Excel Import & Export
+                const handleExport = () => {
+                    try {
+                        const wb = XLSX.utils.book_new();
+
+                        // 1. Alphabetical List (All Individual Guests)
+                        const allIndividuals = [];
+                        guests.value.forEach(g => {
+                            const tableName = g.assignment ? getTableName(g.assignment.table_id) : 'Sin asignar';
+
+                            if (g.sub_guests && g.sub_guests.length > 0) {
+                                g.sub_guests.forEach((sg, idx) => {
+                                    const rsvpStatus = sg.status === 'Confirmed' ? 'CONFIRMADO' : (sg.status === 'Declined' ? 'CANCELADO' : 'PENDIENTE');
+                                    allIndividuals.push({
+                                        'Invitación (Apellido)': g.lastName,
+                                        'Invitación (Nombre)': g.firstName,
+                                        'Integrante (Apellido)': sg.lastName || '(Vacio)',
+                                        'Integrante (Nombre)': sg.firstName || (idx === 0 ? g.firstName : `Acompañante ${idx}`),
+                                        'Asistencia': rsvpStatus,
+                                        'Dieta': sg.dietary || 'Normal',
+                                        'Mesa': tableName,
+                                        'Email Contácto': g.email || '-',
+                                        'Teléfono Contácto': g.phone || '-'
+                                    });
+                                });
+                            } else {
+                                // Fallback for legacy data without sub_guests
+                                const rsvpStatus = g.rsvp_status === 'Confirmed' ? 'CONFIRMADO' : (g.rsvp_status === 'Declined' ? 'CANCELADO' : 'PENDIENTE');
+                                allIndividuals.push({
+                                    'Invitación (Apellido)': g.lastName || g.name || '-',
+                                    'Invitación (Nombre)': g.firstName || '-',
+                                    'Integrante (Apellido)': g.lastName || '-',
+                                    'Integrante (Nombre)': g.firstName || '-',
+                                    'Asistencia': rsvpStatus,
+                                    'Dieta': g.dietary || 'Normal',
+                                    'Mesa': tableName,
+                                    'Email Contácto': g.email || '-',
+                                    'Teléfono Contácto': g.phone || '-'
+                                });
+                            }
+                        });
+
+                        const ws1 = XLSX.utils.json_to_sheet(allIndividuals.sort((a, b) =>
+                            a['Invitación (Apellido)'].localeCompare(b['Invitación (Apellido)']) ||
+                            a['Invitación (Nombre)'].localeCompare(b['Invitación (Nombre)'])
+                        ));
+                        XLSX.utils.book_append_sheet(wb, ws1, "Lista Completa");
+
+                        // 2. Summary by Table (Only Confirmed)
+                        const confirmedOnly = allIndividuals.filter(i => i.Asistencia === 'CONFIRMADO');
+                        const ws2 = XLSX.utils.json_to_sheet(confirmedOnly.sort((a, b) =>
+                            a.Mesa.localeCompare(b.Mesa) ||
+                            a['Integrante (Apellido)'].localeCompare(b['Integrante (Apellido)'])
+                        ));
+                        XLSX.utils.book_append_sheet(wb, ws2, "Por Mesa (Confirmados)");
+
+                        XLSX.writeFile(wb, "RSVP_Guest_List_Export.xlsx");
+                        showToast('Export Successful!');
+
+                    } catch (e) {
+                        console.error(e);
+                        showToast('Export failed', 'error');
+                    }
+                };
+
+                const handleFileUpload = (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Array of Arrays
+
+                            // Structure assumption: 
+                            // Col 0 = Apellido, Col 1 = Nombre, Col 2 = Cantidad, Col 3 = Email, Col 4 = Tel, Col 5 = Dieta
+                            let importedCount = 0;
+
+                            for (let i = 0; i < jsonData.length; i++) {
+                                const row = jsonData[i];
+                                if (!row || row.length < 2) continue;
+
+                                const lName = String(row[0] || '').trim();
+                                const fName = String(row[1] || '').trim();
+                                const count = parseInt(row[2]) || 1;
+
+                                if (lName || fName) {
+                                    const subGuests = [];
+                                    // Member #1
+                                    subGuests.push({ firstName: fName, lastName: lName, status: 'Pending', dietary: row[5] || 'None' });
+
+                                    // Companions
+                                    for (let j = 1; j < count; j++) {
+                                        subGuests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None' });
+                                    }
+
+                                    guests.value.push({
+                                        id: Date.now().toString() + Math.random(),
+                                        firstName: fName,
+                                        lastName: lName,
+                                        guests_confirmed: count,
+                                        email: row[3] || '',
+                                        phone: row[4] || '',
+                                        rsvp_status: 'Pending',
+                                        sub_guests: subGuests
+                                    });
+                                    importedCount++;
+                                }
+                            }
+
+                            if (importedCount > 0) {
+                                showToast(`¡Importado ${importedCount} invitados exitosamente!`);
+                            } else {
+                                showToast('No se encontraron filas válidas. Formato: Apellido, Nombre, Cantidad...', 'error');
+                            }
+
+                        } catch (err) {
+                            console.error(err);
+                            showToast('Error reading Excel file', 'error');
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                    event.target.value = ''; // Reset input
+                };
+
+                // UTILS
+                const backToDashboard = () => {
+                    window.location.href = 'dashboard.html';
+                };
+
+                const formatDate = (dateString) => {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+                };
+
+                const getTableName = (id) => tables.value.find(t => t.id === id)?.name || 'Unknown';
+                const getGuestById = (id) => guests.value.find(g => g.id === id);
+                const getFullName = (item) => {
+                    if (!item) return '';
+                    const f = item.firstName || '';
+                    const l = item.lastName || '';
+                    if (!f && !l) return item.name || ''; // Fallback legacy
+                    return `${l}${l && f ? ', ' : ''}${f}`.trim();
+                };
+                const getGuestInitials = (id) => {
+                    const g = getGuestById(id);
+                    if (!g) return '?';
+                    const f = (g.firstName || '').charAt(0);
+                    const l = (g.lastName || '').charAt(0);
+                    return (f + l).toUpperCase() || (g.name ? g.name.charAt(0).toUpperCase() : '?');
+                };
+                const showToast = (msg, type = 'success') => { toast.message = msg; toast.type = type; toast.show = true; setTimeout(() => toast.show = false, 3000); };
+                const getStatusBadgeClass = (table) => {
+                    const base = 'text-[9px] font-bold px-2 py-0.5 border uppercase tracking-[0.15em]';
+                    if (table.is_full) return `${base} bg-brand-crimson text-white border-brand-crimson`;
+                    if (table.occupancy_percentage >= 80) return `${base} bg-brand-magenta/10 text-brand-magenta border-brand-magenta/20`;
+                    return `${base} bg-brand-pink/20 text-brand-crimson border-brand-crimson/20`;
+                };
+                const getProgressBarClass = (table) => {
+                    if (table.is_full) return 'bg-brand-dark';
+                    if (table.occupancy_percentage >= 80) return 'bg-brand-crimson';
+                    return 'bg-brand-pink';
+                };
+                const getAvatarColor = (name) => {
+                    const colors = [
+                        'bg-brand-crimson text-white',
+                        'bg-brand-dark text-white',
+                        'bg-brand-pink text-brand-dark',
+                        'bg-brand-magenta text-white',
+                        'bg-brand-beige text-brand-dark'
+                    ];
+                    return colors[name.length % colors.length];
+                };
+                const getTableAssignments = (tableId) => assignments.value.filter(a => a.table_id === tableId);
+                const resetData = () => {
+                    if (confirm('¿Resetear todos los datos de este casamiento?')) {
+                        tables.value = [];
+                        guests.value = [];
+                        assignments.value = [];
+                        showToast('Datos reseteados');
+                    }
+                };
+
+                const getGuestPortalLink = () => {
+                    const url = new URL('index2.html', window.location.href);
+                    url.searchParams.set('project', currentProjectId.value);
+                    return url.toString();
+                };
+
+                const copyLink = () => {
+                    navigator.clipboard.writeText(getGuestPortalLink());
+                    showToast('Link copiado al portapapeles!');
+                };
+
+
+                return {
+                    currentProject, currentProjectId,
+                    currentView,
+                    tables, guests, assignments, tablesWithStats, filteredGuests, guestsWithAssignments,
+                    totalCapacity, totalGuestsInvited, assignedGuestsCount, notRespondedCount, confirmedGuestsCount, declinedGuestsCount,
+                    searchQuery, filter, showTableModal, editingTable, tableForm,
+                    showGuestModal, editingGuest, guestForm, toast,
+                    tableModalTitle, guestModalTitle,
+                    openTableModal, editTable, saveTable, deleteTable, closeModal,
+                    openGuestModal, editGuest, saveGuest, deleteGuest, closeGuestModal,
+                    addSubGuest, removeSubGuest,
+                    getIndividualConfirmedCount,
+                    assignGuest, handleFileUpload, handleExport, resetData,
+                    getTableAssignments, getTableName, getGuestName, getGuestInitials,
+                    getStatusBadgeClass, getProgressBarClass, getAvatarColor,
+                    backToDashboard, formatDate,
+                    getGuestPortalLink, copyLink
+                };
+            }
+        }).mount('#app');
+    </script>
+
+</body>
+
+</html>

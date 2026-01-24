@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP - Guest Confirmation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Bodoni Moda"', 'serif'],
+                        sans: ['"Work Sans"', 'sans-serif'],
+                        script: ['"Pinyon Script"', 'cursive']
+                    },
+                    colors: {
+                        brand: {
+                            crimson: '#C42745',
+                            beige: '#F4ECE8',
+                            pink: '#F6D8D9',
+                            magenta: '#F61D57',
+                            dark: '#1A1A1A'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.3s ease;
+        }
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #F4ECE8;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #C42745;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease forwards;
+        }
+    </style>
+</head>
+
+<body class="bg-brand-beige min-h-screen flex items-center justify-center p-4 text-brand-dark font-sans">
+
+    <div id="app" class="w-full max-w-lg">
+
+        <!-- HEADER -->
+        <div class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-serif font-bold text-brand-dark mb-2 tracking-tight">
+                {{ currentProject?.brideName }} & {{ currentProject?.groomName }}
+            </h1>
+            <p class="font-script text-2xl text-brand-crimson">{{ formatDate(currentProject?.weddingDate) }}</p>
+        </div>
+
+        <!-- CARD -->
+        <div class="bg-white shadow-2xl overflow-hidden border border-brand-pink relative">
+
+            <!-- STEP 1: FIND GUEST -->
+            <transition name="fade" mode="out-in">
+                <div v-if="step === 1" key="step1" class="p-8">
+                    <form @submit.prevent="findGuest">
+                        <div class="space-y-6">
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nombre</label>
+                                <input type="text" v-model="form.firstName" required
+                                    class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300"
+                                    placeholder="Ej: Juan">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Apellido</label>
+                                <input type="text" v-model="form.lastName" required
+                                    class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300"
+                                    placeholder="Ej: Pérez">
+                            </div>
+                        </div>
+
+                        <div v-if="error"
+                            class="mt-6 p-4 bg-brand-pink/20 text-brand-crimson text-xs font-bold uppercase tracking-widest border border-brand-pink/50">
+                            {{ error }}
+                        </div>
+
+                        <button type="submit"
+                            class="w-full mt-10 bg-brand-dark text-white font-bold py-5 tracking-[0.2em] uppercase text-xs hover:bg-brand-crimson transition-all shadow-xl">
+                            Confirmar Asistencia
+                        </button>
+                    </form>
+                </div>
+
+                <!-- STEP 2: CONFIRMATION -->
+                <div v-else-if="step === 2" key="step2" class="p-6 md:p-10 flex flex-col max-h-[90vh]">
+                    <div class="text-center mb-8 shrink-0">
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-2">Bienvenido
+                        </div>
+                        <h2 class="text-3xl font-serif font-bold text-brand-dark mb-1">{{ getFullName(guest) }}</h2>
+                        <p class="text-[10px] text-brand-crimson font-bold uppercase tracking-widest italic">Por favor,
+                            confirma la asistencia para cada persona</p>
+                    </div>
+
+                    <div class="space-y-6 overflow-y-auto pr-2 custom-scrollbar mb-8 flex-1">
+                        <div v-for="(sg, idx) in guest.sub_guests" :key="idx"
+                            class="p-6 border border-brand-pink transition-all bg-white relative" :class="{
+                                'opacity-60 bg-slate-50': sg.status === 'Declined',
+                                'border-l-4 border-l-brand-crimson shadow-md': sg.status === 'Confirmed',
+                                'border-l-4 border-l-slate-300': sg.status === 'Pending' || !sg.status
+                            }">
+
+                            <div class="flex flex-col gap-6">
+                                <!-- Name Input -->
+                                <div>
+                                    <label
+                                        class="block text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Integrante</label>
+                                    <div v-if="idx > 0" class="grid grid-cols-2 gap-2">
+                                        <input type="text" v-model="sg.lastName" placeholder="Apellido"
+                                            class="w-full bg-white border border-brand-pink/50 px-3 py-2 text-xs font-semibold outline-none focus:border-brand-crimson transition-all">
+                                        <input type="text" v-model="sg.firstName" placeholder="Nombre"
+                                            class="w-full bg-white border border-brand-pink/50 px-3 py-2 text-xs font-semibold outline-none focus:border-brand-crimson transition-all">
+                                    </div>
+                                    <div v-else
+                                        class="text-base font-bold text-brand-dark bg-brand-beige/20 px-4 py-3 border border-brand-pink/30 flex items-center justify-between">
+                                        {{ getFullName(sg) }}
+                                        <span
+                                            class="text-[8px] bg-brand-crimson text-white px-2 py-0.5 rounded-full uppercase tracking-tighter">Invitado</span>
+                                    </div>
+                                </div>
+
+                                <!-- Attendance Question & Buttons -->
+                                <div class="text-center">
+                                    <label
+                                        class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.15em] mb-4">¿Asistirá?</label>
+                                    <div class="flex flex-wrap justify-center gap-3">
+                                        <button @click="sg.status = 'Confirmed'"
+                                            class="flex-1 min-w-[80px] py-3.5 flex flex-col items-center justify-center gap-1 transition-all border font-bold text-[9px] uppercase tracking-widest"
+                                            :class="sg.status === 'Confirmed' ? 'bg-brand-crimson text-white border-brand-crimson shadow-lg scale-105 z-10' : 'bg-white text-slate-400 border-slate-100 hover:border-brand-crimson/30'">
+                                            <i class="ph-bold ph-check text-xs"></i> <span>SÍ</span>
+                                        </button>
+                                        <button @click="sg.status = 'Declined'"
+                                            class="flex-1 min-w-[80px] py-3.5 flex flex-col items-center justify-center gap-1 transition-all border font-bold text-[9px] uppercase tracking-widest"
+                                            :class="sg.status === 'Declined' ? 'bg-brand-dark text-white border-brand-dark shadow-lg scale-105 z-10' : 'bg-white text-slate-400 border-slate-100 hover:border-brand-dark/30'">
+                                            <i class="ph-bold ph-x text-xs"></i> <span>NO</span>
+                                        </button>
+                                        <button @click="sg.status = 'Pending'"
+                                            class="flex-1 min-w-[80px] py-3.5 flex flex-col items-center justify-center gap-1 transition-all border font-bold text-[9px] uppercase tracking-widest"
+                                            :class="sg.status === 'Pending' ? 'bg-slate-400 text-white border-slate-400 shadow-lg scale-105 z-10' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'">
+                                            <i class="ph-bold ph-dots-three-circle text-xs"></i> <span>AÚN A
+                                                DEFINIR</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Dietary (Only if Confirmed) -->
+                                <div v-if="sg.status === 'Confirmed'" class="animate-fade-in">
+                                    <label
+                                        class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <i class="ph ph-fork-knife"></i> Restricción Alimentaria
+                                    </label>
+                                    <select v-model="sg.dietary"
+                                        class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
+                                        <option value="None">Sin restricciones (Normal)</option>
+                                        <option value="Celiaco">Celíaco</option>
+                                        <option value="Vegano">Vegano</option>
+                                        <option value="Vegetariano">Vegetariano</option>
+                                        <option value="Kosher">Kosher</option>
+                                        <option value="Otro">Otro (especificar luego)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="shrink-0">
+                        <button @click="confirmAttendance"
+                            class="w-full py-6 bg-brand-dark text-white font-bold tracking-[0.25em] uppercase text-xs hover:bg-brand-crimson transition-all shadow-xl">
+                            Enviar Confirmación
+                        </button>
+                        <p class="text-[9px] text-center text-slate-400 mt-4 uppercase tracking-[0.2em]">Puedes
+                            modificar esto más tarde si los planes cambian</p>
+                    </div>
+                </div>
+
+                <!-- STEP 3: SUCCESS -->
+                <div v-else-if="step === 3" key="step3" class="p-12 text-center">
+                    <div
+                        class="w-24 h-24 bg-rose-50 text-brand-crimson rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce border border-brand-pink/30">
+                        <i class="ph ph-heart-straight text-4xl"></i>
+                    </div>
+                    <h2 class="text-3xl font-serif font-bold text-brand-dark mb-4">¡Muchas Gracias!</h2>
+                    <p class="font-sans text-sm text-slate-400 tracking-widest uppercase">Tu confirmación ha sido
+                        guardada.</p>
+                </div>
+            </transition>
+
+            <!-- FUZZY MATCH MODAL -->
+            <div v-if="showFuzzyModal"
+                class="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center p-8 text-center z-10">
+                <div class="border border-brand-pink p-8 bg-white shadow-2xl">
+                    <h3 class="text-2xl font-serif font-bold text-brand-dark mb-3">¿Has querido decir...?</h3>
+                    <p class="text-slate-400 text-xs mb-8 uppercase tracking-[0.2em]">Encontramos un nombre similar en
+                        la lista.</p>
+
+                    <button @click="acceptFuzzyMatch"
+                        class="w-full bg-brand-crimson text-white py-5 px-8 font-bold text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-brand-dark transition-all mb-4">
+                        Sí, soy {{ getFullName(fuzzyCandidate) }}
+                    </button>
+                    <button @click="rejectFuzzyMatch"
+                        class="w-full text-brand-dark/40 font-bold text-[10px] uppercase tracking-[0.2em] hover:text-brand-crimson transition-colors">
+                        No, ese no soy yo
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const step = ref(1);
+                const form = reactive({ firstName: '', lastName: '' });
+                const guests = ref([]);
+                const guest = ref(null);
+                const error = ref('');
+                const currentProject = ref(null);
+
+                // Fuzzy Logic State
+                const showFuzzyModal = ref(false);
+                const fuzzyCandidate = ref(null);
+
+                // Load Data
+                onMounted(() => {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const projectId = urlParams.get('project');
+
+                    if (!projectId) {
+                        error.value = "Enlace inválido. Por favor contacta a los novios.";
+                        return;
+                    }
+
+                    // Load Project
+                    const projects = JSON.parse(localStorage.getItem('rsvp_projects') || '[]');
+                    currentProject.value = projects.find(p => p.id === projectId);
+
+                    if (!currentProject.value) {
+                        error.value = "Evento no encontrado.";
+                        return;
+                    }
+
+                    // Load Guests for this specific project
+                    const guestKey = `project_${projectId}_guests`;
+                    const saved = localStorage.getItem(guestKey);
+                    if (saved) {
+                        guests.value = JSON.parse(saved);
+                    } else {
+                        error.value = "Lista de invitados no disponible.";
+                    }
+                });
+
+                const normalize = (str) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : '';
+                const getFullName = (item) => {
+                    if (!item) return '';
+                    if (item.firstName || item.lastName) {
+                        return `${item.lastName || ''}${item.lastName && item.firstName ? ', ' : ''}${item.firstName || ''}`.trim();
+                    }
+                    return item.name || '';
+                };
+
+                // Levenshtein Distance for typo tolerance
+                const levenshtein = (a, b) => {
+                    if (a.length === 0) return b.length;
+                    if (b.length === 0) return a.length;
+
+                    const matrix = [];
+                    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+                    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+                    for (let i = 1; i <= b.length; i++) {
+                        for (let j = 1; j <= a.length; j++) {
+                            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                                matrix[i][j] = matrix[i - 1][j - 1];
+                            } else {
+                                matrix[i][j] = Math.min(
+                                    matrix[i - 1][j - 1] + 1, // substitution
+                                    Math.min(matrix[i][j - 1] + 1, // insertion
+                                        matrix[i - 1][j] + 1) // deletion
+                                );
+                            }
+                        }
+                    }
+                    return matrix[b.length][a.length];
+                };
+
+                const findGuest = () => {
+                    error.value = '';
+                    if (!guests.value.length) {
+                        error.value = "Guest list is empty.";
+                        return;
+                    }
+
+                    const inputFull = `${form.firstName} ${form.lastName}`;
+                    const inputClean = normalize(inputFull);
+
+                    // 1. Exact Match (Normalized)
+                    const exactMatch = guests.value.find(g => normalize(g.name) === inputClean);
+                    if (exactMatch) {
+                        prepareGuest(exactMatch);
+                        return;
+                    }
+
+                    // 2. Fuzzy Match logic
+                    const inputParts = inputClean.split(' ');
+
+                    const bestMatch = guests.value.find(g => {
+                        const storedFull = getFullName(g);
+                        const storedClean = normalize(storedFull);
+
+                        // Strategy A: Subset Match
+                        const isSubset = inputParts.every(part => storedClean.includes(part));
+                        if (isSubset) return true;
+
+                        // Strategy B: Typo Tolerance (Levenshtein)
+                        if (inputClean.length < 3 || storedClean.length < 3) return false;
+
+                        const dist = levenshtein(inputClean, storedClean);
+                        const threshold = Math.max(3, storedClean.length * 0.3);
+
+                        if (dist <= threshold) return true;
+
+                        return false;
+                    });
+
+                    if (bestMatch) {
+                        fuzzyCandidate.value = bestMatch;
+                        showFuzzyModal.value = true;
+                    } else {
+                        error.value = "Sorry, we couldn't find your invitation. Please check the spelling.";
+                    }
+                };
+
+                const acceptFuzzyMatch = () => {
+                    prepareGuest(fuzzyCandidate.value);
+                    showFuzzyModal.value = false;
+                };
+
+                const prepareGuest = (matchedGuest) => {
+                    // Initialize sub_guests if they don't exist
+                    const g = JSON.parse(JSON.stringify(matchedGuest));
+
+                    // Legacy migration for first level
+                    if (!g.firstName && !g.lastName && g.name) {
+                        const parts = g.name.trim().split(' ');
+                        g.firstName = parts[0] || '';
+                        g.lastName = parts.slice(1).join(' ') || '';
+                    }
+
+                    if (!g.sub_guests || g.sub_guests.length === 0) {
+                        g.sub_guests = [{
+                            firstName: g.firstName,
+                            lastName: g.lastName,
+                            status: 'Pending',
+                            dietary: g.dietary || 'None'
+                        }];
+                        for (let i = 1; i < (g.guests_confirmed || 1); i++) {
+                            g.sub_guests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None' });
+                        }
+                    } else {
+                        // Legacy migration for sub_guests
+                        g.sub_guests.forEach(sg => {
+                            if (!sg.firstName && !sg.lastName && sg.name) {
+                                const parts = sg.name.trim().split(' ');
+                                sg.firstName = parts[0] || '';
+                                sg.lastName = parts.slice(1).join(' ') || '';
+                            }
+                        });
+                    }
+                    guest.value = g;
+                    step.value = 2;
+                };
+
+                const rejectFuzzyMatch = () => {
+                    showFuzzyModal.value = false;
+                    error.value = "Please try searching again with the exact name on your invitation.";
+                };
+
+                const confirmAttendance = () => {
+                    if (guest.value && currentProject.value) {
+                        const idx = guests.value.findIndex(g => g.id === guest.value.id);
+                        if (idx !== -1) {
+                            // Update the main guest object in the list
+                            const updatedGuest = { ...guest.value };
+
+                            // Determine overall status based on sub_guests
+                            const confirmedCount = updatedGuest.sub_guests.filter(sg => sg.status === 'Confirmed').length;
+                            updatedGuest.rsvp_status = confirmedCount > 0 ? 'Confirmed' : (updatedGuest.sub_guests.every(sg => sg.status === 'Declined') ? 'Declined' : 'Pending');
+
+                            // IMPORTANT: Update legacy count for display in lists
+                            // updatedGuest.guests_confirmed = confirmedCount > 0 ? confirmedCount : 0;
+
+                            guests.value[idx] = updatedGuest;
+                            const guestKey = `project_${currentProject.value.id}_guests`;
+                            localStorage.setItem(guestKey, JSON.stringify(guests.value));
+                        }
+                    }
+                    step.value = 3;
+                };
+
+                const formatDate = (dateString) => {
+                    if (!dateString) return '';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+                };
+
+                return {
+                    step, form, error, guest, findGuest, confirmAttendance, currentProject, formatDate,
+                    showFuzzyModal, fuzzyCandidate, acceptFuzzyMatch, rejectFuzzyMatch, getFullName
+                };
+            }
+        }).mount('#app');
+    </script>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP Seating - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+        rel="stylesheet">
+    <script>
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            alert('Error: ' + msg + '\nLínea: ' + lineNo + '\nArchivo: ' + url);
+            return false;
+        };
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Bodoni Moda"', 'serif'],
+                        sans: ['"Work Sans"', 'sans-serif'],
+                        script: ['"Pinyon Script"', 'cursive']
+                    },
+                    colors: {
+                        brand: {
+                            crimson: '#C42745',
+                            beige: '#F4ECE8',
+                            pink: '#F6D8D9',
+                            magenta: '#F61D57',
+                            dark: '#1A1A1A'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .slide-enter-active,
+        .slide-leave-active {
+            transition: all 0.3s ease;
+        }
+
+        .slide-enter-from,
+        .slide-leave-to {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.2s ease;
+        }
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+        }
+
+        @keyframes gradient-shift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .gradient-animate {
+            background-size: 200% 200%;
+            animation: gradient-shift 8s ease infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-brand-beige min-h-screen text-brand-dark font-sans">
+
+    <div id="app" class="p-4 md:p-8 max-w-[1800px] mx-auto">
+
+        <header class="mb-12 border-b border-brand-pink/30 pb-8">
+            <div class="flex flex-col md:flex-row justify-between items-baseline gap-4">
+                <div>
+                    <h1
+                        class="text-5xl md:text-6xl font-serif font-bold text-brand-dark tracking-tight flex items-baseline gap-3">
+                        RSVP<span class="text-brand-crimson italic">Seating</span>
+                    </h1>
+                    <p class="font-script text-3xl text-brand-crimson mt-2">Events Boutique Wedding Planners</p>
+                </div>
+                <div class="flex gap-4">
+                    <button @click="handleExportAll"
+                        class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-xs hover:text-brand-crimson transition-all">
+                        Export All
+                    </button>
+                    <button @click="openProjectModal()"
+                        class="bg-brand-crimson hover:bg-brand-dark text-white px-8 py-3 rounded-none font-bold tracking-widest uppercase text-xs transition-all shadow-xl">
+                        Nuevo Casamiento
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- STATS OVERVIEW -->
+        <div v-if="projects.length > 0" class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <div class="bg-white border-t-4 border-brand-crimson p-8 shadow-sm">
+                <p class="text-[10px] font-bold text-brand-crimson uppercase tracking-[0.2em] mb-2">Total Eventos</p>
+                <p class="text-5xl font-serif font-bold text-brand-dark leading-none">{{ projects.length }}</p>
+            </div>
+            <div class="bg-white border-t-4 border-brand-crimson p-8 shadow-sm">
+                <p class="text-[10px] font-bold text-brand-crimson uppercase tracking-[0.2em] mb-2">Bodas Críticas (&lt;
+                    45 días)</p>
+                <div class="flex items-baseline gap-2">
+                    <p class="text-5xl font-serif font-bold text-brand-dark leading-none">{{ weddingsSoonCount }}</p>
+                    <p class="text-sm text-brand-crimson/40 font-bold uppercase tracking-widest">/ {{ projects.length }}
+                    </p>
+                </div>
+            </div>
+            <div class="bg-white border-t-4 border-brand-crimson p-8 shadow-sm">
+                <p class="text-[10px] font-bold text-brand-crimson uppercase tracking-[0.2em] mb-2">Próxima Boda</p>
+                <div class="flex items-baseline gap-2">
+                    <p class="text-5xl font-serif font-bold text-brand-dark leading-none">{{ nextEventDays }}</p>
+                    <p class="text-sm text-brand-crimson/40 font-bold uppercase tracking-widest">días</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEARCH BAR -->
+        <div v-if="projects.length > 0" class="mb-12">
+            <div class="relative max-w-md">
+                <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" v-model="searchQuery" placeholder="Buscar evento..."
+                    class="w-full pl-12 pr-4 py-4 bg-white border border-brand-pink focus:border-brand-crimson outline-none transition-all placeholder:text-[10px] placeholder:uppercase placeholder:tracking-widest">
+            </div>
+        </div>
+
+        <!-- PROJECTS GRID -->
+        <div v-if="filteredProjects.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            <div v-for="project in filteredProjects" :key="project.id"
+                class="bg-white border border-brand-pink shadow-sm hover:shadow-2xl transition-all group relative">
+
+                <!-- Decorative Header -->
+                <div class="h-4 w-full bg-brand-crimson"></div>
+
+                <!-- Content -->
+                <div class="p-8">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="text-3xl font-serif font-bold text-brand-dark">{{ project.coupleName }}</h3>
+                            <p class="text-xs font-bold text-brand-crimson tracking-[0.2em] uppercase mt-1">{{
+                                formatDate(project.weddingDate) }}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="editProject(project)"
+                                class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-crimson transition-colors">
+                                <i class="ph-bold ph-pencil-simple text-sm"></i>
+                            </button>
+                            <button @click="deleteProject(project.id)"
+                                class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-crimson transition-colors">
+                                <i class="ph-bold ph-trash text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="project.venue" class="flex items-center gap-2 text-xs text-slate-500 italic mb-6">
+                        <i class="ph ph-map-pin"></i>
+                        <span>{{ project.venue }}</span>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="grid grid-cols-2 border-y border-brand-pink/30 py-6 mb-8 gap-4">
+                        <div class="text-left border-r border-brand-pink/30 pr-4">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
+                                Invitados</div>
+                            <div class="text-xl font-serif font-bold text-brand-dark">{{
+                                getProjectStats(project.id).totalGuests }}</div>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
+                                Confirm.</div>
+                            <div class="text-xl font-serif font-bold text-brand-dark">{{
+                                getProjectStats(project.id).confirmed }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button @click="openProject(project.id)"
+                        class="w-full bg-brand-dark hover:bg-brand-crimson text-white py-4 font-bold tracking-[0.2em] uppercase text-[10px] transition-all flex items-center justify-center gap-3">
+                        Ver Detalles <i class="ph ph-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- EMPTY STATE -->
+        <div v-if="projects.length === 0"
+            class="bg-white border border-brand-pink p-20 text-center max-w-2xl mx-auto mt-12 shadow-sm">
+            <h3 class="text-4xl font-serif font-bold text-brand-dark mb-4 tracking-tight">Bienvenido a Events Boutique
+            </h3>
+            <p class="text-slate-500 mb-10 max-w-md mx-auto leading-relaxed">Comienza creando tu primer evento de lujo.
+                Gestiona invitados, mesas y confirmaciones con elegancia.</p>
+            <button @click="openProjectModal()"
+                class="bg-brand-crimson hover:bg-brand-dark text-white px-12 py-4 font-bold tracking-[0.2em] uppercase text-xs transition-all shadow-xl">
+                Crear Primer Casamiento
+            </button>
+        </div>
+
+        <!-- NO RESULTS -->
+        <div v-if="projects.length > 0 && filteredProjects.length === 0"
+            class="bg-white border border-brand-pink p-12 text-center max-w-lg mx-auto mt-8 shadow-sm">
+            <h3 class="text-2xl font-serif font-bold text-brand-dark mb-2">No se encontraron resultados</h3>
+            <p class="text-slate-500 text-xs font-bold uppercase tracking-widest">Intenta con otros términos</p>
+        </div>
+
+        <!-- MODAL: PROJECT FORM -->
+        <div v-if="showProjectModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/20 backdrop-blur-sm"
+            @click.self="closeProjectModal">
+            <div
+                class="bg-white shadow-2xl w-full max-w-lg overflow-hidden transform transition-all animate-fade-in border border-brand-pink">
+                <div
+                    class="px-8 py-6 border-b border-brand-pink/30 flex justify-between items-center bg-brand-beige/50">
+                    <h3 class="font-serif font-bold text-2xl text-brand-dark">{{ modalTitle }}</h3>
+                    <button @click="closeProjectModal"
+                        class="text-brand-dark hover:text-brand-crimson transition-colors"><i
+                            class="ph-bold ph-x text-xl"></i></button>
+                </div>
+                <form @submit.prevent="saveProject" class="p-8 space-y-6">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nombre
+                                Novia</label>
+                            <input type="text" v-model="projectForm.brideName" placeholder="María" required
+                                class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nombre
+                                Novio</label>
+                            <input type="text" v-model="projectForm.groomName" placeholder="Juan" required
+                                class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Fecha
+                            del Casamiento</label>
+                        <input type="date" v-model="projectForm.weddingDate" required
+                            class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Lugar
+                            (Opcional)</label>
+                        <input type="text" v-model="projectForm.venue" placeholder="Palacio Duhau"
+                            class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300">
+                    </div>
+
+                    <div class="pt-4 flex gap-4">
+                        <button type="button" @click="closeProjectModal"
+                            class="flex-1 py-4 border border-brand-pink text-brand-dark font-bold uppercase tracking-widest text-[10px] hover:bg-brand-beige transition-all">Cancelar</button>
+                        <button type="submit"
+                            class="flex-1 py-4 bg-brand-dark text-white font-bold uppercase tracking-widest text-[10px] hover:bg-brand-crimson transition-all shadow-xl">{{
+                            submitButtonText }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- TOAST -->
+        <transition name="slide">
+            <div v-if="toast.show"
+                class="fixed bottom-10 right-10 px-8 py-4 shadow-2xl flex items-center gap-4 text-xs font-bold uppercase tracking-widest z-50 border border-brand-pink"
+                :class="toast.type === 'error' ? 'bg-white text-brand-crimson' : 'bg-brand-dark text-white'">
+                <i class="ph-fill text-lg"
+                    :class="toast.type === 'error' ? 'ph-warning-circle' : 'ph-check-circle'"></i>
+                {{ toast.message }}
+            </div>
+        </transition>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, reactive, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                // STATE
+                const projects = ref([]);
+                const searchQuery = ref('');
+                const showProjectModal = ref(false);
+                const editingProject = ref(null);
+                const projectForm = reactive({
+                    brideName: '',
+                    groomName: '',
+                    weddingDate: '',
+                    venue: ''
+                });
+                const toast = reactive({ show: false, message: '', type: 'success' });
+
+                // LOAD DATA
+                onMounted(() => {
+                    loadProjects();
+                });
+
+                const loadProjects = () => {
+                    const saved = localStorage.getItem('rsvp_projects');
+                    if (saved) {
+                        projects.value = JSON.parse(saved);
+                    }
+                };
+
+                const saveProjects = () => {
+                    localStorage.setItem('rsvp_projects', JSON.stringify(projects.value));
+                };
+
+                // COMPUTED
+                const modalTitle = computed(() => editingProject.value ? 'Editar Casamiento' : 'Nuevo Casamiento');
+                const submitButtonText = computed(() => editingProject.value ? 'Guardar' : 'Crear');
+
+                const filteredProjects = computed(() => {
+                    if (!searchQuery.value) return projects.value;
+                    const q = searchQuery.value.toLowerCase();
+                    return projects.value.filter(p =>
+                        p.coupleName.toLowerCase().includes(q) ||
+                        p.brideName.toLowerCase().includes(q) ||
+                        p.groomName.toLowerCase().includes(q) ||
+                        p.weddingDate.includes(q) ||
+                        (p.venue && p.venue.toLowerCase().includes(q))
+                    );
+                });
+
+                const totalGuestsAllProjects = computed(() => {
+                    return projects.value.reduce((sum, project) => {
+                        return sum + getProjectStats(project.id).totalGuests;
+                    }, 0);
+                });
+
+                const totalConfirmedAllProjects = computed(() => {
+                    return projects.value.reduce((sum, project) => {
+                        return sum + getProjectStats(project.id).confirmed;
+                    }, 0);
+                });
+
+                const nextEventDays = computed(() => {
+                    if (projects.value.length === 0) return '-';
+                    const upcoming = projects.value
+                        .map(p => ({ ...p, days: getDaysUntil(p.weddingDate) }))
+                        .filter(p => p.days >= 0)
+                        .sort((a, b) => a.days - b.days);
+                    return upcoming.length > 0 ? upcoming[0].days : '-';
+                });
+
+                const weddingsSoonCount = computed(() => {
+                    return projects.value.filter(p => {
+                        const days = getDaysUntil(p.weddingDate);
+                        return days >= 0 && days <= 45;
+                    }).length;
+                });
+
+                // METHODS - Project CRUD
+                const openProjectModal = () => {
+                    editingProject.value = null;
+                    projectForm.brideName = '';
+                    projectForm.groomName = '';
+                    projectForm.weddingDate = '';
+                    projectForm.venue = '';
+                    showProjectModal.value = true;
+                };
+
+                const editProject = (project) => {
+                    editingProject.value = project;
+                    projectForm.brideName = project.brideName;
+                    projectForm.groomName = project.groomName;
+                    projectForm.weddingDate = project.weddingDate;
+                    projectForm.venue = project.venue || '';
+                    showProjectModal.value = true;
+                };
+
+                const saveProject = () => {
+                    const coupleName = `${projectForm.brideName} & ${projectForm.groomName}`;
+
+                    if (editingProject.value) {
+                        const idx = projects.value.findIndex(p => p.id === editingProject.value.id);
+                        if (idx !== -1) {
+                            projects.value[idx] = {
+                                ...projects.value[idx],
+                                brideName: projectForm.brideName,
+                                groomName: projectForm.groomName,
+                                coupleName: coupleName,
+                                weddingDate: projectForm.weddingDate,
+                                venue: projectForm.venue,
+                                updatedAt: new Date().toISOString()
+                            };
+                            showToast('Casamiento actualizado');
+                        }
+                    } else {
+                        const newProject = {
+                            id: Date.now().toString(),
+                            brideName: projectForm.brideName,
+                            groomName: projectForm.groomName,
+                            coupleName: coupleName,
+                            weddingDate: projectForm.weddingDate,
+                            venue: projectForm.venue,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                        projects.value.push(newProject);
+                        showToast('Casamiento creado');
+
+                        // Navigate to new project
+                        setTimeout(() => {
+                            openProject(newProject.id);
+                        }, 500);
+                    }
+
+                    saveProjects();
+                    closeProjectModal();
+                };
+
+                const deleteProject = (id) => {
+                    if (!confirm('¿Estás seguro de eliminar este casamiento? Se perderán todos los datos asociados.')) return;
+
+                    // Remove project
+                    projects.value = projects.value.filter(p => p.id !== id);
+                    saveProjects();
+
+                    // Remove project data
+                    localStorage.removeItem(`project_${id}_guests`);
+                    localStorage.removeItem(`project_${id}_tables`);
+                    localStorage.removeItem(`project_${id}_assignments`);
+
+                    showToast('Casamiento eliminado');
+                };
+
+                const closeProjectModal = () => {
+                    showProjectModal.value = false;
+                };
+
+                const openProject = (id) => {
+                    window.location.href = `wedding.html?project=${id}`;
+                };
+
+                // METHODS - Stats
+                const getProjectStats = (projectId) => {
+                    const guests = JSON.parse(localStorage.getItem(`project_${projectId}_guests`) || '[]');
+                    const tables = JSON.parse(localStorage.getItem(`project_${projectId}_tables`) || '[]');
+
+                    // Total spots invited is the sum of guests_confirmed (total spots in each group)
+                    const totalSpots = guests.reduce((sum, g) => sum + (g.guests_confirmed || 0), 0);
+
+                    // Confirmed is the count of individual sub-guests with 'Confirmed' status
+                    const confirmed = guests.reduce((sum, g) => {
+                        if (g.sub_guests && g.sub_guests.length > 0) {
+                            return sum + g.sub_guests.filter(sg => sg.status === 'Confirmed').length;
+                        }
+                        return sum + (g.rsvp_status === 'Confirmed' ? (g.guests_confirmed || 0) : 0);
+                    }, 0);
+
+                    return {
+                        totalGuests: totalSpots,
+                        confirmed,
+                        tables: tables.length
+                    };
+                };
+
+                // METHODS - Date Utils
+                const getDaysUntil = (dateString) => {
+                    const wedding = new Date(dateString);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    wedding.setHours(0, 0, 0, 0);
+                    const diff = Math.ceil((wedding - today) / (1000 * 60 * 60 * 24));
+                    return diff;
+                };
+
+                const formatDate = (dateString) => {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+                };
+
+                const getCountdownText = (project) => {
+                    const days = getDaysUntil(project.weddingDate);
+                    if (days < 0) return 'Evento finalizado';
+                    if (days === 0) return '¡Hoy es el día!';
+                    if (days === 1) return 'Mañana';
+                    return `Faltan ${days} días`;
+                };
+
+                const getCountdownClass = (project) => {
+                    const days = getDaysUntil(project.weddingDate);
+                    if (days < 0) return 'bg-slate-100 text-slate-600';
+                    if (days === 0) return 'bg-gradient-to-r from-brand-teal to-emerald-500 text-white';
+                    if (days <= 7) return 'bg-orange-100 text-orange-700';
+                    if (days <= 30) return 'bg-yellow-100 text-yellow-700';
+                    return 'bg-blue-100 text-blue-700';
+                };
+
+                // METHODS - Excel Export
+                const handleExportAll = () => {
+                    try {
+                        const wb = XLSX.utils.book_new();
+
+                        // Overview Sheet
+                        const overviewData = projects.value.map(p => {
+                            const stats = getProjectStats(p.id);
+                            return {
+                                'Pareja': p.coupleName,
+                                'Fecha': formatDate(p.weddingDate),
+                                'Días Restantes': getDaysUntil(p.weddingDate),
+                                'Total Invitados': stats.totalGuests,
+                                'Confirmados': stats.confirmed,
+                                'Mesas': stats.tables,
+                                'Lugar': p.venue || '-'
+                            };
+                        }).sort((a, b) => a['Días Restantes'] - b['Días Restantes']);
+
+                        const wsOverview = XLSX.utils.json_to_sheet(overviewData);
+                        XLSX.utils.book_append_sheet(wb, wsOverview, "Resumen");
+
+                        // Individual project sheets
+                        projects.value.forEach(project => {
+                            const guests = JSON.parse(localStorage.getItem(`project_${project.id}_guests`) || '[]');
+                            const assignments = JSON.parse(localStorage.getItem(`project_${project.id}_assignments`) || '[]');
+                            const tables = JSON.parse(localStorage.getItem(`project_${project.id}_tables`) || '[]');
+
+                            const getTableName = (tableId) => {
+                                const table = tables.find(t => t.id === tableId);
+                                return table ? table.name : 'Sin asignar';
+                            };
+
+                            const sheetData = guests.map(g => {
+                                const assignment = assignments.find(a => a.rsvp_id === g.id);
+                                return {
+                                    'Apellido': g.lastName || g.name || '-',
+                                    'Nombre': g.firstName || '-',
+                                    'RSVP': g.rsvp_status === 'Confirmed' ? 'Confirmado' : (g.rsvp_status === 'Declined' ? 'Declinado' : 'Pendiente'),
+                                    'Cantidad': g.guests_confirmed,
+                                    'Email': g.email || '',
+                                    'Teléfono': g.phone || '',
+                                    'Restricciones': g.dietary || 'Ninguna',
+                                    'Mesa': assignment ? getTableName(assignment.table_id) : 'Sin asignar'
+                                };
+                            });
+
+                            if (sheetData.length > 0) {
+                                const ws = XLSX.utils.json_to_sheet(sheetData);
+                                // Truncate sheet name to 31 chars (Excel limit)
+                                const sheetName = project.coupleName.substring(0, 31);
+                                XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                            }
+                        });
+
+                        XLSX.writeFile(wb, `RSVP_Dashboard_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+                        showToast('Exportación exitosa!');
+
+                    } catch (e) {
+                        console.error(e);
+                        showToast('Error al exportar', 'error');
+                    }
+                };
+
+                // UTILS
+                const showToast = (msg, type = 'success') => {
+                    toast.message = msg;
+                    toast.type = type;
+                    toast.show = true;
+                    setTimeout(() => toast.show = false, 3000);
+                };
+
+                return {
+                    projects,
+                    searchQuery,
+                    showProjectModal,
+                    editingProject,
+                    projectForm,
+                    toast,
+                    modalTitle,
+                    submitButtonText,
+                    filteredProjects,
+                    totalGuestsAllProjects,
+                    totalConfirmedAllProjects,
+                    nextEventDays,
+                    openProjectModal,
+                    editProject,
+                    saveProject,
+                    deleteProject,
+                    closeProjectModal,
+                    openProject,
+                    getProjectStats,
+                    getDaysUntil,
+                    formatDate,
+                    getCountdownText,
+                    getCountdownClass,
+                    handleExportAll,
+                    showToast,
+                    weddingsSoonCount
+                };
+            }
+        }).mount('#app');
+    </script>
+    </div>
+</body>
+
+</html>
