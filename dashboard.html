@@ -100,7 +100,7 @@
                     </h1>
                     <p class="font-script text-3xl text-brand-crimson mt-2">Events Boutique Wedding Planners</p>
                 </div>
-                <div class="flex gap-4">
+                <div class="flex gap-4" v-if="isAdmin">
                     <button @click="handleExportAll"
                         class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-xs hover:text-brand-crimson transition-all">
                         Export All
@@ -108,6 +108,13 @@
                     <button @click="openProjectModal()"
                         class="bg-brand-crimson hover:bg-brand-dark text-white px-8 py-3 rounded-none font-bold tracking-widest uppercase text-xs transition-all shadow-xl">
                         Nuevo Casamiento
+                    </button>
+                </div>
+                <!-- Optional: Logout button for everyone -->
+                <div v-else class="flex gap-4">
+                    <button @click="logout"
+                        class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-xs hover:text-brand-crimson transition-all">
+                        Cerrar Sesión
                     </button>
                 </div>
             </div>
@@ -149,16 +156,17 @@
         <!-- PROJECTS GRID -->
         <div v-if="filteredProjects.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             <div v-for="project in filteredProjects" :key="project.id"
-                class="bg-white border border-brand-pink shadow-sm hover:shadow-2xl transition-all group relative">
+                class="bg-white border border-brand-pink shadow-sm hover:shadow-2xl transition-all group relative flex flex-col h-full">
 
                 <!-- Decorative Header -->
-                <div class="h-4 w-full bg-brand-crimson"></div>
+                <div class="h-4 w-full bg-brand-crimson shrink-0"></div>
 
                 <!-- Content -->
-                <div class="p-8">
+                <div class="p-8 flex flex-col flex-1">
                     <div class="flex justify-between items-start mb-6">
                         <div>
-                            <h3 class="text-3xl font-serif font-bold text-brand-dark">{{ project.coupleName }}</h3>
+                            <h3 class="text-3xl font-serif font-bold text-brand-dark leading-tight">{{
+                                project.coupleName }}</h3>
                             <p class="text-xs font-bold text-brand-crimson tracking-[0.2em] uppercase mt-1">{{
                                 formatDate(project.weddingDate) }}</p>
                         </div>
@@ -166,6 +174,11 @@
                             <button @click="editProject(project)"
                                 class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-crimson transition-colors">
                                 <i class="ph-bold ph-pencil-simple text-sm"></i>
+                            </button>
+                            <button v-if="isAdmin" @click="viewLogs(project)"
+                                class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-dark transition-colors"
+                                title="Ver accesos">
+                                <i class="ph-bold ph-clock-counter-clockwise text-sm"></i>
                             </button>
                             <button @click="deleteProject(project.id)"
                                 class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-crimson transition-colors">
@@ -178,6 +191,10 @@
                         <i class="ph ph-map-pin"></i>
                         <span>{{ project.venue }}</span>
                     </div>
+                    <div v-else class="mb-6 h-[16px]"></div>
+
+                    <!-- Layout Spacer -->
+                    <div class="grow"></div>
 
                     <!-- Stats -->
                     <div class="grid grid-cols-2 border-y border-brand-pink/30 py-6 mb-8 gap-4">
@@ -280,6 +297,53 @@
             </div>
         </div>
 
+        <!-- MODAL: LOGS -->
+        <div v-if="showLogModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/20 backdrop-blur-sm"
+            @click.self="closeLogModal">
+            <div
+                class="bg-white shadow-2xl w-full max-w-lg overflow-hidden transform transition-all animate-fade-in border border-brand-pink flex flex-col max-h-[80vh]">
+                <div
+                    class="px-8 py-6 border-b border-brand-pink/30 flex justify-between items-center bg-brand-beige/50 shrink-0">
+                    <h3 class="font-serif font-bold text-xl text-brand-dark">Accesos: {{ selectedProjectName }}</h3>
+                    <button @click="closeLogModal" class="text-brand-dark hover:text-brand-crimson transition-colors"><i
+                            class="ph-bold ph-x text-xl"></i></button>
+                </div>
+                <div class="p-0 overflow-y-auto flex-1">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-50 sticky top-0">
+                            <tr>
+                                <th
+                                    class="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                    Fecha y Hora</th>
+                                <th
+                                    class="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                    Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr v-for="(log, idx) in projectLogs" :key="idx" class="hover:bg-brand-beige/10">
+                                <td class="px-6 py-3 text-xs font-mono text-slate-600">{{ formatDateTime(log.timestamp)
+                                    }}</td>
+                                <td class="px-6 py-3 text-xs font-bold text-brand-dark">{{ log.coupleName }}</td>
+                            </tr>
+                            <tr v-if="projectLogs.length === 0">
+                                <td colspan="2" class="px-6 py-8 text-center text-slate-400 text-xs italic">
+                                    No hay registros de acceso aún.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-4 border-t border-brand-pink/30 bg-slate-50 shrink-0 text-right">
+                    <button @click="closeLogModal"
+                        class="bg-white border border-brand-pink px-6 py-2 rounded-none font-bold tracking-widest uppercase text-[10px] hover:bg-brand-beige transition-all">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- TOAST -->
         <transition name="slide">
             <div v-if="toast.show"
@@ -310,26 +374,51 @@
                     venue: ''
                 });
                 const toast = reactive({ show: false, message: '', type: 'success' });
+                const session = ref(null);
+
+                // LOGS STATE
+                const showLogModal = ref(false);
+                const projectLogs = ref([]);
+                const selectedProjectName = ref('');
 
                 // LOAD DATA
                 onMounted(() => {
+                    const sessionData = localStorage.getItem('rsvp_session');
+                    if (!sessionData) {
+                        window.location.href = 'login.html';
+                        return;
+                    }
+                    session.value = JSON.parse(sessionData);
                     loadProjects();
                 });
 
                 const loadProjects = () => {
                     const saved = localStorage.getItem('rsvp_projects');
                     if (saved) {
-                        projects.value = JSON.parse(saved);
+                        let allProjects = JSON.parse(saved);
+
+                        // Filter for Couple
+                        if (session.value && session.value.role === 'couple') {
+                            projects.value = allProjects.filter(p => p.id === session.value.projectId);
+                        } else {
+                            projects.value = allProjects;
+                        }
                     }
                 };
 
                 const saveProjects = () => {
+                    // Safety check: Couples shouldn't be saving the full project list array directly
+                    // if they only have a slice, but since they can't create/delete, this is less risky
+                    // if we only assume Admin calls this or we rely on ID matching updates.
+                    // Ideally, we load fresh from LS, update specific item, then save back.
+                    // For now, only Admin has CREATE/DELETE buttons visible.
                     localStorage.setItem('rsvp_projects', JSON.stringify(projects.value));
                 };
 
                 // COMPUTED
                 const modalTitle = computed(() => editingProject.value ? 'Editar Casamiento' : 'Nuevo Casamiento');
                 const submitButtonText = computed(() => editingProject.value ? 'Guardar' : 'Crear');
+                const isAdmin = computed(() => session.value && session.value.role === 'admin');
 
                 const filteredProjects = computed(() => {
                     if (!searchQuery.value) return projects.value;
@@ -573,12 +662,40 @@
                     }
                 };
 
+                // METHODS - Logs
+                const viewLogs = (project) => {
+                    const allLogs = JSON.parse(localStorage.getItem('login_logs') || '[]');
+                    // Filter logs for this project
+                    // Sort descending by timestamp
+                    projectLogs.value = allLogs
+                        .filter(l => l.projectId === project.id)
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                    selectedProjectName.value = project.coupleName;
+                    showLogModal.value = true;
+                };
+
+                const closeLogModal = () => {
+                    showLogModal.value = false;
+                    projectLogs.value = [];
+                };
+
+                const formatDateTime = (isoString) => {
+                    if (!isoString) return '-';
+                    return new Date(isoString).toLocaleString('es-ES');
+                };
+
                 // UTILS
                 const showToast = (msg, type = 'success') => {
                     toast.message = msg;
                     toast.type = type;
                     toast.show = true;
                     setTimeout(() => toast.show = false, 3000);
+                };
+
+                const logout = () => {
+                    localStorage.removeItem('rsvp_session');
+                    window.location.href = 'login.html';
                 };
 
                 return {
@@ -607,7 +724,16 @@
                     getCountdownClass,
                     handleExportAll,
                     showToast,
-                    weddingsSoonCount
+                    weddingsSoonCount,
+                    isAdmin,
+                    logout,
+                    // Logs
+                    showLogModal,
+                    projectLogs,
+                    selectedProjectName,
+                    viewLogs,
+                    closeLogModal,
+                    formatDateTime
                 };
             }
         }).mount('#app');

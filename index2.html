@@ -87,11 +87,36 @@
         </div>
 
         <!-- CARD -->
-        <div class="bg-white shadow-2xl overflow-hidden border border-brand-pink relative">
+        <div class="bg-white shadow-2xl border border-brand-pink relative">
 
-            <!-- STEP 1: FIND GUEST -->
+            <!-- STEP 0: VALIDATE CODE -->
             <transition name="fade" mode="out-in">
-                <div v-if="step === 1" key="step1" class="p-8">
+                <div v-if="step === 0" key="step0" class="p-8">
+                    <div class="text-center mb-8">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Bienvenido</p>
+                        <i class="ph-thin ph-key text-4xl text-brand-crimson mb-4"></i>
+                        <h3 class="font-serif text-2xl text-brand-dark">Ingresa tu código de boda</h3>
+                    </div>
+                    <form @submit.prevent="validateCode">
+                        <div class="mb-6">
+                            <input type="text" v-model="code" required
+                                class="w-full px-4 py-4 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300 text-center uppercase tracking-[0.3em] font-bold text-lg"
+                                placeholder="AB12345678">
+                        </div>
+
+                        <div v-if="error"
+                            class="mb-6 p-4 bg-brand-pink/20 text-brand-crimson text-xs font-bold uppercase tracking-widest border border-brand-pink/50 text-center">
+                            {{ error }}
+                        </div>
+
+                        <button type="submit"
+                            class="w-full bg-brand-dark text-white font-bold py-5 tracking-[0.2em] uppercase text-xs hover:bg-brand-crimson transition-all shadow-xl">
+                            Continuar
+                        </button>
+                    </form>
+                </div>
+
+                <div v-else-if="step === 1" key="step1" class="p-8">
                     <form @submit.prevent="findGuest">
                         <div class="space-y-6">
                             <div>
@@ -184,7 +209,7 @@
                                 </div>
 
                                 <!-- Dietary (Only if Confirmed) -->
-                                <div v-if="sg.status === 'Confirmed'" class="animate-fade-in">
+                                <div v-if="sg.status !== 'Declined'">
                                     <label
                                         class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                         <i class="ph ph-fork-knife"></i> Restricción Alimentaria
@@ -252,12 +277,15 @@
 
         createApp({
             setup() {
-                const step = ref(1);
+                // STATE
+                const step = ref(0); // Start at Step 0 (Code)
+                const code = ref('');
                 const form = reactive({ firstName: '', lastName: '' });
                 const guests = ref([]);
                 const guest = ref(null);
                 const error = ref('');
                 const currentProject = ref(null);
+                const projects = ref([]);
 
                 // Fuzzy Logic State
                 const showFuzzyModal = ref(false);
@@ -265,32 +293,41 @@
 
                 // Load Data
                 onMounted(() => {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const projectId = urlParams.get('project');
-
-                    if (!projectId) {
-                        error.value = "Enlace inválido. Por favor contacta a los novios.";
-                        return;
-                    }
-
-                    // Load Project
-                    const projects = JSON.parse(localStorage.getItem('rsvp_projects') || '[]');
-                    currentProject.value = projects.find(p => p.id === projectId);
-
-                    if (!currentProject.value) {
-                        error.value = "Evento no encontrado.";
-                        return;
-                    }
-
-                    // Load Guests for this specific project
-                    const guestKey = `project_${projectId}_guests`;
-                    const saved = localStorage.getItem(guestKey);
-                    if (saved) {
-                        guests.value = JSON.parse(saved);
-                    } else {
-                        error.value = "Lista de invitados no disponible.";
-                    }
+                    projects.value = JSON.parse(localStorage.getItem('rsvp_projects') || '[]');
+                    // Optional: If 'project' param exists, maybe pre-fill or auto-validate?
+                    // For now, adhere to request: "invitado debería ingresar la clave"
                 });
+
+                const generateProjectCode = (project) => {
+                    if (!project.brideName || !project.groomName || !project.weddingDate) return null;
+                    const initials = (project.brideName.charAt(0) + project.groomName.charAt(0)).toUpperCase();
+                    const [y, m, d] = project.weddingDate.split('-');
+                    const dateStr = `${d}${m}${y}`;
+                    return `${initials}${dateStr}`;
+                };
+
+                const validateCode = () => {
+                    error.value = '';
+                    const input = code.value.trim().toUpperCase();
+
+                    const found = projects.value.find(p => generateProjectCode(p) === input);
+
+                    if (found) {
+                        currentProject.value = found;
+
+                        // Load guests for this project
+                        const guestKey = `project_${found.id}_guests`;
+                        const saved = localStorage.getItem(guestKey);
+                        if (saved) {
+                            guests.value = JSON.parse(saved);
+                            step.value = 1; // Proceed to Name Search
+                        } else {
+                            error.value = "Lista de invitados no disponible para este evento.";
+                        }
+                    } else {
+                        error.value = "Código de boda incorrecto. Por favor verifique.";
+                    }
+                };
 
                 const normalize = (str) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : '';
                 const getFullName = (item) => {
@@ -328,6 +365,10 @@
 
                 const findGuest = () => {
                     error.value = '';
+                    if (!currentProject.value) {
+                        error.value = "Project not loaded. Please enter the wedding code first.";
+                        return;
+                    }
                     if (!guests.value.length) {
                         error.value = "Guest list is empty.";
                         return;
@@ -369,7 +410,7 @@
                         fuzzyCandidate.value = bestMatch;
                         showFuzzyModal.value = true;
                     } else {
-                        error.value = "Sorry, we couldn't find your invitation. Please check the spelling.";
+                        error.value = "No encontramos tu invitación. Verifica el nombre o contacta a los novios.";
                     }
                 };
 
@@ -382,13 +423,7 @@
                     // Initialize sub_guests if they don't exist
                     const g = JSON.parse(JSON.stringify(matchedGuest));
 
-                    // Legacy migration for first level
-                    if (!g.firstName && !g.lastName && g.name) {
-                        const parts = g.name.trim().split(' ');
-                        g.firstName = parts[0] || '';
-                        g.lastName = parts.slice(1).join(' ') || '';
-                    }
-
+                    // 1. If no sub_guests, create structure
                     if (!g.sub_guests || g.sub_guests.length === 0) {
                         g.sub_guests = [{
                             firstName: g.firstName,
@@ -396,26 +431,41 @@
                             status: 'Pending',
                             dietary: g.dietary || 'None'
                         }];
-                        for (let i = 1; i < (g.guests_confirmed || 1); i++) {
+
+                        // Add additional placeholders based on allocation
+                        const totalSlots = g.guests_confirmed || 1;
+                        for (let i = 1; i < totalSlots; i++) {
                             g.sub_guests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None' });
                         }
-                    } else {
-                        // Legacy migration for sub_guests
-                        g.sub_guests.forEach(sg => {
-                            if (!sg.firstName && !sg.lastName && sg.name) {
-                                const parts = sg.name.trim().split(' ');
-                                sg.firstName = parts[0] || '';
-                                sg.lastName = parts.slice(1).join(' ') || '';
-                            }
-                        });
                     }
+
+                    // 2. Deep hydration to ensure reactive properties exist for ALL 
+                    g.sub_guests = g.sub_guests.map((sg, idx) => {
+                        // Ensure object integrity
+                        if (!sg) sg = { status: 'Pending', dietary: 'None' };
+
+                        // Default properties
+                        if (!sg.status) sg.status = 'Pending';
+
+                        // Ensure dietary exists. If it's missing, default to None.
+                        if (sg.dietary === undefined || sg.dietary === null) {
+                            // If index 0, try to inherit from main guest object if available
+                            if (idx === 0 && g.dietary) {
+                                sg.dietary = g.dietary;
+                            } else {
+                                sg.dietary = 'None';
+                            }
+                        }
+                        return sg;
+                    });
+
                     guest.value = g;
                     step.value = 2;
                 };
 
                 const rejectFuzzyMatch = () => {
                     showFuzzyModal.value = false;
-                    error.value = "Please try searching again with the exact name on your invitation.";
+                    error.value = "Por favor intenta buscar nuevamente con el nombre exacto.";
                 };
 
                 const confirmAttendance = () => {
@@ -447,8 +497,8 @@
                 };
 
                 return {
-                    step, form, error, guest, findGuest, confirmAttendance, currentProject, formatDate,
-                    showFuzzyModal, fuzzyCandidate, acceptFuzzyMatch, rejectFuzzyMatch, getFullName
+                    step, code, form, error, guest, findGuest, confirmAttendance, currentProject, formatDate,
+                    showFuzzyModal, fuzzyCandidate, acceptFuzzyMatch, rejectFuzzyMatch, getFullName, validateCode
                 };
             }
         }).mount('#app');

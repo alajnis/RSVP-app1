@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEBUG RSVP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { crimson: '#C42745', beige: '#F4ECE8', pink: '#F6D8D9', dark: '#1A1A1A' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-brand-beige min-h-screen p-4">
+    <div id="app" class="max-w-lg mx-auto bg-white border border-brand-pink p-6">
+        <h1 class="text-2xl font-bold mb-4">Debug Mode</h1>
+
+        <div class="mb-4 space-x-2">
+            <button @click="loadSingle" class="bg-blue-500 text-white px-4 py-2 rounded">Load Single Guest</button>
+            <button @click="loadGroup" class="bg-blue-500 text-white px-4 py-2 rounded">Load Group Guest</button>
+        </div>
+
+        <div v-if="guest && step === 2">
+            <h2 class="text-xl font-bold">{{ getFullName(guest) }}</h2>
+            <div class="space-y-6 mt-4">
+                <div v-for="(sg, idx) in guest.sub_guests" :key="idx" class="p-4 border">
+                    <div class="font-bold">{{ sg.firstName || 'Guest ' + (idx + 1) }}</div>
+
+                    <!-- STATUS BUTTONS -->
+                    <div class="flex gap-2 my-2">
+                        <button @click="sg.status = 'Confirmed'"
+                            :class="sg.status === 'Confirmed' ? 'bg-green-500 text-white' : 'bg-gray-200'">YES</button>
+                        <button @click="sg.status = 'Declined'"
+                            :class="sg.status === 'Declined' ? 'bg-red-500 text-white' : 'bg-gray-200'">NO</button>
+                        <button @click="sg.status = 'Pending'"
+                            :class="sg.status === 'Pending' ? 'bg-yellow-500 text-white' : 'bg-gray-200'">PENDING</button>
+                    </div>
+
+                    <div>Current Status: {{ sg.status }}</div>
+
+                    <!-- DIETARY -->
+                    <div v-if="sg.status === 'Confirmed'" class="mt-2 bg-blue-50 p-2">
+                        <label>Dietary Restriction (Visible only if Confirmed)</label>
+                        <select v-model="sg.dietary" class="block w-full border p-1">
+                            <option value="None">None</option>
+                            <option value="Vegan">Vegan</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref } = Vue;
+        createApp({
+            setup() {
+                const step = ref(2);
+                const guest = ref(null);
+
+                const getFullName = (g) => `${g.firstName} ${g.lastName}`;
+
+                const prepareGuest = (matchedGuest) => {
+                    // COPIED LOGIC FROM index2.html
+                    const g = JSON.parse(JSON.stringify(matchedGuest));
+
+                    if (!g.sub_guests || g.sub_guests.length === 0) {
+                        g.sub_guests = [{
+                            firstName: g.firstName,
+                            lastName: g.lastName,
+                            status: 'Pending',
+                            dietary: g.dietary || 'None'
+                        }];
+                        // Add additional placeholders
+                        const totalSlots = g.guests_confirmed || 1;
+                        for (let i = 1; i < totalSlots; i++) {
+                            g.sub_guests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None' });
+                        }
+                    }
+
+                    // Deep hydration
+                    g.sub_guests = g.sub_guests.map((sg, idx) => {
+                        if (!sg) sg = { status: 'Pending', dietary: 'None' };
+                        if (!sg.status) sg.status = 'Pending';
+                        if (sg.dietary === undefined || sg.dietary === null) {
+                            if (idx === 0 && g.dietary) sg.dietary = g.dietary;
+                            else sg.dietary = 'None';
+                        }
+                        return sg;
+                    });
+                    guest.value = g;
+                };
+
+                const loadSingle = () => {
+                    prepareGuest({ firstName: 'Ale', lastName: 'Lajnis', guests_confirmed: 1, id: '1' });
+                };
+
+                const loadGroup = () => {
+                    prepareGuest({ firstName: 'Martin', lastName: 'Lajnis', guests_confirmed: 2, id: '2' });
+                };
+
+                return { guest, step, loadSingle, loadGroup, getFullName };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>

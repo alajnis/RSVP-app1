@@ -363,6 +363,13 @@
                         class="bg-brand-crimson hover:bg-brand-dark text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg flex items-center gap-2">
                         <i class="ph-bold ph-plus"></i> Nuevo Invitado
                     </button>
+
+                    <!-- Load Test Data -->
+                    <button @click="loadTestData()"
+                        class="bg-brand-beige border border-brand-pink text-brand-crimson px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-md flex items-center gap-2 hover:bg-brand-pink/20"
+                        title="Borrar todo y cargar ejemplos">
+                        <i class="ph-bold ph-lightning"></i> Datos Prueba
+                    </button>
                 </div>
             </div>
 
@@ -985,8 +992,8 @@
                                 g.sub_guests.forEach((sg, idx) => {
                                     const rsvpStatus = sg.status === 'Confirmed' ? 'CONFIRMADO' : (sg.status === 'Declined' ? 'CANCELADO' : 'PENDIENTE');
                                     allIndividuals.push({
-                                        'Invitación (Apellido)': g.lastName,
-                                        'Invitación (Nombre)': g.firstName,
+                                        'Invitación (Apellido)': g.lastName || '',
+                                        'Invitación (Nombre)': g.firstName || '',
                                         'Integrante (Apellido)': sg.lastName || '(Vacio)',
                                         'Integrante (Nombre)': sg.firstName || (idx === 0 ? g.firstName : `Acompañante ${idx}`),
                                         'Asistencia': rsvpStatus,
@@ -1014,16 +1021,16 @@
                         });
 
                         const ws1 = XLSX.utils.json_to_sheet(allIndividuals.sort((a, b) =>
-                            a['Invitación (Apellido)'].localeCompare(b['Invitación (Apellido)']) ||
-                            a['Invitación (Nombre)'].localeCompare(b['Invitación (Nombre)'])
+                            (a['Invitación (Apellido)'] || '').localeCompare(b['Invitación (Apellido)'] || '') ||
+                            (a['Invitación (Nombre)'] || '').localeCompare(b['Invitación (Nombre)'] || '')
                         ));
                         XLSX.utils.book_append_sheet(wb, ws1, "Lista Completa");
 
                         // 2. Summary by Table (Only Confirmed)
                         const confirmedOnly = allIndividuals.filter(i => i.Asistencia === 'CONFIRMADO');
                         const ws2 = XLSX.utils.json_to_sheet(confirmedOnly.sort((a, b) =>
-                            a.Mesa.localeCompare(b.Mesa) ||
-                            a['Integrante (Apellido)'].localeCompare(b['Integrante (Apellido)'])
+                            (a.Mesa || '').localeCompare(b.Mesa || '') ||
+                            (a['Integrante (Apellido)'] || '').localeCompare(b['Integrante (Apellido)'] || '')
                         ));
                         XLSX.utils.book_append_sheet(wb, ws2, "Por Mesa (Confirmados)");
 
@@ -1032,7 +1039,7 @@
 
                     } catch (e) {
                         console.error(e);
-                        showToast('Export failed', 'error');
+                        showToast('Export failed: ' + e.message, 'error');
                     }
                 };
 
@@ -1169,6 +1176,102 @@
                     showToast('Link copiado al portapapeles!');
                 };
 
+                const loadTestData = () => {
+                    if (!confirm('ATENCIÓN: Esto BORRARÁ todos los datos actuales (invitados y mesas) y cargará datos de prueba. ¿Estás seguro?')) return;
+
+                    // 1. Create Tables
+                    tables.value = [
+                        { id: 't1', name: 'Mesa Principal', capacity: 8, guests_assigned: 0 },
+                        { id: 't2', name: 'Familia Novia', capacity: 10, guests_assigned: 0 },
+                        { id: 't3', name: 'Familia Novio', capacity: 10, guests_assigned: 0 },
+                        { id: 't4', name: 'Amigos Universidad', capacity: 12, guests_assigned: 0 },
+                        { id: 't5', name: 'Amigos Trabajo', capacity: 10, guests_assigned: 0 },
+                        { id: 't6', name: 'Varios', capacity: 8, guests_assigned: 0 }
+                    ];
+
+                    // 2. Create Guests
+                    guests.value = [
+                        {
+                            id: 'g1', firstName: 'Lionel', lastName: 'Messi', guests_confirmed: 4, email: 'leo@example.com', phone: '555-1010', rsvp_status: 'Confirmed', dietary: 'None',
+                            sub_guests: [
+                                { firstName: 'Lionel', lastName: 'Messi', status: 'Confirmed', dietary: 'None' },
+                                { firstName: 'Antonela', lastName: 'Roccuzzo', status: 'Confirmed', dietary: 'None' },
+                                { firstName: 'Thiago', lastName: 'Messi', status: 'Confirmed', dietary: 'None' },
+                                { firstName: 'Mateo', lastName: 'Messi', status: 'Confirmed', dietary: 'None' }
+                            ]
+                        },
+                        {
+                            id: 'g2', firstName: 'Taylor', lastName: 'Swift', guests_confirmed: 1, email: 'taylor@example.com', phone: '', rsvp_status: 'Pending', dietary: 'None',
+                            sub_guests: [
+                                { firstName: 'Taylor', lastName: 'Swift', status: 'Pending', dietary: 'None' }
+                            ]
+                        },
+                        {
+                            id: 'g3', firstName: 'Diego', lastName: 'Maradona', guests_confirmed: 1, email: '', phone: '', rsvp_status: 'Confirmed', dietary: 'None',
+                            sub_guests: [
+                                { firstName: 'Diego', lastName: 'Maradona', status: 'Confirmed', dietary: 'None' }
+                            ]
+                        },
+                        {
+                            id: 'g4', firstName: 'Homero', lastName: 'Simpson', guests_confirmed: 5, email: 'homer@example.com', phone: '555-DOH', rsvp_status: 'Confirmed', dietary: 'None',
+                            sub_guests: [
+                                { firstName: 'Homero', lastName: 'Simpson', status: 'Confirmed', dietary: 'None' },
+                                { firstName: 'Marge', lastName: 'Simpson', status: 'Confirmed', dietary: 'None' },
+                                { firstName: 'Bart', lastName: 'Simpson', status: 'Confirmed', dietary: 'None' },
+                                { firstName: 'Lisa', lastName: 'Simpson', status: 'Confirmed', dietary: 'Vegetariano' },
+                                { firstName: 'Maggie', lastName: 'Simpson', status: 'Confirmed', dietary: 'None' }
+                            ]
+                        },
+                        {
+                            id: 'g5', firstName: 'Cristiano', lastName: 'Ronaldo', guests_confirmed: 2, email: 'cr7@example.com', phone: '', rsvp_status: 'Confirmed', dietary: 'None',
+                            sub_guests: [
+                                { firstName: 'Cristiano', lastName: 'Ronaldo', status: 'Confirmed', dietary: 'None' },
+                                { firstName: 'Georgina', lastName: 'Rodríguez', status: 'Confirmed', dietary: 'None' }
+                            ]
+                        },
+                        {
+                            id: 'g6', firstName: 'Harry', lastName: 'Potter', guests_confirmed: 2, email: 'hp@magic.com', phone: '', rsvp_status: 'Pending', dietary: 'None',
+                            sub_guests: [
+                                { firstName: 'Harry', lastName: 'Potter', status: 'Pending', dietary: 'None' },
+                                { firstName: 'Ginny', lastName: 'Weasley', status: 'Pending', dietary: 'None' }
+                            ]
+                        },
+                        {
+                            id: 'g7', firstName: 'Hermione', lastName: 'Granger', guests_confirmed: 2, email: '', phone: '', rsvp_status: 'Confirmed', dietary: 'Vegetariano',
+                            sub_guests: [
+                                { firstName: 'Hermione', lastName: 'Granger', status: 'Confirmed', dietary: 'Vegetariano' },
+                                { firstName: 'Ron', lastName: 'Weasley', status: 'Confirmed', dietary: 'Celiaco' }
+                            ]
+                        },
+                        {
+                            id: 'g8', firstName: 'Barack', lastName: 'Obama', guests_confirmed: 2, email: 'b.obama@example.com', phone: '', rsvp_status: 'Declined', dietary: 'None',
+                            sub_guests: [
+                                { firstName: 'Barack', lastName: 'Obama', status: 'Declined', dietary: 'None' },
+                                { firstName: 'Michelle', lastName: 'Obama', status: 'Declined', dietary: 'None' }
+                            ]
+                        },
+                        {
+                            id: 'g9', firstName: 'Shakira', lastName: 'Mebarak', guests_confirmed: 3, email: '', phone: '', rsvp_status: 'Pending', dietary: 'None',
+                            sub_guests: [
+                                { firstName: 'Shakira', lastName: 'Mebarak', status: 'Pending', dietary: 'None' },
+                                { firstName: 'Milan', lastName: '', status: 'Pending', dietary: 'None' },
+                                { firstName: 'Sasha', lastName: '', status: 'Pending', dietary: 'None' }
+                            ]
+                        },
+                        {
+                            id: 'g10', firstName: 'Brad', lastName: 'Pitt', guests_confirmed: 1, email: '', phone: '', rsvp_status: 'Pending', dietary: 'None',
+                            sub_guests: [
+                                { firstName: 'Brad', lastName: 'Pitt', status: 'Pending', dietary: 'None' }
+                            ]
+                        }
+                    ];
+
+                    // 3. Reset Assignments
+                    assignments.value = [];
+
+                    showToast('¡Datos de prueba cargados!');
+                };
+
 
                 return {
                     currentProject, currentProjectId,
@@ -1182,8 +1285,8 @@
                     openGuestModal, editGuest, saveGuest, deleteGuest, closeGuestModal,
                     addSubGuest, removeSubGuest,
                     getIndividualConfirmedCount,
-                    assignGuest, handleFileUpload, handleExport, resetData,
-                    getTableAssignments, getTableName, getGuestName, getGuestInitials,
+                    assignGuest, handleFileUpload, handleExport, resetData, loadTestData,
+                    getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials,
                     getStatusBadgeClass, getProgressBarClass, getAvatarColor,
                     backToDashboard, formatDate,
                     getGuestPortalLink, copyLink

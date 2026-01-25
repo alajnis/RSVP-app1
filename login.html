@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Bodoni Moda"', 'serif'],
+                        sans: ['"Work Sans"', 'sans-serif'],
+                        script: ['"Pinyon Script"', 'cursive']
+                    },
+                    colors: {
+                        brand: {
+                            crimson: '#C42745',
+                            beige: '#F4ECE8',
+                            pink: '#F6D8D9',
+                            dark: '#1A1A1A'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-brand-beige min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-md">
+        <div class="bg-white shadow-2xl border border-brand-pink p-8 text-center relative overflow-hidden">
+            <!-- Decorative Header -->
+            <div class="absolute top-0 left-0 w-full h-2 bg-brand-crimson"></div>
+
+            <h1 class="text-4xl font-serif font-bold text-brand-dark mb-2 mt-4">Bienvenido</h1>
+            <p class="font-script text-2xl text-brand-crimson mb-8">Events Boutique</p>
+
+            <form @submit.prevent="login">
+                <div class="mb-8">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ingresa tu
+                        clave</label>
+                    <input type="password" v-model="password"
+                        class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all text-center tracking-widest text-lg"
+                        placeholder="••••••••" autofocus>
+                </div>
+
+                <div v-if="error" class="mb-6 text-xs font-bold text-brand-crimson uppercase tracking-widest">
+                    {{ error }}
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-brand-dark text-white py-4 font-bold tracking-[0.2em] uppercase text-xs hover:bg-brand-crimson transition-all shadow-xl">
+                    Ingresar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const password = ref('');
+                const error = ref('');
+                const projects = ref([]);
+
+                onMounted(() => {
+                    const saved = localStorage.getItem('rsvp_projects');
+                    if (saved) {
+                        projects.value = JSON.parse(saved);
+                    }
+                });
+
+                const getProjectCodes = (project) => {
+                    try {
+                        if (!project.brideName || !project.groomName || !project.weddingDate) return [];
+
+                        // Parse date safely from string "YYYY-MM-DD"
+                        // This avoids any timezone offset issues completely
+                        const parts = project.weddingDate.split('-');
+                        if (parts.length < 3) return [];
+
+                        const y = parts[0];
+                        const m = parts[1]; // Already has leading zero if saved from input type=date
+                        const d = parts[2]; // Already has leading zero if saved from input type=date
+
+                        // Ensure 2 digits just in case database has "2025-8-5"
+                        const mm = m.padStart(2, '0');
+                        const dd = d.padStart(2, '0');
+
+                        const dateStr = `${dd}${mm}${y}`;
+
+                        const b = project.brideName.charAt(0).toUpperCase();
+                        const g = project.groomName.charAt(0).toUpperCase();
+
+                        return [
+                            `${b}${g}${dateStr}`, // Standard (Bride-Groom)
+                            `${g}${b}${dateStr}`  // Reverse (Groom-Bride)
+                        ];
+                    } catch (e) {
+                        console.error("Error generating code for:", project, e);
+                        return [];
+                    }
+                };
+
+                const login = () => {
+                    try {
+                        error.value = '';
+                        const input = password.value.trim().toUpperCase(); // Normalize input
+
+                        if (!input) {
+                            error.value = 'Por favor ingresa una clave';
+                            return;
+                        }
+
+                        // Debug/Help Command (Hidden feature)
+                        if (input === 'SOCORRO' || input === 'HELP') {
+                            const codes = projects.value.map(p =>
+                                `${p.coupleName}: ${getProjectCodes(p).join(' O ')}`
+                            ).join('\n');
+                            alert(`Códigos disponibles:\n${codes}`);
+                            return;
+                        }
+
+                        // 1. Admin Login
+                        if (input === 'ADMIN') {
+                            localStorage.setItem('rsvp_session', JSON.stringify({ role: 'admin' }));
+                            window.location.href = 'dashboard.html';
+                            return;
+                        }
+
+                        // 2. Couple Login
+                        const foundProject = projects.value.find(p => {
+                            const possibleCodes = getProjectCodes(p);
+                            console.log(`Checking project ${p.coupleName}`, possibleCodes); // Debug
+                            return possibleCodes.includes(input);
+                        });
+
+                        if (foundProject) {
+                            // Log Entry
+                            const logs = JSON.parse(localStorage.getItem('login_logs') || '[]');
+                            logs.push({
+                                projectId: foundProject.id,
+                                coupleName: foundProject.coupleName,
+                                timestamp: new Date().toISOString()
+                            });
+                            localStorage.setItem('login_logs', JSON.stringify(logs));
+
+                            // Set Session
+                            localStorage.setItem('rsvp_session', JSON.stringify({
+                                role: 'couple',
+                                projectId: foundProject.id,
+                                coupleName: foundProject.coupleName
+                            }));
+                            window.location.href = 'dashboard.html';
+                        } else {
+                            error.value = 'Clave incorrecta';
+                        }
+                    } catch (e) {
+                        alert('Error al intentar ingresar: ' + e.message);
+                        console.error(e);
+                    }
+                };
+
+                return { password, login, error };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
