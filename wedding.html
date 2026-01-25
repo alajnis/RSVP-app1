@@ -284,46 +284,52 @@
 
                     <!-- Guest List -->
                     <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-brand-beige/20">
-                        <div v-for="guest in filteredGuests" :key="guest.id"
-                            class="bg-white p-4 border border-brand-pink shadow-sm hover:border-brand-crimson transition-all group">
+                        <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-brand-beige/20">
+                            <div v-for="item in filteredAssignableItems" :key="item.id"
+                                class="bg-white p-4 border border-brand-pink shadow-sm hover:border-brand-crimson transition-all group">
 
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 flex items-center justify-center font-bold text-xs"
-                                        :class="getAvatarColor(guest.lastName || '')">
-                                        {{ getGuestInitials(guest.id) }}
-                                    </div>
-                                    <div>
-                                        <div class="font-bold text-brand-dark text-sm">{{ guest.lastName }}, {{
-                                            guest.firstName }}</div>
-                                        <div class="flex items-center gap-2 mt-1">
-                                            <span
-                                                class="text-[10px] bg-brand-beige font-bold px-2 py-0.5 text-brand-dark/60 flex items-center gap-1 border border-brand-pink">
-                                                <i class="ph-fill ph-users"></i> {{ guest.guests_confirmed }}
-                                            </span>
-                                            <span v-if="guest.assignment"
-                                                class="text-[10px] text-brand-crimson font-bold bg-brand-pink/50 px-2 py-0.5 border border-brand-crimson/20 tracking-widest">ASIGNADO</span>
-                                            <span v-else
-                                                class="text-[10px] text-brand-magenta font-bold bg-brand-magenta/5 px-2 py-0.5 border border-brand-magenta/20 tracking-widest">PENDIENTE</span>
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-10 h-10 flex items-center justify-center font-bold text-xs"
+                                            :class="getAvatarColor(item.lastName || '')">
+                                            {{ (item.firstName || '?').charAt(0) }}{{ (item.lastName || '?').charAt(0)
+                                            }}
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-brand-dark text-sm">{{ item.lastName }}, {{
+                                                item.firstName }}</div>
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <span v-if="item.assignment"
+                                                    class="text-[10px] text-brand-crimson font-bold bg-brand-pink/50 px-2 py-0.5 border border-brand-crimson/20 tracking-widest">ASIGNADO</span>
+                                                <span v-else
+                                                    class="text-[10px] text-brand-magenta font-bold bg-brand-magenta/5 px-2 py-0.5 border border-brand-magenta/20 tracking-widest">PENDIENTE</span>
+
+                                                <span v-if="item.status === 'Confirmed'"
+                                                    class="text-[10px] font-bold text-green-600 flex items-center gap-1"><i
+                                                        class="ph-bold ph-check"></i> Si</span>
+                                                <span v-else-if="item.status === 'Declined'"
+                                                    class="text-[10px] font-bold text-red-400 flex items-center gap-1"><i
+                                                        class="ph-bold ph-x"></i> No</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <select :value="guest.assignment?.table_id || ''"
-                                @change="assignGuest(guest.id, $event.target.value)"
-                                class="w-full text-xs font-bold uppercase tracking-widest py-3 px-4 border cursor-pointer transition-all appearance-none"
-                                :class="guest.assignment ? 'bg-brand-crimson text-white border-brand-crimson' : 'bg-white border-brand-pink text-brand-dark hover:border-brand-crimson placeholder:text-brand-dark/30'">
-                                <option value="">Asignar Mesa...</option>
-                                <template v-for="table in tablesWithStats" :key="table.id">
-                                    <option :value="table.id"
-                                        :disabled="table.is_full && table.id !== guest.assignment?.table_id"
-                                        class="bg-white text-brand-dark">
-                                        {{ table.name }} ({{ table.guests_assigned }}/{{ table.capacity }}) {{
-                                        table.is_full ? '- LLENA' : '' }}
-                                    </option>
-                                </template>
-                            </select>
+                                <select :value="item.assignment?.table_id || ''"
+                                    @change="assignGuest(item.guestId, item.subGuestIdx, $event.target.value)"
+                                    class="w-full text-xs font-bold uppercase tracking-widest py-3 px-4 border cursor-pointer transition-all appearance-none"
+                                    :class="item.assignment ? 'bg-brand-crimson text-white border-brand-crimson' : 'bg-white border-brand-pink text-brand-dark hover:border-brand-crimson placeholder:text-brand-dark/30'">
+                                    <option value="">Asignar Mesa...</option>
+                                    <template v-for="table in tablesWithStats" :key="table.id">
+                                        <option :value="table.id"
+                                            :disabled="table.is_full && table.id !== item.assignment?.table_id"
+                                            class="bg-white text-brand-dark">
+                                            {{ table.name }} ({{ table.guests_assigned }}/{{ table.capacity }}) {{
+                                            table.is_full ? '- LLENA' : '' }}
+                                        </option>
+                                    </template>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -364,12 +370,7 @@
                         <i class="ph-bold ph-plus"></i> Nuevo Invitado
                     </button>
 
-                    <!-- Load Test Data -->
-                    <button @click="loadTestData()"
-                        class="bg-brand-beige border border-brand-pink text-brand-crimson px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-md flex items-center gap-2 hover:bg-brand-pink/20"
-                        title="Borrar todo y cargar ejemplos">
-                        <i class="ph-bold ph-lightning"></i> Datos Prueba
-                    </button>
+
                 </div>
             </div>
 
@@ -784,12 +785,7 @@
                 const tablesWithStats = computed(() => {
                     return tables.value.map(table => {
                         const tableAssignments = assignmentsByTable.value[table.id] || [];
-                        const guestsAssigned = tableAssignments.reduce((sum, a) => {
-                            const guest = guests.value.find(g => g.id === a.rsvp_id);
-                            if (!guest) return sum;
-                            // Count total invited spots for seating purposes
-                            return sum + (guest.guests_confirmed || 0);
-                        }, 0);
+                        const guestsAssigned = tableAssignments.length; // Count 1 per assignment (because now 1 assignment = 1 person)
                         const occupancyPercentage = (guestsAssigned / table.capacity) * 100;
                         return { ...table, guests_assigned: guestsAssigned, occupancy_percentage: occupancyPercentage, is_full: guestsAssigned >= table.capacity };
                     });
@@ -807,15 +803,68 @@
                     });
                 });
 
-                const filteredGuests = computed(() => {
-                    let result = guestsWithAssignments.value;
-                    if (filter.value === 'assigned') result = result.filter(g => g.assignment);
-                    if (filter.value === 'pending') result = result.filter(g => !g.assignment);
+                const assignableItems = computed(() => {
+                    const items = [];
+                    guests.value.forEach(g => {
+                        if (g.sub_guests && g.sub_guests.length > 0) {
+                            g.sub_guests.forEach((sg, idx) => {
+                                // Check if this sub guest has an assignment
+                                // We need to match assignments by both rsvp_id AND subGuestIdx if possible,
+                                // OR we need to migrate existing assignments to include subGuestIdx.
+                                // For now, let's assume assignments structure is { id, table_id, rsvp_id, sub_guest_idx }
+                                // If legacy assignment exists without sub_guest_idx, we might treat it as assigning ALL?
+                                // The prompt implies we should switch to granular.
+
+                                const assignment = assignments.value.find(a => a.rsvp_id === g.id && a.sub_guest_idx === idx);
+
+                                items.push({
+                                    id: `${g.id}_${idx}`, // unique UI key
+                                    guestId: g.id,
+                                    subGuestIdx: idx,
+                                    firstName: sg.firstName,
+                                    lastName: sg.lastName || g.lastName,
+                                    status: sg.status,
+                                    dietary: sg.dietary,
+                                    assignment: assignment,
+                                    mainGuestId: g.id
+                                });
+                            });
+                        } else {
+                            // Fallback for legacy guests without sub_guests structure (rare due to loadTestData logic, but possible)
+                            // Treat as single person
+                            const assignment = assignments.value.find(a => a.rsvp_id === g.id && a.sub_guest_idx === undefined);
+                            items.push({
+                                id: `${g.id}_main`,
+                                guestId: g.id,
+                                subGuestIdx: undefined,
+                                firstName: g.firstName,
+                                lastName: g.lastName,
+                                status: g.rsvp_status,
+                                dietary: g.dietary,
+                                assignment: assignment,
+                                mainGuestId: g.id
+                            });
+                        }
+                    });
+
+                    // Sort items
+                    return items.sort((a, b) => {
+                        const lnA = (a.lastName || '').toLowerCase();
+                        const lnB = (b.lastName || '').toLowerCase();
+                        if (lnA !== lnB) return lnA.localeCompare(lnB);
+                        return (a.firstName || '').toLowerCase().localeCompare((b.firstName || '').toLowerCase());
+                    });
+                });
+
+                const filteredAssignableItems = computed(() => {
+                    let result = assignableItems.value;
+                    if (filter.value === 'assigned') result = result.filter(i => i.assignment);
+                    if (filter.value === 'pending') result = result.filter(i => !i.assignment);
                     if (searchQuery.value) {
                         const q = searchQuery.value.toLowerCase();
-                        result = result.filter(g =>
-                            (g.firstName || '').toLowerCase().includes(q) ||
-                            (g.lastName || '').toLowerCase().includes(q)
+                        result = result.filter(i =>
+                            (i.firstName || '').toLowerCase().includes(q) ||
+                            (i.lastName || '').toLowerCase().includes(q)
                         );
                     }
                     return result;
@@ -828,11 +877,7 @@
                     return acc + (g.rsvp_status === 'Confirmed' ? (g.guests_confirmed || 0) : 0);
                 }, 0));
 
-                const assignedGuestsCount = computed(() => {
-                    return guestsWithAssignments.value
-                        .filter(g => g.assignment)
-                        .reduce((acc, g) => acc + (g.guests_confirmed || 0), 0);
-                });
+                const assignedGuestsCount = computed(() => assignments.value.length);
 
                 const declinedGuestsCount = computed(() => guests.value.reduce((acc, g) => {
                     if (g.sub_guests && g.sub_guests.length > 0) {
@@ -971,11 +1016,37 @@
                 const closeGuestModal = () => { showGuestModal.value = false; };
 
                 // METHODS - Assignments
-                const assignGuest = (guestId, tableId) => {
-                    assignments.value = assignments.value.filter(a => a.rsvp_id !== guestId); // Remove existing
-                    if (!tableId) { showToast('Assignment removed', 'success'); return; }
-                    assignments.value.push({ id: Date.now().toString(), table_id: tableId, rsvp_id: guestId });
-                    showToast('Assigned successfully');
+                // METHODS - Assignments
+                const assignGuest = (guestId, subGuestIdx, tableId) => {
+                    // 1. Remove existing assignment for this specific person
+                    if (subGuestIdx !== undefined) {
+                        assignments.value = assignments.value.filter(a => !(a.rsvp_id === guestId && a.sub_guest_idx === subGuestIdx));
+                    } else {
+                        assignments.value = assignments.value.filter(a => !(a.rsvp_id === guestId && a.sub_guest_idx === undefined));
+                    }
+
+                    if (!tableId) { showToast('Desasignado', 'success'); return; }
+
+                    // 2. check Capacity
+                    const table = tables.value.find(t => t.id === tableId);
+                    if (table) {
+                        const currentCount = assignments.value.filter(a => a.table_id === tableId).length;
+                        if (currentCount >= table.capacity) {
+                            alert(`La mesa "${table.name}" está llena (${table.capacity}/${table.capacity}). No se puede agregar más personas.`);
+                            return;
+                        }
+                    } else {
+                        return;
+                    }
+
+                    // 3. Add Assignment
+                    assignments.value.push({
+                        id: Date.now().toString() + Math.random(),
+                        table_id: tableId,
+                        rsvp_id: guestId,
+                        sub_guest_idx: subGuestIdx
+                    });
+                    showToast('Asignado exitosamente');
                 };
 
                 // METHODS - Excel Import & Export
@@ -1060,7 +1131,7 @@
                             // Col 0 = Apellido, Col 1 = Nombre, Col 2 = Cantidad, Col 3 = Email, Col 4 = Tel, Col 5 = Dieta
                             let importedCount = 0;
 
-                            for (let i = 0; i < jsonData.length; i++) {
+                            for (let i = 1; i < jsonData.length; i++) {
                                 const row = jsonData[i];
                                 if (!row || row.length < 2) continue;
 
@@ -1176,107 +1247,13 @@
                     showToast('Link copiado al portapapeles!');
                 };
 
-                const loadTestData = () => {
-                    if (!confirm('ATENCIÓN: Esto BORRARÁ todos los datos actuales (invitados y mesas) y cargará datos de prueba. ¿Estás seguro?')) return;
 
-                    // 1. Create Tables
-                    tables.value = [
-                        { id: 't1', name: 'Mesa Principal', capacity: 8, guests_assigned: 0 },
-                        { id: 't2', name: 'Familia Novia', capacity: 10, guests_assigned: 0 },
-                        { id: 't3', name: 'Familia Novio', capacity: 10, guests_assigned: 0 },
-                        { id: 't4', name: 'Amigos Universidad', capacity: 12, guests_assigned: 0 },
-                        { id: 't5', name: 'Amigos Trabajo', capacity: 10, guests_assigned: 0 },
-                        { id: 't6', name: 'Varios', capacity: 8, guests_assigned: 0 }
-                    ];
-
-                    // 2. Create Guests
-                    guests.value = [
-                        {
-                            id: 'g1', firstName: 'Lionel', lastName: 'Messi', guests_confirmed: 4, email: 'leo@example.com', phone: '555-1010', rsvp_status: 'Confirmed', dietary: 'None',
-                            sub_guests: [
-                                { firstName: 'Lionel', lastName: 'Messi', status: 'Confirmed', dietary: 'None' },
-                                { firstName: 'Antonela', lastName: 'Roccuzzo', status: 'Confirmed', dietary: 'None' },
-                                { firstName: 'Thiago', lastName: 'Messi', status: 'Confirmed', dietary: 'None' },
-                                { firstName: 'Mateo', lastName: 'Messi', status: 'Confirmed', dietary: 'None' }
-                            ]
-                        },
-                        {
-                            id: 'g2', firstName: 'Taylor', lastName: 'Swift', guests_confirmed: 1, email: 'taylor@example.com', phone: '', rsvp_status: 'Pending', dietary: 'None',
-                            sub_guests: [
-                                { firstName: 'Taylor', lastName: 'Swift', status: 'Pending', dietary: 'None' }
-                            ]
-                        },
-                        {
-                            id: 'g3', firstName: 'Diego', lastName: 'Maradona', guests_confirmed: 1, email: '', phone: '', rsvp_status: 'Confirmed', dietary: 'None',
-                            sub_guests: [
-                                { firstName: 'Diego', lastName: 'Maradona', status: 'Confirmed', dietary: 'None' }
-                            ]
-                        },
-                        {
-                            id: 'g4', firstName: 'Homero', lastName: 'Simpson', guests_confirmed: 5, email: 'homer@example.com', phone: '555-DOH', rsvp_status: 'Confirmed', dietary: 'None',
-                            sub_guests: [
-                                { firstName: 'Homero', lastName: 'Simpson', status: 'Confirmed', dietary: 'None' },
-                                { firstName: 'Marge', lastName: 'Simpson', status: 'Confirmed', dietary: 'None' },
-                                { firstName: 'Bart', lastName: 'Simpson', status: 'Confirmed', dietary: 'None' },
-                                { firstName: 'Lisa', lastName: 'Simpson', status: 'Confirmed', dietary: 'Vegetariano' },
-                                { firstName: 'Maggie', lastName: 'Simpson', status: 'Confirmed', dietary: 'None' }
-                            ]
-                        },
-                        {
-                            id: 'g5', firstName: 'Cristiano', lastName: 'Ronaldo', guests_confirmed: 2, email: 'cr7@example.com', phone: '', rsvp_status: 'Confirmed', dietary: 'None',
-                            sub_guests: [
-                                { firstName: 'Cristiano', lastName: 'Ronaldo', status: 'Confirmed', dietary: 'None' },
-                                { firstName: 'Georgina', lastName: 'Rodríguez', status: 'Confirmed', dietary: 'None' }
-                            ]
-                        },
-                        {
-                            id: 'g6', firstName: 'Harry', lastName: 'Potter', guests_confirmed: 2, email: 'hp@magic.com', phone: '', rsvp_status: 'Pending', dietary: 'None',
-                            sub_guests: [
-                                { firstName: 'Harry', lastName: 'Potter', status: 'Pending', dietary: 'None' },
-                                { firstName: 'Ginny', lastName: 'Weasley', status: 'Pending', dietary: 'None' }
-                            ]
-                        },
-                        {
-                            id: 'g7', firstName: 'Hermione', lastName: 'Granger', guests_confirmed: 2, email: '', phone: '', rsvp_status: 'Confirmed', dietary: 'Vegetariano',
-                            sub_guests: [
-                                { firstName: 'Hermione', lastName: 'Granger', status: 'Confirmed', dietary: 'Vegetariano' },
-                                { firstName: 'Ron', lastName: 'Weasley', status: 'Confirmed', dietary: 'Celiaco' }
-                            ]
-                        },
-                        {
-                            id: 'g8', firstName: 'Barack', lastName: 'Obama', guests_confirmed: 2, email: 'b.obama@example.com', phone: '', rsvp_status: 'Declined', dietary: 'None',
-                            sub_guests: [
-                                { firstName: 'Barack', lastName: 'Obama', status: 'Declined', dietary: 'None' },
-                                { firstName: 'Michelle', lastName: 'Obama', status: 'Declined', dietary: 'None' }
-                            ]
-                        },
-                        {
-                            id: 'g9', firstName: 'Shakira', lastName: 'Mebarak', guests_confirmed: 3, email: '', phone: '', rsvp_status: 'Pending', dietary: 'None',
-                            sub_guests: [
-                                { firstName: 'Shakira', lastName: 'Mebarak', status: 'Pending', dietary: 'None' },
-                                { firstName: 'Milan', lastName: '', status: 'Pending', dietary: 'None' },
-                                { firstName: 'Sasha', lastName: '', status: 'Pending', dietary: 'None' }
-                            ]
-                        },
-                        {
-                            id: 'g10', firstName: 'Brad', lastName: 'Pitt', guests_confirmed: 1, email: '', phone: '', rsvp_status: 'Pending', dietary: 'None',
-                            sub_guests: [
-                                { firstName: 'Brad', lastName: 'Pitt', status: 'Pending', dietary: 'None' }
-                            ]
-                        }
-                    ];
-
-                    // 3. Reset Assignments
-                    assignments.value = [];
-
-                    showToast('¡Datos de prueba cargados!');
-                };
 
 
                 return {
                     currentProject, currentProjectId,
                     currentView,
-                    tables, guests, assignments, tablesWithStats, filteredGuests, guestsWithAssignments,
+                    tables, guests, assignments, tablesWithStats, filteredAssignableItems, assignableItems, guestsWithAssignments,
                     totalCapacity, totalGuestsInvited, assignedGuestsCount, notRespondedCount, confirmedGuestsCount, declinedGuestsCount,
                     searchQuery, filter, showTableModal, editingTable, tableForm,
                     showGuestModal, editingGuest, guestForm, toast,
@@ -1285,7 +1262,7 @@
                     openGuestModal, editGuest, saveGuest, deleteGuest, closeGuestModal,
                     addSubGuest, removeSubGuest,
                     getIndividualConfirmedCount,
-                    assignGuest, handleFileUpload, handleExport, resetData, loadTestData,
+                    assignGuest, handleFileUpload, handleExport, resetData,
                     getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials,
                     getStatusBadgeClass, getProgressBarClass, getAvatarColor,
                     backToDashboard, formatDate,

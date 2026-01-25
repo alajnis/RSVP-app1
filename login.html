@@ -47,9 +47,9 @@
                 <div class="mb-8">
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ingresa tu
                         clave</label>
-                    <input type="password" v-model="password"
+                    <input type="text" v-model="password"
                         class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all text-center tracking-widest text-lg"
-                        placeholder="••••••••" autofocus>
+                        placeholder="" autofocus>
                 </div>
 
                 <div v-if="error" class="mb-6 text-xs font-bold text-brand-crimson uppercase tracking-widest">
@@ -82,32 +82,19 @@
 
                 const getProjectCodes = (project) => {
                     try {
-                        if (!project.brideName || !project.groomName || !project.weddingDate) return [];
+                        if (!project.brideName || !project.groomName) return [];
+                        const clean = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-                        // Parse date safely from string "YYYY-MM-DD"
-                        // This avoids any timezone offset issues completely
-                        const parts = project.weddingDate.split('-');
-                        if (parts.length < 3) return [];
-
-                        const y = parts[0];
-                        const m = parts[1]; // Already has leading zero if saved from input type=date
-                        const d = parts[2]; // Already has leading zero if saved from input type=date
-
-                        // Ensure 2 digits just in case database has "2025-8-5"
-                        const mm = m.padStart(2, '0');
-                        const dd = d.padStart(2, '0');
-
-                        const dateStr = `${dd}${mm}${y}`;
-
-                        const b = project.brideName.charAt(0).toUpperCase();
-                        const g = project.groomName.charAt(0).toUpperCase();
+                        const b = clean(project.brideName);
+                        const g = clean(project.groomName);
 
                         return [
-                            `${b}${g}${dateStr}`, // Standard (Bride-Groom)
-                            `${g}${b}${dateStr}`  // Reverse (Groom-Bride)
+                            `${b}y${g}`, // aleyjuan
+                            `${g}y${b}`,  // juanyale
+                            `${b}&${g}`, // ale&juan (just in case)
+                            `${g}&${b}`
                         ];
                     } catch (e) {
-                        console.error("Error generating code for:", project, e);
                         return [];
                     }
                 };
@@ -115,7 +102,7 @@
                 const login = () => {
                     try {
                         error.value = '';
-                        const input = password.value.trim().toUpperCase(); // Normalize input
+                        const input = password.value.trim().toLowerCase(); // Normalize input
 
                         if (!input) {
                             error.value = 'Por favor ingresa una clave';
@@ -123,7 +110,7 @@
                         }
 
                         // Debug/Help Command (Hidden feature)
-                        if (input === 'SOCORRO' || input === 'HELP') {
+                        if (input === 'socorro' || input === 'help') {
                             const codes = projects.value.map(p =>
                                 `${p.coupleName}: ${getProjectCodes(p).join(' O ')}`
                             ).join('\n');
@@ -132,7 +119,7 @@
                         }
 
                         // 1. Admin Login
-                        if (input === 'ADMIN') {
+                        if (input === 'admin') {
                             localStorage.setItem('rsvp_session', JSON.stringify({ role: 'admin' }));
                             window.location.href = 'dashboard.html';
                             return;

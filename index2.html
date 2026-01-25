@@ -79,7 +79,7 @@
     <div id="app" class="w-full max-w-lg">
 
         <!-- HEADER -->
-        <div class="text-center mb-10">
+        <div class="text-center mb-10" v-if="currentProject">
             <h1 class="text-4xl md:text-5xl font-serif font-bold text-brand-dark mb-2 tracking-tight">
                 {{ currentProject?.brideName }} & {{ currentProject?.groomName }}
             </h1>
@@ -95,7 +95,7 @@
                     <div class="text-center mb-8">
                         <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Bienvenido</p>
                         <i class="ph-thin ph-key text-4xl text-brand-crimson mb-4"></i>
-                        <h3 class="font-serif text-2xl text-brand-dark">Ingresa tu código de boda</h3>
+                        <h3 class="font-serif text-2xl text-brand-dark">Ingresa el código de la boda</h3>
                     </div>
                     <form @submit.prevent="validateCode">
                         <div class="mb-6">
@@ -191,7 +191,7 @@
                                     <div class="flex flex-wrap justify-center gap-3">
                                         <button @click="sg.status = 'Confirmed'"
                                             class="flex-1 min-w-[80px] py-3.5 flex flex-col items-center justify-center gap-1 transition-all border font-bold text-[9px] uppercase tracking-widest"
-                                            :class="sg.status === 'Confirmed' ? 'bg-brand-crimson text-white border-brand-crimson shadow-lg scale-105 z-10' : 'bg-white text-slate-400 border-slate-100 hover:border-brand-crimson/30'">
+                                            :class="sg.status === 'Confirmed' ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg scale-105 z-10' : 'bg-white text-slate-400 border-slate-100 hover:border-emerald-600/30'">
                                             <i class="ph-bold ph-check text-xs"></i> <span>SÍ</span>
                                         </button>
                                         <button @click="sg.status = 'Declined'"
@@ -299,16 +299,23 @@
                 });
 
                 const generateProjectCode = (project) => {
-                    if (!project.brideName || !project.groomName || !project.weddingDate) return null;
-                    const initials = (project.brideName.charAt(0) + project.groomName.charAt(0)).toUpperCase();
-                    const [y, m, d] = project.weddingDate.split('-');
-                    const dateStr = `${d}${m}${y}`;
-                    return `${initials}${dateStr}`;
+                    if (!project.brideName || !project.groomName) return null;
+                    const clean = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const b = clean(project.brideName);
+                    const g = clean(project.groomName);
+                    return `${b}y${g}`;
                 };
 
                 const validateCode = () => {
                     error.value = '';
                     const input = code.value.trim().toUpperCase();
+
+                    // Admin / Help Command
+                    if (['HELP', 'SOCORRO'].includes(input)) {
+                        const list = projects.value.map(p => `${p.coupleName}: ${generateProjectCode(p)}`).join('\n');
+                        alert(`CLAVES DE BODA:\n\n${list}`);
+                        return;
+                    }
 
                     const found = projects.value.find(p => generateProjectCode(p) === input);
 
