@@ -1,5 +1,5 @@
 
-// Configuración de Supabase para VPS Dokploy
+// Configuración de Supabase para VPS Dokploy (Updated)
 const SUPABASE_URL = 'https://rsvp.boutique-rsvp.com';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk0Mjg4MDgsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.6kZJm1OcvT6b5uNAHcSOxp9GzXhKMdJZc6gXyojx2Q4';
 
