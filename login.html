@@ -7,6 +7,8 @@
     <title>RSVP - Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap"
         rel="stylesheet">
@@ -73,10 +75,24 @@
                 const error = ref('');
                 const projects = ref([]);
 
-                onMounted(() => {
-                    const saved = localStorage.getItem('rsvp_projects');
-                    if (saved) {
-                        projects.value = JSON.parse(saved);
+                onMounted(async () => {
+                    // Load projects from Supabase
+                    try {
+                        const { data, error } = await supabase.from('projects').select('*');
+                        if (error) throw error;
+
+                        // Map snake_case (DB) to camelCase (App)
+                        projects.value = data.map(p => ({
+                            id: p.id,
+                            brideName: p.bride_name,
+                            groomName: p.groom_name,
+                            coupleName: p.couple_name,
+                            weddingDate: p.wedding_date
+                        }));
+
+                    } catch (e) {
+                        console.error('Error loading projects:', e);
+                        error.value = 'Error de conexión: No se pudieron cargar los datos.';
                     }
                 });
 
@@ -99,7 +115,7 @@
                     }
                 };
 
-                const login = () => {
+                const login = async () => {
                     try {
                         error.value = '';
                         const input = password.value.trim().toLowerCase(); // Normalize input
@@ -134,13 +150,10 @@
 
                         if (foundProject) {
                             // Log Entry
-                            const logs = JSON.parse(localStorage.getItem('login_logs') || '[]');
-                            logs.push({
-                                projectId: foundProject.id,
-                                coupleName: foundProject.coupleName,
-                                timestamp: new Date().toISOString()
+                            await supabase.from('login_logs').insert({
+                                project_id: foundProject.id,
+                                couple_name: foundProject.coupleName
                             });
-                            localStorage.setItem('login_logs', JSON.stringify(logs));
 
                             // Set Session
                             localStorage.setItem('rsvp_session', JSON.stringify({
