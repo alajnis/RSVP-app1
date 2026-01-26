@@ -70,6 +70,7 @@ services:
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: 54z0md2ksQViLMKoT8DBI3XEhpOx1YSyNFAGutZg
       PGRST_DB_USE_LEGACY_GUC_TROLE: "false"
+      PGRST_SERVER_PROXY_URI: "https://rsvp.boutique-rsvp.com"
     depends_on:
       - db
 
