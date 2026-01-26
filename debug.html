@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP System Diagnosis</title>
+    <!-- Cargar Supabase CDN -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #f0f0f0;
+        }
+
+        .card {
+            background: #2a2a2a;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+
+        h1 {
+            color: #C42745;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            margin-top: 0;
+            color: #00A884;
+        }
+
+        .status {
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .success {
+            background: #006644;
+            color: white;
+        }
+
+        .error {
+            background: #990000;
+            color: white;
+        }
+
+        .pending {
+            background: #665500;
+            color: white;
+        }
+
+        pre {
+            background: #000;
+            padding: 10px;
+            overflow-x: auto;
+            border: 1px solid #333;
+            color: #aaa;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #00A884;
+            border: none;
+            color: white;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Diagnóstico de Sistema RSVP</h1>
+    <p>Esta herramienta verificará cada punto de falla posible.</p>
+
+    <div class="card">
+        <h3>1. Configuración Detectada</h3>
+        <div id="config-status">Leída desde supabase-client.js...</div>
+    </div>
+
+    <div class="card">
+        <h3>2. Prueba de API (Ping)</h3>
+        <p>Intentando contactar al servidor...</p>
+        <div id="api-status"><span class="status pending">Pendiente</span></div>
+        <pre id="api-logs"></pre>
+    </div>
+
+    <div class="card">
+        <h3>3. Prueba de Base de Datos (Select)</h3>
+        <p>Intentando leer tabla 'projects'...</p>
+        <div id="db-status"><span class="status pending">Pendiente</span></div>
+        <pre id="db-logs"></pre>
+    </div>
+
+    <button onclick="runDiagnostics()">Ejecutar Diagnóstico</button>
+
+    <!-- Usamos las credenciales reales de tu archivo -->
+    <script>
+        // CONFIGURACIÓN (Copiada de tu archivo)
+        const URL = 'https://rsvp.boutique-rsvp.com';
+        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk0Mjg4MDgsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.6kZJm1OcvT6b5uNAHcSOxp9GzXhKMdJZc6gXyojx2Q4';
+
+        document.getElementById('config-status').innerText = `URL: ${URL}\nKEY: ${KEY.substring(0, 15)}...`;
+
+        async function runDiagnostics() {
+            // STEP 1: API Reachability (Fetch simple)
+            const apiStat = document.getElementById('api-status');
+            const apiLog = document.getElementById('api-logs');
+            apiLog.innerText = 'Haciendo fetch a ' + URL;
+
+            try {
+                // Intentamos acceder a la raíz de la API (Kong suele devolver 404 o mensaje de welcome)
+                // O mejor, a /rest/v1/ que debería pedir auth
+                const response = await fetch(`${URL}/rest/v1/`, { method: 'HEAD' });
+                apiLog.innerText += `\nStatus: ${response.status} ${response.statusText}`;
+
+                if (response.status === 401 || response.status === 200 || response.status === 404) {
+                    apiStat.innerHTML = '<span class="status success">CONEXIÓN OK</span>';
+                    apiLog.innerText += '\nEl servidor responde correctamente (HTTP/HTTPS funciona).';
+                } else {
+                    apiStat.innerHTML = '<span class="status error">ERROR HTTP</span>';
+                }
+            } catch (e) {
+                apiStat.innerHTML = '<span class="status error">FALLO DE RED</span>';
+                apiLog.innerText += `\nError: ${e.message}`;
+                apiLog.innerText += `\n\nPOSIBLES CAUSAS:
+1. Certificado SSL inválido (¿Ves candado rojo en rsvp.boutique-rsvp.com?)
+2. DNS no propagado (¿Sigue apuntando a Hostinger?)
+3. CORS bloqueado (Si 'Failed to fetch' sin detalles)`;
+                return; // Stop if network fails
+            }
+
+            // STEP 2: Supabase Client & DB
+            const dbStat = document.getElementById('db-status');
+            const dbLog = document.getElementById('db-logs');
+
+            try {
+                dbLog.innerText = 'Inicializando cliente...';
+
+                // Forzamos namespace por si acaso
+                const client = supabase.createClient(URL, KEY);
+
+                dbLog.innerText += '\nIntentando SELECT a tabla "projects"...';
+
+                const { data, error } = await client.from('projects').select('count', { count: 'exact', head: true });
+
+                if (error) {
+                    dbStat.innerHTML = '<span class="status error">ERROR BD</span>';
+                    dbLog.innerText += `\n\nSupabase Error: ${JSON.stringify(error, null, 2)}`;
+
+                    if (error.code === 'PGRST301' || error.message.includes('JWT')) {
+                        dbLog.innerText += '\n-> Problema con la ANON_KEY (Token inválido o expirado).';
+                    } else if (error.code === '42P01') {
+                        dbLog.innerText += '\n-> LA TABLA "projects" NO EXISTE (Falta correr el SQL).';
+                    }
+                } else {
+                    dbStat.innerHTML = '<span class="status success">LECTURA OK</span>';
+                    dbLog.innerText += `\n¡Éxito! Se conectó y leyó la base de datos.`;
+                }
+
+            } catch (e) {
+                dbStat.innerHTML = '<span class="status error">EXCEPCIÓN CRÍTICA</span>';
+                dbLog.innerText += `\nError JS: ${e.message}\n${e.stack}`;
+            }
+        }
+
+        // Auto-run
+        setTimeout(runDiagnostics, 1000);
+    </script>
+</body>
+
+</html>
