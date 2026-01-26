@@ -1,6 +1,6 @@
 
 // Configuración de Supabase para VPS Dokploy
-const SUPABASE_URL = 'http://rsvp-app-supabase-b3cdd1-76-13-166-122.traefik.me';
+const SUPABASE_URL = 'https://rsvp.boutique-rsvp.com';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk0Mjg4MDgsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.6kZJm1OcvT6b5uNAHcSOxp9GzXhKMdJZc6gXyojx2Q4';
 
 // Inicializar cliente globalmente
