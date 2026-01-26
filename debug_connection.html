@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico de Conexión</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        h1 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+            background: #fff0f0;
+            padding: 10px;
+            border: 1px solid red;
+            border-radius: 4px;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .loading {
+            color: orange;
+            font-weight: bold;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Diagnóstico de Supabase: Boutique RSVP</h1>
+    <p>Esta herramienta verificará si la API y la Base de Datos están accesibles.</p>
+
+    <button onclick="runDiagnostics()">EJECUTAR DIAGNÓSTICO</button>
+
+    <div id="results"></div>
+
+    <script>
+        // CONFIGURACIÓN EXACTA DE TU PROYECTO
+        const SUPABASE_URL = 'https://rsvp.boutique-rsvp.com';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY5NDU4MDYzLCJleHAiOjIwODQ4MTgwNjN9.BLdRie7if_hl-k0kPoe6JsZuw6C-emTGLfbIqzaV6VI';
+
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const resultsDiv = document.getElementById('results');
+
+        function log(message, type = 'info', detail = null) {
+            const p = document.createElement('div');
+            p.style.marginBottom = '10px';
+            p.style.padding = '10px';
+            p.style.borderBottom = '1px solid #eee';
+
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '❌';
+            if (type === 'loading') icon = '⏳';
+
+            let html = `<strong>${icon} ${message}</strong>`;
+
+            if (detail) {
+                if (typeof detail === 'object') {
+                    html += `<pre>${JSON.stringify(detail, null, 2)}</pre>`;
+                } else {
+                    html += `<div class="${type}">${detail}</div>`;
+                }
+            }
+
+            p.innerHTML = html;
+            resultsDiv.appendChild(p);
+        }
+
+        async function runDiagnostics() {
+            resultsDiv.innerHTML = ''; // Limpiar resultados anteriores
+            log('Iniciando diagnóstico...', 'loading');
+
+            // 1. Verificar URL Base
+            try {
+                log(`Verificando conectividad básica con ${SUPABASE_URL}...`, 'loading');
+                const controller = new AbortController();
+                const id = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+                // Intentamos llegar a /auth/v1/health (endpoint común de GoTrue)
+                const healthUrl = `${SUPABASE_URL}/auth/v1/health`;
+                const response = await fetch(healthUrl, { signal: controller.signal });
+                clearTimeout(id);
+
+                if (response.ok) {
+                    log('Conexión con el servidor de AUTH exitosa.', 'success');
+                } else {
+                    log('El servidor respondió, pero con error.', 'error', `Status: ${response.status} ${response.statusText}`);
+                }
+            } catch (err) {
+                log('FALLÓ la conexión básica con el servidor.', 'error', `Error de red o SSL/CORS: ${err.message}. \n\nPosibles causas:\n1. El dominio no apunta al puerto 8000.\n2. SSL no es válido.\n3. Tu firewall bloquea la conexión.`);
+                return; // Si esto falla, lo demás fallará seguro
+            }
+
+            // 2. Verificar Base de Datos (Select simple)
+            try {
+                log('Intentando leer la tabla "projects" de la base de datos...', 'loading');
+                const { data, error } = await client.from('projects').select('count', { count: 'exact', head: true });
+
+                if (error) {
+                    log('Error al conectar con la Base de Datos (PostgREST).', 'error', error);
+                } else {
+                    log('¡ÉXITO! Conexión a Base de Datos establecida.', 'success', 'La API respondió correctamente. Las tablas existen.');
+                }
+            } catch (err) {
+                log('Error inesperado al usar el cliente Supabase.', 'error', err.message);
+            }
+
+            // 3. Verificar Autenticación (Login falso)
+            try {
+                log('Verificando servicio de Autenticación (Login)...', 'loading');
+                const { data, error } = await client.auth.signInWithPassword({
+                    email: 'test@example.com',
+                    password: 'wrongpassword123'
+                });
+
+                if (error && error.message.includes('Invalid login credentials')) {
+                    log('¡ÉXITO! El servicio de Auth está funcionando (rechazó correctamente credenciales falsas).', 'success');
+                } else if (error) {
+                    log('Error en servicio de Auth.', 'error', error);
+                } else {
+                    log('Respuesta inesperada del Auth.', 'info', data);
+                }
+            } catch (err) {
+                log('Error crítico en Auth.', 'error', err.message);
+            }
+
+            log('Diagnóstico finalizado.', 'info');
+        }
+    </script>
+</body>
+
+</html>
