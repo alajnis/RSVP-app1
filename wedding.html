@@ -16,7 +16,12 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <!-- SheetJS (CDN) for Excel Import -->
+    <!-- SheetJS (CDN) for Excel Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
 
     <!-- Google Fonts -->
     <link
@@ -699,46 +704,49 @@
                 }
 
                 // Load project data
-                const projects = JSON.parse(localStorage.getItem('rsvp_projects') || '[]');
-                const project = projects.find(p => p.id === projectId);
+                // Load project data
 
-                if (!project) {
-                    alert('Proyecto no encontrado');
-                    window.location.href = 'dashboard.html';
-                    return {};
-                }
+                const loadData = async () => {
+                    if (!projectId) return;
 
-                currentProjectId.value = projectId;
-                currentProject.value = project;
+                    // 1. Project Info
+                    const { data: proj, error: projErr } = await supabase.from('projects').select('*').eq('id', projectId).single();
+                    if (projErr || !proj) { alert('Proyecto no encontrado'); window.location.href = 'dashboard.html'; return; }
 
-                // STATE
-                const currentView = ref('seating'); // 'seating' | 'guests'
+                    currentProject.value = {
+                        id: proj.id,
+                        coupleName: proj.couple_name,
+                        weddingDate: proj.wedding_date,
+                        brideName: proj.bride_name,
+                        groomName: proj.groom_name
+                    };
+                    currentProjectId.value = projectId;
 
-                // Load from LocalStorage with project-specific keys
-                const load = (key, fallback = []) => {
-                    try {
-                        const saved = localStorage.getItem(`project_${projectId}_${key}`);
-                        return saved ? JSON.parse(saved) : fallback;
-                    } catch (e) {
-                        console.error(`Error loading ${key}:`, e);
-                        return fallback;
-                    }
+                    // 2. Tables
+                    const { data: tbs } = await supabase.from('tables').select('*').eq('project_id', projectId);
+                    tables.value = tbs || [];
+
+                    // 3. Guests
+                    const { data: gs } = await supabase.from('guests').select('*').eq('project_id', projectId);
+                    // Map sub_guests from JSON
+                    guests.value = (gs || []).map(g => ({
+                        id: g.id,
+                        firstName: g.first_name,
+                        lastName: g.last_name,
+                        email: g.email,
+                        phone: g.phone,
+                        guests_confirmed: g.guests_confirmed,
+                        rsvp_status: g.rsvp_status,
+                        dietary: g.dietary,
+                        sub_guests: g.sub_guests || []
+                    }));
+
+                    // 4. Assignments
+                    const { data: asgs } = await supabase.from('assignments').select('*').eq('project_id', projectId);
+                    assignments.value = asgs || [];
                 };
 
-                const tables = ref(load('tables'));
-                const guests = ref(load('guests'));
-                const assignments = ref(load('assignments'));
-
-                // Sync to LocalStorage with project-specific keys
-                watch(tables, (val) => localStorage.setItem(`project_${projectId}_tables`, JSON.stringify(val)), { deep: true });
-                watch(guests, (val) => localStorage.setItem(`project_${projectId}_guests`, JSON.stringify(val)), { deep: true });
-                watch(assignments, (val) => localStorage.setItem(`project_${projectId}_assignments`, JSON.stringify(val)), { deep: true });
-
-
-                // Add event listener for storage changes
-                window.addEventListener('storage', (e) => {
-                    if (e.key === `project_${projectId}_guests`) guests.value = JSON.parse(e.newValue);
-                });
+                loadData();
 
                 // UI State
                 const searchQuery = ref('');
@@ -901,16 +909,53 @@
                 // METHODS - Table
                 const openTableModal = () => { editingTable.value = null; tableForm.name = ''; tableForm.capacity = 8; showTableModal.value = true; };
                 const editTable = (table) => { editingTable.value = table; tableForm.name = table.name; tableForm.capacity = table.capacity; showTableModal.value = true; };
-                const saveTable = () => {
-                    if (editingTable.value) {
-                        const idx = tables.value.findIndex(t => t.id === editingTable.value.id);
-                        if (idx !== -1) { tables.value[idx] = { ...tables.value[idx], ...tableForm }; showToast('Table updated'); }
-                    } else {
-                        tables.value.push({ id: Date.now().toString(), ...tableForm }); showToast('Table created');
+
+                const saveTable = async () => {
+                    try {
+                        if (editingTable.value) {
+                            const { error } = await supabase.from('tables').update({
+                                name: tableForm.name,
+                                capacity: tableForm.capacity
+                            }).eq('id', editingTable.value.id);
+                            if (error) throw error;
+
+                            // Update local
+                            const idx = tables.value.findIndex(t => t.id === editingTable.value.id);
+                            if (idx !== -1) { tables.value[idx] = { ...tables.value[idx], ...tableForm }; }
+                            showToast('Mesa actualizada');
+                        } else {
+                            const newTable = {
+                                id: crypto.randomUUID(),
+                                project_id: currentProjectId.value,
+                                name: tableForm.name,
+                                capacity: tableForm.capacity
+                            };
+                            const { error } = await supabase.from('tables').insert(newTable);
+                            if (error) throw error;
+
+                            tables.value.push(newTable);
+                            showToast('Mesa creada');
+                        }
+                        closeModal();
+                    } catch (e) {
+                        console.error(e);
+                        showToast('Error: ' + e.message, 'error');
                     }
-                    closeModal();
                 };
-                const deleteTable = (id) => { if (confirm('Delete table?')) { tables.value = tables.value.filter(t => t.id !== id); showToast('Table deleted'); } };
+
+                const deleteTable = async (id) => {
+                    if (confirm('¿Borrar mesa?')) {
+                        try {
+                            const { error } = await supabase.from('tables').delete().eq('id', id);
+                            if (error) throw error;
+
+                            tables.value = tables.value.filter(t => t.id !== id);
+                            // Remove assignments locally too (DB handles cascade but UI needs update)
+                            assignments.value = assignments.value.filter(a => a.table_id !== id);
+                            showToast('Mesa eliminada');
+                        } catch (e) { console.error(e); showToast('Error al borrar', 'error'); }
+                    }
+                };
                 const closeModal = () => { showTableModal.value = false; };
 
                 const openGuestModal = () => {
@@ -945,20 +990,44 @@
                     }
                 };
 
-                const saveGuest = () => {
+                const saveGuest = async () => {
                     // Final sync before saving
                     if (guestForm.sub_guests.length > 0) {
                         guestForm.sub_guests[0].firstName = guestForm.firstName;
                         guestForm.sub_guests[0].lastName = guestForm.lastName;
                     }
 
-                    if (editingGuest.value) {
-                        const idx = guests.value.findIndex(g => g.id === editingGuest.value.id);
-                        if (idx !== -1) { guests.value[idx] = { ...guests.value[idx], ...guestForm }; showToast('Invitado actualizado'); }
-                    } else {
-                        guests.value.push({ id: Date.now().toString() + Math.random(), ...guestForm }); showToast('Invitado agregado');
+                    try {
+                        const guestData = {
+                            first_name: guestForm.firstName,
+                            last_name: guestForm.lastName,
+                            email: guestForm.email,
+                            phone: guestForm.phone,
+                            guests_confirmed: guestForm.guests_confirmed,
+                            rsvp_status: guestForm.rsvp_status,
+                            dietary: guestForm.dietary,
+                            sub_guests: guestForm.sub_guests, // JSONB
+                            project_id: currentProjectId.value
+                        };
+
+                        if (editingGuest.value) {
+                            const { error } = await supabase.from('guests').update(guestData).eq('id', editingGuest.value.id);
+                            if (error) throw error;
+
+                            const idx = guests.value.findIndex(g => g.id === editingGuest.value.id);
+                            if (idx !== -1) { guests.value[idx] = { ...guests.value[idx], ...guestForm }; showToast('Invitado actualizado'); }
+                        } else {
+                            const newId = crypto.randomUUID();
+                            const { error } = await supabase.from('guests').insert({ id: newId, ...guestData });
+                            if (error) throw error;
+
+                            guests.value.push({ id: newId, ...guestForm }); showToast('Invitado agregado');
+                        }
+                        closeGuestModal();
+                    } catch (e) {
+                        console.error(e);
+                        showToast('Error saving guest: ' + e.message, 'error');
                     }
-                    closeGuestModal();
                 };
 
                 const editGuest = (guest) => {
@@ -1006,47 +1075,86 @@
                     showGuestModal.value = true;
                 };
 
-                const deleteGuest = (id) => {
-                    if (confirm('Delete guest?')) {
-                        guests.value = guests.value.filter(g => g.id !== id);
-                        assignments.value = assignments.value.filter(a => a.rsvp_id !== id);
-                        showToast('Guest deleted');
+                const deleteGuest = async (id) => {
+                    if (confirm('¿Eliminar invitado?')) {
+                        try {
+                            const { error } = await supabase.from('guests').delete().eq('id', id);
+                            if (error) throw error;
+
+                            guests.value = guests.value.filter(g => g.id !== id);
+                            assignments.value = assignments.value.filter(a => a.rsvp_id !== id);
+                            showToast('Invitado eliminado');
+                        } catch (e) {
+                            console.error(e);
+                            showToast('Error al eliminar', 'error');
+                        }
                     }
                 };
                 const closeGuestModal = () => { showGuestModal.value = false; };
 
                 // METHODS - Assignments
                 // METHODS - Assignments
-                const assignGuest = (guestId, subGuestIdx, tableId) => {
-                    // 1. Remove existing assignment for this specific person
-                    if (subGuestIdx !== undefined) {
-                        assignments.value = assignments.value.filter(a => !(a.rsvp_id === guestId && a.sub_guest_idx === subGuestIdx));
-                    } else {
-                        assignments.value = assignments.value.filter(a => !(a.rsvp_id === guestId && a.sub_guest_idx === undefined));
-                    }
+                const assignGuest = async (guestId, subGuestIdx, tableId) => {
+                    // 1. Remove existing assignment for this specific person logic locally BUT must do it in DB first.
+                    // Actually, easiest valid DB approach: 
+                    // Delete any assignment where rsvp_id = X AND sub_guest_idx = Y (or null)
 
-                    if (!tableId) { showToast('Desasignado', 'success'); return; }
+                    try {
+                        const isMain = subGuestIdx === undefined;
+                        let deleteQuery = supabase.from('assignments').delete().eq('rsvp_id', guestId);
 
-                    // 2. check Capacity
-                    const table = tables.value.find(t => t.id === tableId);
-                    if (table) {
-                        const currentCount = assignments.value.filter(a => a.table_id === tableId).length;
-                        if (currentCount >= table.capacity) {
-                            alert(`La mesa "${table.name}" está llena (${table.capacity}/${table.capacity}). No se puede agregar más personas.`);
+                        // If subGuestIdx is defined, match it. If undefined (legacy main), match that?
+                        // Actually, 'undefined' usually doesn't happen in updated logic, but safeguard:
+                        if (isMain) {
+                            deleteQuery = deleteQuery.filter('sub_guest_idx', 'is', null); // or how we store it?
+                            // Wait, our new schema has sub_guest_idx. If we pass undefined, maybe we mean idx 0? 
+                            // Let's assume frontend passes valid index.
+                        } else {
+                            deleteQuery = deleteQuery.eq('sub_guest_idx', subGuestIdx);
+                        }
+
+                        await deleteQuery; // Execute removal
+
+                        // Update local state (optimistic or refresh?)
+                        // Refresh is safer but slower. Let's update local
+                        if (subGuestIdx !== undefined) {
+                            assignments.value = assignments.value.filter(a => !(a.rsvp_id === guestId && a.sub_guest_idx === subGuestIdx));
+                        } else {
+                            assignments.value = assignments.value.filter(a => !(a.rsvp_id === guestId && a.sub_guest_idx === undefined));
+                        }
+
+                        if (!tableId) { showToast('Desasignado', 'success'); return; }
+
+                        // 2. check Capacity (Local check is fine since we have data)
+                        const table = tables.value.find(t => t.id === tableId);
+                        if (table) {
+                            const currentCount = assignments.value.filter(a => a.table_id === tableId).length;
+                            if (currentCount >= table.capacity) {
+                                alert(`La mesa "${table.name}" está llena (${table.capacity}/${table.capacity}). No se puede agregar más personas.`);
+                                return;
+                            }
+                        } else {
                             return;
                         }
-                    } else {
-                        return;
-                    }
 
-                    // 3. Add Assignment
-                    assignments.value.push({
-                        id: Date.now().toString() + Math.random(),
-                        table_id: tableId,
-                        rsvp_id: guestId,
-                        sub_guest_idx: subGuestIdx
-                    });
-                    showToast('Asignado exitosamente');
+                        // 3. Add Assignment DB
+                        const newAsg = {
+                            id: crypto.randomUUID(),
+                            project_id: currentProjectId.value,
+                            table_id: tableId,
+                            rsvp_id: guestId,
+                            sub_guest_idx: subGuestIdx
+                        };
+
+                        const { error } = await supabase.from('assignments').insert(newAsg);
+                        if (error) throw error;
+
+                        assignments.value.push(newAsg);
+                        showToast('Asignado exitosamente');
+                    } catch (e) {
+                        console.error(e);
+                        showToast('Error asignando: ' + e.message, 'error');
+                    }
                 };
 
                 // METHODS - Excel Import & Export
@@ -1227,12 +1335,23 @@
                     return colors[name.length % colors.length];
                 };
                 const getTableAssignments = (tableId) => assignments.value.filter(a => a.table_id === tableId);
-                const resetData = () => {
+                const resetData = async () => {
                     if (confirm('¿Resetear todos los datos de este casamiento?')) {
-                        tables.value = [];
-                        guests.value = [];
-                        assignments.value = [];
-                        showToast('Datos reseteados');
+                        try {
+                            // Supabase cascade delete handles referenced stuff if configured, 
+                            // but manual delete is safer.
+                            // Deleting tables cascades to assignments.
+                            // Deleting guests cascades to assignments.
+
+                            // Let's delete all tables and guests for this project.
+                            await supabase.from('tables').delete().eq('project_id', currentProjectId.value);
+                            await supabase.from('guests').delete().eq('project_id', currentProjectId.value);
+
+                            tables.value = [];
+                            guests.value = [];
+                            assignments.value = [];
+                            showToast('Datos reseteados');
+                        } catch (e) { console.error(e); }
                     }
                 };
 

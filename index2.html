@@ -7,6 +7,8 @@
     <title>RSVP - Guest Confirmation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap"
@@ -292,47 +294,58 @@
                 const fuzzyCandidate = ref(null);
 
                 // Load Data
-                onMounted(() => {
-                    projects.value = JSON.parse(localStorage.getItem('rsvp_projects') || '[]');
-                    // Optional: If 'project' param exists, maybe pre-fill or auto-validate?
-                    // For now, adhere to request: "invitado debería ingresar la clave"
+                onMounted(async () => {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const pid = urlParams.get('project');
+
+                    if (pid) {
+                        try {
+                            const { data: proj, error: dbError } = await supabase.from('projects').select('*').eq('id', pid).single();
+
+                            if (dbError) throw dbError;
+
+                            if (proj) {
+                                currentProject.value = {
+                                    id: proj.id,
+                                    brideName: proj.bride_name,
+                                    groomName: proj.groom_name,
+                                    weddingDate: proj.wedding_date,
+                                    coupleName: proj.couple_name
+                                };
+                            } else {
+                                alert('Proyecto inválido o no encontrado');
+                            }
+                        } catch (e) {
+                            console.error("Error loading project:", e);
+                            error.value = "Error al cargar el proyecto.";
+                        }
+                    }
                 });
 
                 const generateProjectCode = (project) => {
-                    if (!project.brideName || !project.groomName) return null;
+                    if (!project || !project.brideName || !project.groomName) return null;
                     const clean = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const b = clean(project.brideName);
                     const g = clean(project.groomName);
                     return `${b}y${g}`;
                 };
 
-                const validateCode = () => {
+                const validateCode = async () => {
                     error.value = '';
-                    const input = code.value.trim().toUpperCase();
-
-                    // Admin / Help Command
-                    if (['HELP', 'SOCORRO'].includes(input)) {
-                        const list = projects.value.map(p => `${p.coupleName}: ${generateProjectCode(p)}`).join('\n');
-                        alert(`CLAVES DE BODA:\n\n${list}`);
+                    if (!currentProject.value) {
+                        error.value = "No se ha cargado el proyecto. Asegúrate de que la URL contenga '?project=ID_DEL_PROYECTO'.";
                         return;
                     }
 
-                    const found = projects.value.find(p => generateProjectCode(p) === input);
+                    const inputCode = accessCode.value.trim().toLowerCase();
+                    const expectedCode = generateProjectCode(currentProject.value);
+                    const expectedRevCode = generateProjectCode({ brideName: currentProject.value.groomName, groomName: currentProject.value.brideName }); // Reverse check
 
-                    if (found) {
-                        currentProject.value = found;
-
-                        // Load guests for this project
-                        const guestKey = `project_${found.id}_guests`;
-                        const saved = localStorage.getItem(guestKey);
-                        if (saved) {
-                            guests.value = JSON.parse(saved);
-                            step.value = 1; // Proceed to Name Search
-                        } else {
-                            error.value = "Lista de invitados no disponible para este evento.";
-                        }
+                    if (inputCode === expectedCode || inputCode === expectedRevCode) {
+                        step.value = 1; // Proceed to Name Search
+                        error.value = '';
                     } else {
-                        error.value = "Código de boda incorrecto. Por favor verifique.";
+                        error.value = 'Código de boda incorrecto. Por favor verifique.';
                     }
                 };
 
@@ -342,10 +355,10 @@
                     if (item.firstName || item.lastName) {
                         return `${item.lastName || ''}${item.lastName && item.firstName ? ', ' : ''}${item.firstName || ''}`.trim();
                     }
-                    return item.name || '';
+                    return item.name || ''; // Fallback for older structures if any
                 };
 
-                // Levenshtein Distance for typo tolerance
+                // Levenshtein Distance for typo tolerance (kept for potential future use, though not directly used in new findInvitation)
                 const levenshtein = (a, b) => {
                     if (a.length === 0) return b.length;
                     if (b.length === 0) return a.length;
@@ -370,67 +383,66 @@
                     return matrix[b.length][a.length];
                 };
 
-                const findGuest = () => {
+                const findInvitation = async () => {
+                    loading.value = true;
                     error.value = '';
+
                     if (!currentProject.value) {
-                        error.value = "Project not loaded. Please enter the wedding code first.";
-                        return;
-                    }
-                    if (!guests.value.length) {
-                        error.value = "Guest list is empty.";
+                        error.value = "No se ha cargado el proyecto. Por favor, ingresa el código de la boda primero.";
+                        loading.value = false;
                         return;
                     }
 
-                    const inputFull = `${form.firstName} ${form.lastName}`;
-                    const inputClean = normalize(inputFull);
+                    try {
+                        const q = lastNameSearch.value.trim().toLowerCase();
+                        if (q.length < 2) {
+                            error.value = 'Ingresa al menos 2 letras del apellido.';
+                            loading.value = false;
+                            return;
+                        }
 
-                    // 1. Exact Match (Normalized)
-                    const exactMatch = guests.value.find(g => normalize(g.name) === inputClean);
-                    if (exactMatch) {
-                        prepareGuest(exactMatch);
-                        return;
-                    }
+                        const { data: guests, error: err } = await supabase
+                            .from('guests')
+                            .select('*')
+                            .eq('project_id', currentProject.value.id)
+                            .ilike('last_name', `%${q}%`); // Search by partial last name
 
-                    // 2. Fuzzy Match logic
-                    const inputParts = inputClean.split(' ');
+                        if (err) throw err;
 
-                    const bestMatch = guests.value.find(g => {
-                        const storedFull = getFullName(g);
-                        const storedClean = normalize(storedFull);
+                        if (guests && guests.length > 0) {
+                            searchResults.value = guests.map(g => ({
+                                id: g.id,
+                                firstName: g.first_name,
+                                lastName: g.last_name,
+                                guests_confirmed: g.guests_confirmed,
+                                rsvp_status: g.rsvp_status,
+                                sub_guests: g.sub_guests || [],
+                                email: g.email,
+                                phone: g.phone,
+                                dietary: g.dietary
+                            }));
 
-                        // Strategy A: Subset Match
-                        const isSubset = inputParts.every(part => storedClean.includes(part));
-                        if (isSubset) return true;
+                            if (searchResults.value.length === 1) {
+                                selectGuest(searchResults.value[0]);
+                            } else {
+                                step.value = 2; // Show list of results
+                            }
+                        } else {
+                            error.value = 'No encontramos tu invitación. Verifica el apellido.';
+                        }
 
-                        // Strategy B: Typo Tolerance (Levenshtein)
-                        if (inputClean.length < 3 || storedClean.length < 3) return false;
-
-                        const dist = levenshtein(inputClean, storedClean);
-                        const threshold = Math.max(3, storedClean.length * 0.3);
-
-                        if (dist <= threshold) return true;
-
-                        return false;
-                    });
-
-                    if (bestMatch) {
-                        fuzzyCandidate.value = bestMatch;
-                        showFuzzyModal.value = true;
-                    } else {
-                        error.value = "No encontramos tu invitación. Verifica el nombre o contacta a los novios.";
+                    } catch (e) {
+                        console.error("Error searching for guest:", e);
+                        error.value = 'Error al buscar tu invitación. Intenta de nuevo más tarde.';
+                    } finally {
+                        loading.value = false;
                     }
                 };
 
-                const acceptFuzzyMatch = () => {
-                    prepareGuest(fuzzyCandidate.value);
-                    showFuzzyModal.value = false;
-                };
-
-                const prepareGuest = (matchedGuest) => {
-                    // Initialize sub_guests if they don't exist
+                const selectGuest = (matchedGuest) => {
+                    // Initialize sub_guests if they don't exist or are empty
                     const g = JSON.parse(JSON.stringify(matchedGuest));
 
-                    // 1. If no sub_guests, create structure
                     if (!g.sub_guests || g.sub_guests.length === 0) {
                         g.sub_guests = [{
                             firstName: g.firstName,
@@ -446,7 +458,7 @@
                         }
                     }
 
-                    // 2. Deep hydration to ensure reactive properties exist for ALL 
+                    // Deep hydration to ensure reactive properties exist for ALL sub_guests
                     g.sub_guests = g.sub_guests.map((sg, idx) => {
                         // Ensure object integrity
                         if (!sg) sg = { status: 'Pending', dietary: 'None' };
@@ -466,8 +478,14 @@
                         return sg;
                     });
 
-                    guest.value = g;
-                    step.value = 2;
+                    selectedGuest.value = g;
+                    step.value = 3; // Proceed to confirmation step
+                    error.value = ''; // Clear any previous errors
+                };
+
+                const acceptFuzzyMatch = () => {
+                    selectGuest(fuzzyCandidate.value); // Use selectGuest for fuzzy match acceptance
+                    showFuzzyModal.value = false;
                 };
 
                 const rejectFuzzyMatch = () => {

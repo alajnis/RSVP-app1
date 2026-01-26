@@ -7,6 +7,8 @@
     <title>RSVP Seating - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -479,60 +481,71 @@
                     showProjectModal.value = true;
                 };
 
-                const saveProject = () => {
+                const saveProject = async () => {
                     const coupleName = `${projectForm.brideName} & ${projectForm.groomName}`;
 
-                    if (editingProject.value) {
-                        const idx = projects.value.findIndex(p => p.id === editingProject.value.id);
-                        if (idx !== -1) {
-                            projects.value[idx] = {
-                                ...projects.value[idx],
-                                brideName: projectForm.brideName,
-                                groomName: projectForm.groomName,
-                                coupleName: coupleName,
-                                weddingDate: projectForm.weddingDate,
-                                venue: projectForm.venue,
-                                updatedAt: new Date().toISOString()
-                            };
+                    try {
+                        if (editingProject.value) {
+                            // Update existing project
+                            const { error } = await supabase
+                                .from('projects')
+                                .update({
+                                    bride_name: projectForm.brideName,
+                                    groom_name: projectForm.groomName,
+                                    couple_name: coupleName,
+                                    wedding_date: projectForm.weddingDate,
+                                    venue: projectForm.venue,
+                                    updated_at: new Date().toISOString()
+                                })
+                                .eq('id', editingProject.value.id);
+
+                            if (error) throw error;
                             showToast('Casamiento actualizado');
+                        } else {
+                            // Create new project
+                            const newProjectData = {
+                                id: crypto.randomUUID(),
+                                bride_name: projectForm.brideName,
+                                groom_name: projectForm.groomName,
+                                couple_name: coupleName,
+                                wedding_date: projectForm.weddingDate,
+                                venue: projectForm.venue
+                            };
+
+                            const { data, error } = await supabase.from('projects').insert(newProjectData).select();
+                            if (error) throw error;
+                            showToast('Casamiento creado');
                         }
-                    } else {
-                        const newProject = {
-                            id: Date.now().toString(),
-                            brideName: projectForm.brideName,
-                            groomName: projectForm.groomName,
-                            coupleName: coupleName,
-                            weddingDate: projectForm.weddingDate,
-                            venue: projectForm.venue,
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                        };
-                        projects.value.push(newProject);
-                        showToast('Casamiento creado');
 
-                        // Navigate to new project
-                        setTimeout(() => {
-                            openProject(newProject.id);
-                        }, 500);
+                        await fetchProjects();
+                        closeProjectModal();
+
+                    } catch (e) {
+                        console.error('Error saving project:', e);
+                        showToast('Error al guardar: ' + e.message, 'error');
                     }
-
-                    saveProjects();
-                    closeProjectModal();
                 };
 
-                const deleteProject = (id) => {
+                const deleteProject = async (id) => {
                     if (!confirm('¿Estás seguro de eliminar este casamiento? Se perderán todos los datos asociados.')) return;
 
-                    // Remove project
-                    projects.value = projects.value.filter(p => p.id !== id);
-                    saveProjects();
+                    try {
+                        const { error } = await supabase.from('projects').delete().eq('id', id);
+                        if (error) throw error;
 
-                    // Remove project data
-                    localStorage.removeItem(`project_${id}_guests`);
-                    localStorage.removeItem(`project_${id}_tables`);
-                    localStorage.removeItem(`project_${id}_assignments`);
+                        showToast('Casamiento eliminado');
+                        await fetchProjects();
 
-                    showToast('Casamiento eliminado');
+                        // Clean session if deleting current project (rare case in dashboard)
+                        const session = JSON.parse(localStorage.getItem('rsvp_session'));
+                        if (session && session.projectId === id) {
+                            localStorage.removeItem('rsvp_session');
+                        }
+
+                    } catch (e) {
+                        console.error('Error deleting project:', e);
+                        showToast('Error al eliminar: ' + e.message, 'error');
+                    }
                 };
 
                 const closeProjectModal = () => {
