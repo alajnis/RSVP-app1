@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador Simple (Final)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #f0f0f0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 80px;
+            font-family: monospace;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        button {
+            padding: 15px;
+            background: #000;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            font-size: 16px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Generador de Claves "A Prueba de Balas"</h1>
+    <p>Vamos a usar un secreto simple (sin símbolos raros) para evitar errores de copia/pega en Docker.</p>
+
+    <button onclick="generate()">1. GENERAR CLAVES SIMPLES</button>
+
+    <label>JWT_SECRET (Actualizar en Dokploy)</label>
+    <textarea id="jwt_secret" readonly></textarea>
+
+    <label>ANON_KEY (Pegar en Dokploy y en el CHAT)</label>
+    <textarea id="anon_key" readonly></textarea>
+
+    <label>SERVICE_ROLE_KEY (Actualizar en Dokploy)</label>
+    <textarea id="service_key" readonly></textarea>
+
+    <script>
+        function base64url(source) {
+            let encodedSource = CryptoJS.enc.Base64.stringify(source);
+            encodedSource = encodedSource.replace(/=+$/, '');
+            encodedSource = encodedSource.replace(/\+/g, '-');
+            encodedSource = encodedSource.replace(/\//g, '_');
+            return encodedSource;
+        }
+
+        function sign(payload, secret) {
+            const header = { "alg": "HS256", "typ": "JWT" };
+            const stringifiedHeader = CryptoJS.enc.Utf8.parse(JSON.stringify(header));
+            const encodedHeader = base64url(stringifiedHeader);
+            const stringifiedData = CryptoJS.enc.Utf8.parse(JSON.stringify(payload));
+            const encodedData = base64url(stringifiedData);
+            const token = encodedHeader + "." + encodedData;
+            const signature = CryptoJS.HmacSHA256(token, secret);
+            const encodedSignature = base64url(signature);
+            return token + "." + encodedSignature;
+        }
+
+        function generate() {
+            // Usamos un secreto PLANO y SENCILLO, sin base64 ni simbolos raros.
+            // Solo letras y numeros, 40 caracteres.
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let secret = '';
+            for (let i = 0; i < 40; i++) {
+                secret += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+
+            document.getElementById('jwt_secret').value = secret;
+
+            const iat = Math.floor(Date.now() / 1000) - 60; // Backdate 1 minute to allow for clock skew
+            const exp = iat + (20 * 365 * 24 * 60 * 60); // 20 years
+
+            const anonPayload = { "role": "anon", "iss": "supabase", "iat": iat, "exp": exp };
+            const servicePayload = { "role": "service_role", "iss": "supabase", "iat": iat, "exp": exp };
+
+            document.getElementById('anon_key').value = sign(anonPayload, secret);
+            document.getElementById('service_key').value = sign(servicePayload, secret);
+        }
+    </script>
+</body>
+
+</html>
