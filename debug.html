@@ -102,22 +102,22 @@
 
     <!-- Usamos las credenciales reales de tu archivo -->
     <script>
-        // CONFIGURACIÓN (Copiada de tu archivo)
-        const URL = 'https://rsvp.boutique-rsvp.com';
-        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk0Mjg4MDgsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.6kZJm1OcvT6b5uNAHcSOxp9GzXhKMdJZc6gXyojx2Q4';
+        // CONFIGURACIÓN (Copiada de tu archivo) - Renombrado para evitar conflicto
+        const API_URL = 'https://rsvp.boutique-rsvp.com';
+        const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk0Mjg4MDgsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.6kZJm1OcvT6b5uNAHcSOxp9GzXhKMdJZc6gXyojx2Q4';
 
-        document.getElementById('config-status').innerText = `URL: ${URL}\nKEY: ${KEY.substring(0, 15)}...`;
+        document.getElementById('config-status').innerText = `URL: ${API_URL}\nKEY: ${API_KEY.substring(0, 15)}...`;
 
         async function runDiagnostics() {
             // STEP 1: API Reachability (Fetch simple)
             const apiStat = document.getElementById('api-status');
             const apiLog = document.getElementById('api-logs');
-            apiLog.innerText = 'Haciendo fetch a ' + URL;
+            apiLog.innerText = 'Haciendo fetch a ' + API_URL;
 
             try {
                 // Intentamos acceder a la raíz de la API (Kong suele devolver 404 o mensaje de welcome)
                 // O mejor, a /rest/v1/ que debería pedir auth
-                const response = await fetch(`${URL}/rest/v1/`, { method: 'HEAD' });
+                const response = await fetch(`${API_URL}/rest/v1/`, { method: 'HEAD' });
                 apiLog.innerText += `\nStatus: ${response.status} ${response.statusText}`;
 
                 if (response.status === 401 || response.status === 200 || response.status === 404) {
@@ -144,7 +144,7 @@
                 dbLog.innerText = 'Inicializando cliente...';
 
                 // Forzamos namespace por si acaso
-                const client = supabase.createClient(URL, KEY);
+                const client = supabase.createClient(API_URL, API_KEY);
 
                 dbLog.innerText += '\nIntentando SELECT a tabla "projects"...';
 
