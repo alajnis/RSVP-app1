@@ -1,7 +1,7 @@
 
 // Configuración de Supabase para VPS Dokploy (Updated)
 const SUPABASE_URL = 'https://rsvp.boutique-rsvp.com';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk0Mjg4MDgsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.6kZJm1OcvT6b5uNAHcSOxp9GzXhKMdJZc6gXyojx2Q4';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY5NDU2NTg5LCJleHAiOjIwODQ4MTY1ODl9.iXbG86sYXbrHI5kAwwevVPovvQNysbCLY5LbHlRKDYo';
 
 (function () {
     // 1. Detectar la librería (que el CDN carga en window.supabase)
