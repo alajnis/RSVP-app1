@@ -14,6 +14,7 @@ services:
       SUPABASE_PUBLIC_URL: http://boutique-rsvp.com:8000
       SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY5NDU4MDYzLCJleHAiOjIwODQ4MTgwNjN9.BLdRie7if_hl-k0kPoe6JsZuw6C-emTGLfbIqzaV6VI
       SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3Njk0NTgwNjMsImV4cCI6MjA4NDgxODA2M30.C7tJzBMvE9eONUHHGfTSfekBoBxD9ShPBfOOZyIyMZ8
+      SNIPPETS_MANAGEMENT_FOLDER: /var/lib/studio/snippets
     depends_on:
       - meta
 
