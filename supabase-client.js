@@ -1,81 +1,65 @@
-/**
- * Cliente Supabase - Configuración Centralizada
- * IMPORTANTE: Asegúrate de cargar config.js ANTES que este archivo
- */
+// ============================================
+// SUPABASE CLIENT ACTUALIZADO CON CREDENCIALES DE DOCKPLOY
+// ============================================
+// Este archivo usa las credenciales REALES generadas por Dockploy
 
-(function () {
-    // Verificar que config.js se haya cargado
-    if (!window.SUPABASE_CONFIG) {
-        console.error('❌ CRÍTICO: config.js no está cargado. Carga config.js antes que supabase-client.js');
-        return;
-    }
+const SUPABASE_CONFIG = {
+    // URL de Kong (API Gateway) - Tu dominio de producción
+    url: 'https://rsvp.boutique-rsvp.com',
 
-    const SUPABASE_URL = window.SUPABASE_CONFIG.SUPABASE_URL;
-    const SUPABASE_ANON_KEY = window.SUPABASE_CONFIG.SUPABASE_ANON_KEY;
+    // Anon Key generada por Dockploy
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk1NDY2MzIsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.4aBcS7MkWVZSZDHk2pnH1W3S2hjX02YxPqAxCoISoxE',
 
-    console.log('🔧 Inicializando Supabase Client...');
-    console.log(`📡 URL: ${SUPABASE_URL}`);
-    console.log(`🔑 Key: ${SUPABASE_ANON_KEY.substring(0, 20)}...`);
-
-    // 1. Detectar la librería (que el CDN carga en window.supabase)
-    const lib = window.supabase;
-    let client = null;
-
-    try {
-        if (lib && lib.createClient) {
-            // Estándar CDN v2
-            console.log('✅ Detectada librería Supabase en window.supabase');
-            client = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } else if (typeof createClient !== 'undefined') {
-            // Caso raro donde createClient es global
-            console.log('✅ Detectado createClient global');
-            client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } else {
-            throw new Error('Librería @supabase/supabase-js no encontrada. Verifica el script CDN en el HTML.');
+    // Opciones de cliente
+    options: {
+        auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true
+        },
+        global: {
+            headers: {
+                'X-Client-Info': 'rsvp-app@1.0.0'
+            }
         }
-
-        // 2. Exponer el CLIENTE como 'window.supabase'
-        if (client) {
-            window.supabase = client;
-            console.log('✅ Cliente Supabase inicializado correctamente');
-            console.log(`🌍 Ambiente: ${window.SUPABASE_CONFIG.ENVIRONMENT}`);
-        }
-    } catch (err) {
-        console.error('❌ Error fatal al inicializar Supabase:', err);
-        window.supabase = null;
-    }
-})();
-
-// Helper para verificar conexión (accesible globalmente)
-window.checkConnection = async function () {
-    if (!window.supabase) {
-        console.error('❌ Cliente Supabase no inicializado');
-        return false;
-    }
-
-    try {
-        console.log('🔍 Probando conexión a Supabase...');
-        const { data, error } = await window.supabase
-            .from('projects')
-            .select('count', { count: 'exact', head: true });
-
-        if (error) {
-            console.error('❌ Error en la consulta:', error);
-            throw error;
-        }
-
-        console.log('✅ Conexión exitosa!');
-        return true;
-    } catch (e) {
-        console.error('❌ Prueba de conexión falló:', e.message);
-        console.error('Detalles:', e);
-        return false;
     }
 };
 
-// Auto-test de conexión (opcional, comentar si no se desea)
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        window.checkConnection();
-    }, 1000);
-});
+// Crear cliente de Supabase
+const supabase = window.supabase.createClient(
+    SUPABASE_CONFIG.url,
+    SUPABASE_CONFIG.anonKey,
+    SUPABASE_CONFIG.options
+);
+
+// Exportar para uso global
+window.supabaseClient = supabase;
+
+// Función de diagnóstico
+async function testSupabaseConnection() {
+    try {
+        console.log('🔍 Probando conexión a Supabase...');
+        console.log('URL:', SUPABASE_CONFIG.url);
+
+        // Test básico de conexión
+        const { data, error } = await supabase.from('guests').select('count');
+
+        if (error) {
+            console.error('❌ Error de conexión:', error);
+            return false;
+        }
+
+        console.log('✅ Conexión exitosa a Supabase');
+        return true;
+    } catch (err) {
+        console.error('❌ Error crítico:', err);
+        return false;
+    }
+}
+
+// Auto-test al cargar (solo en desarrollo)
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    testSupabaseConnection();
+}
+
+console.log('✅ Supabase Client configurado con credenciales de Dockploy');
