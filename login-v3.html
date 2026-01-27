@@ -11,6 +11,9 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
+    <!-- CONFIGURACIÓN CENTRALIZADA -->
+    <script src="config.js"></script>
+
     <link
         href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap"
         rel="stylesheet">
@@ -77,9 +80,14 @@
     <script>
         const { createApp, ref, onMounted } = Vue;
 
-        // --- CONFIGURACIÓN SUPABASE INTEGRADA (Para evitar errores de carga) ---
-        const SUPABASE_URL = 'https://rsvp.boutique-rsvp.com';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY5NDU4MDYzLCJleHAiOjIwODQ4MTgwNjN9.BLdRie7if_hl-k0kPoe6JsZuw6C-emTGLfbIqzaV6VI';
+        // --- USAR CONFIGURACIÓN CENTRALIZADA ---
+        if (!window.SUPABASE_CONFIG) {
+            alert('❌ Error crítico: config.js no está cargado');
+            throw new Error('config.js debe cargarse antes que este script');
+        }
+
+        const SUPABASE_URL = window.SUPABASE_CONFIG.SUPABASE_URL;
+        const SUPABASE_ANON_KEY = window.SUPABASE_CONFIG.SUPABASE_ANON_KEY;
 
         // Inicializar cliente
         let supabaseClient;
@@ -88,12 +96,12 @@
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 // Exponer globalmente con nombre seguro
                 window.sb = supabaseClient;
-                console.log('Supabase initialized internal');
+                console.log('✅ Supabase inicializado en login-v3.html');
             } else {
                 throw new Error('Librería Supabase no cargó');
             }
         } catch (err) {
-            console.error('Fatal init error:', err);
+            console.error('❌ Fatal init error:', err);
         }
 
         createApp({

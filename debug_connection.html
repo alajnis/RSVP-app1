@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diagnóstico de Conexión</title>
+    <!-- Configuración centralizada -->
+    <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
@@ -79,9 +81,14 @@
     <div id="results"></div>
 
     <script>
-        // CONFIGURACIÓN EXACTA DE TU PROYECTO
-        const SUPABASE_URL = 'https://rsvp.boutique-rsvp.com';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY5NDU4MDYzLCJleHAiOjIwODQ4MTgwNjN9.BLdRie7if_hl-k0kPoe6JsZuw6C-emTGLfbIqzaV6VI';
+        // USAR CONFIGURACIÓN CENTRALIZADA
+        if (!window.SUPABASE_CONFIG) {
+            document.body.innerHTML = '<h1 style="color:red">ERROR: config.js no está cargado</h1><p>Por favor asegúrate de que config.js esté en el mismo directorio.</p>';
+            throw new Error('config.js no cargado');
+        }
+
+        const SUPABASE_URL = window.SUPABASE_CONFIG.SUPABASE_URL;
+        const SUPABASE_KEY = window.SUPABASE_CONFIG.SUPABASE_ANON_KEY;
 
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const resultsDiv = document.getElementById('results');
