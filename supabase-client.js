@@ -26,14 +26,15 @@ const SUPABASE_CONFIG = {
 };
 
 // Crear cliente de Supabase
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabase.createClient(
     SUPABASE_CONFIG.url,
     SUPABASE_CONFIG.anonKey,
     SUPABASE_CONFIG.options
 );
 
-// Exportar para uso global
-window.supabaseClient = supabase;
+// Exportar para uso global (ambas variables para compatibilidad)
+window.supabaseClient = supabaseClient;
+window.supabase = supabaseClient; // Para compatibilidad con código existente
 
 // Función de diagnóstico
 async function testSupabaseConnection() {
@@ -42,7 +43,7 @@ async function testSupabaseConnection() {
         console.log('URL:', SUPABASE_CONFIG.url);
 
         // Test básico de conexión
-        const { data, error } = await supabase.from('guests').select('count');
+        const { data, error } = await supabaseClient.from('guests').select('count');
 
         if (error) {
             console.error('❌ Error de conexión:', error);
@@ -63,3 +64,4 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
 }
 
 console.log('✅ Supabase Client configurado con credenciales de Dockploy');
+console.log('📡 Disponible como window.supabase y window.supabaseClient');
