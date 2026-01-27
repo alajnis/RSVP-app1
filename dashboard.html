@@ -516,6 +516,19 @@
 
                             const { data, error } = await supabase.from('projects').insert(newProjectData).select();
                             if (error) throw error;
+
+                            // Add to local projects array and save to localStorage
+                            const formattedProject = {
+                                id: newProjectData.id,
+                                brideName: projectForm.brideName,
+                                groomName: projectForm.groomName,
+                                coupleName: coupleName,
+                                weddingDate: projectForm.weddingDate,
+                                venue: projectForm.venue || ''
+                            };
+                            projects.value.push(formattedProject);
+                            saveProjects();
+
                             showToast('Casamiento creado');
                         }
 
