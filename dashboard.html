@@ -519,7 +519,7 @@
                             showToast('Casamiento creado');
                         }
 
-                        await fetchProjects();
+                        loadProjects();
                         closeProjectModal();
 
                     } catch (e) {
@@ -536,7 +536,7 @@
                         if (error) throw error;
 
                         showToast('Casamiento eliminado');
-                        await fetchProjects();
+                        loadProjects();
 
                         // Clean session if deleting current project (rare case in dashboard)
                         const session = JSON.parse(localStorage.getItem('rsvp_session'));
