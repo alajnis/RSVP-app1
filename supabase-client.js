@@ -3,6 +3,9 @@
 // ============================================
 // Este archivo usa las credenciales REALES generadas por Dockploy
 
+// IMPORTANTE: Guardar referencia a la librería ANTES de sobrescribirla
+const SupabaseLib = window.supabase;
+
 const SUPABASE_CONFIG = {
     // URL de Kong (API Gateway) - Tu dominio de producción
     url: 'https://rsvp.boutique-rsvp.com',
@@ -25,8 +28,8 @@ const SUPABASE_CONFIG = {
     }
 };
 
-// Crear cliente de Supabase
-const supabaseClient = window.supabase.createClient(
+// Crear cliente de Supabase usando la librería guardada
+const supabaseClient = SupabaseLib.createClient(
     SUPABASE_CONFIG.url,
     SUPABASE_CONFIG.anonKey,
     SUPABASE_CONFIG.options
@@ -34,7 +37,7 @@ const supabaseClient = window.supabase.createClient(
 
 // Exportar para uso global (ambas variables para compatibilidad)
 window.supabaseClient = supabaseClient;
-window.supabase = supabaseClient; // Para compatibilidad con código existente
+window.supabase = supabaseClient; // Para compatibilidad con dashboard.html
 
 // Función de diagnóstico
 async function testSupabaseConnection() {
