@@ -1150,7 +1150,7 @@
                             project_id: currentProjectId.value,
                             table_id: tableId,
                             rsvp_id: guestId,
-                            sub_guest_idx: subGuestIdx
+                            sub_guest_idx: subGuestIdx !== undefined ? subGuestIdx : null
                         };
 
                         const { error } = await supabase.from('assignments').insert(newAsg);

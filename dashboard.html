@@ -544,26 +544,42 @@
                 };
 
                 // METHODS - Stats
-                const getProjectStats = (projectId) => {
-                    const guests = JSON.parse(localStorage.getItem(`project_${projectId}_guests`) || '[]');
-                    const tables = JSON.parse(localStorage.getItem(`project_${projectId}_tables`) || '[]');
+                const getProjectStats = async (projectId) => {
+                    try {
+                        // Query Supabase for guests and tables
+                        const { data: guests } = await supabase
+                            .from('guests')
+                            .select('*')
+                            .eq('project_id', projectId);
 
-                    // Total spots invited is the sum of guests_confirmed (total spots in each group)
-                    const totalSpots = guests.reduce((sum, g) => sum + (g.guests_confirmed || 0), 0);
+                        const { data: tables } = await supabase
+                            .from('tables')
+                            .select('id')
+                            .eq('project_id', projectId);
 
-                    // Confirmed is the count of individual sub-guests with 'Confirmed' status
-                    const confirmed = guests.reduce((sum, g) => {
-                        if (g.sub_guests && g.sub_guests.length > 0) {
-                            return sum + g.sub_guests.filter(sg => sg.status === 'Confirmed').length;
-                        }
-                        return sum + (g.rsvp_status === 'Confirmed' ? (g.guests_confirmed || 0) : 0);
-                    }, 0);
+                        const guestList = guests || [];
+                        const tableList = tables || [];
 
-                    return {
-                        totalGuests: totalSpots,
-                        confirmed,
-                        tables: tables.length
-                    };
+                        // Total spots invited
+                        const totalSpots = guestList.reduce((sum, g) => sum + (g.guests_confirmed || 0), 0);
+
+                        // Confirmed count
+                        const confirmed = guestList.reduce((sum, g) => {
+                            if (g.sub_guests && g.sub_guests.length > 0) {
+                                return sum + g.sub_guests.filter(sg => sg.status === 'Confirmed').length;
+                            }
+                            return sum + (g.rsvp_status === 'Confirmed' ? (g.guests_confirmed || 0) : 0);
+                        }, 0);
+
+                        return {
+                            totalGuests: totalSpots,
+                            confirmed,
+                            tables: tableList.length
+                        };
+                    } catch (e) {
+                        console.error('Error loading stats:', e);
+                        return { totalGuests: 0, confirmed: 0, tables: 0 };
+                    }
                 };
 
                 // METHODS - Date Utils
