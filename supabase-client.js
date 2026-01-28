@@ -10,15 +10,18 @@ const SUPABASE_CONFIG = {
     // URL de Kong (API Gateway) - Tu dominio de producción
     url: 'https://rsvp.boutique-rsvp.com',
 
-    // Anon Key generada por Dockploy
+    // Anon Key generada por Dockploy (desde supabase-env-DOKPLOY-CORREGIDO.env)
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk1NDY2MzIsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.4aBcS7MkWVZSZDHk2pnH1W3S2hjX02YxPqAxCoISoxE',
 
     // Opciones de cliente
     options: {
         auth: {
-            autoRefreshToken: true,
-            persistSession: true,
-            detectSessionInUrl: true
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false
+        },
+        db: {
+            schema: 'public'
         },
         global: {
             headers: {
