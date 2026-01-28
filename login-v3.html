@@ -153,11 +153,10 @@
                         const b = clean(project.brideName);
                         const g = clean(project.groomName);
 
+                        // Generate password: bridename + groomname (e.g., "larayale")
                         return [
-                            `${b}y${g}`,
-                            `${g}y${b}`,
-                            `${b}&${g}`,
-                            `${g}&${b}`
+                            `${b}${g}`,      // larayale
+                            `${g}${b}`       // alelara (también aceptado)
                         ];
                     } catch (e) {
                         return [];
