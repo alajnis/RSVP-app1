@@ -695,6 +695,12 @@
                 const currentProjectId = ref(null);
                 const currentProject = ref(null);
 
+                // DATA STORES
+                const tables = ref([]);
+                const guests = ref([]);
+                const assignments = ref([]);
+                const currentView = ref('seating');
+
                 // Get project ID from URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const projectId = urlParams.get('project');
