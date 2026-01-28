@@ -1,17 +1,17 @@
 // ============================================
-// SUPABASE CLIENT ACTUALIZADO CON CREDENCIALES DE DOCKPLOY
+// SUPABASE CLIENT - CONFIGURACIÓN VERIFICADA
 // ============================================
-// Este archivo usa las credenciales REALES generadas por Dockploy
+// URL verificada con test-supabase-urls.html el 2026-01-28
 
 // IMPORTANTE: Guardar referencia a la librería ANTES de sobrescribirla
 const SupabaseLib = window.supabase;
 
 const SUPABASE_CONFIG = {
-    // URL PÚBLICA de Supabase (desde SUPABASE_HOST en env)
-    // IMPORTANTE: Esta es la URL accesible desde el navegador
-    url: 'https://rsvp-app-supabase-dbf9f5-76-13-166-122.traefik.me',
+    // ✅ URL VERIFICADA - Kong Gateway (probado y funcionando)
+    // Test results: SUCCESS (200), 531ms response time, 1 project found
+    url: 'https://rsvp.boutique-rsvp.com',
 
-    // Anon Key generada por Dockploy (desde supabase-env-DOKPLOY-CORREGIDO.env)
+    // Anon Key generada por Dockploy
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk1NDY2MzIsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.4aBcS7MkWVZSZDHk2pnH1W3S2hjX02YxPqAxCoISoxE',
 
     // Opciones de cliente
@@ -26,6 +26,7 @@ const SUPABASE_CONFIG = {
         },
         global: {
             headers: {
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk1NDY2MzIsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.4aBcS7MkWVZSZDHk2pnH1W3S2hjX02YxPqAxCoISoxE',
                 'X-Client-Info': 'rsvp-app@1.0.0'
             }
         }
