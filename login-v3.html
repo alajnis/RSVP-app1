@@ -153,14 +153,18 @@
 
                         // HELP command - show all passwords (internal use only)
                         if (input === 'help') {
-                            const passwords = ['admin'];
+                            const passwordList = ['• admin'];
+
                             projects.value.forEach(p => {
                                 const codes = getProjectCodes(p);
-                                if (codes.length > 0) {
-                                    passwords.push(`${codes[0]} (${p.coupleName || p.brideName + ' & ' + p.groomName})`);
-                                }
+                                const coupleName = p.coupleName || `${p.brideName} & ${p.groomName}`;
+
+                                codes.forEach(code => {
+                                    passwordList.push(`• ${code} (${coupleName})`);
+                                });
                             });
-                            alert('🔑 Claves disponibles:\n\n' + passwords.join('\n'));
+
+                            alert('🔑 Códigos disponibles:\n\n' + passwordList.join('\n'));
                             return;
                         }
 
