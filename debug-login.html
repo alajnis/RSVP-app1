@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Login</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+
+        h1 {
+            color: #0ff;
+        }
+
+        pre {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #0f0;
+        }
+
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #f00;
+        }
+
+        .success {
+            color: #0f0;
+        }
+
+        .warning {
+            color: #ff0;
+        }
+
+        input {
+            padding: 8px;
+            margin: 10px 0;
+            font-size: 16px;
+            width: 300px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Debug Login & Passwords</h1>
+
+    <div>
+        <input type="text" id="testPassword" placeholder="Ingresa password a probar">
+        <button onclick="testPassword()">Test Password</button>
+    </div>
+
+    <button onclick="loadAllProjects()">📋 Listar Todos los Proyectos</button>
+    <button onclick="showAllPasswords()">🔑 Ver Todas las Claves</button>
+
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(msg, className = 'success') {
+            const div = document.createElement('div');
+            div.className = className;
+            div.innerHTML = msg;
+            output.appendChild(div);
+        }
+
+        function clean(str) {
+            return str.toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+
+        function getProjectCodes(project) {
+            if (!project.bride_name || !project.groom_name) return [];
+            const b = clean(project.bride_name);
+            const g = clean(project.groom_name);
+            return [`${b}${g}`, `${g}${b}`];
+        }
+
+        async function loadAllProjects() {
+            output.innerHTML = '<h2>Cargando proyectos...</h2>';
+
+            try {
+                const { data, error } = await supabase.from('projects').select('*');
+
+                if (error) {
+                    log(`❌ Error: ${error.message}`, 'error');
+                    return;
+                }
+
+                log(`✅ ${data.length} proyectos encontrados:\n`, 'success');
+
+                data.forEach((p, i) => {
+                    const pre = document.createElement('pre');
+                    pre.textContent = `${i + 1}. ID: ${p.id}
+   Bride: "${p.bride_name}"
+   Groom: "${p.groom_name}"
+   Couple: "${p.couple_name}"
+   Passwords: ${getProjectCodes(p).join(', ')}`;
+                    output.appendChild(pre);
+                });
+
+            } catch (e) {
+                log(`❌ Exception: ${e.message}`, 'error');
+            }
+        }
+
+        async function showAllPasswords() {
+            output.innerHTML = '<h2>🔑 Todas las Claves Disponibles</h2>';
+
+            try {
+                const { data, error } = await supabase.from('projects').select('*');
+
+                if (error) throw error;
+
+                const passwords = ['admin (Admin - ve todo)'];
+
+                data.forEach(p => {
+                    const codes = getProjectCodes(p);
+                    const name = p.couple_name || `${p.bride_name} & ${p.groom_name}`;
+                    if (codes.length > 0) {
+                        codes.forEach(code => {
+                            passwords.push(`${code} (${name})`);
+                        });
+                    }
+                });
+
+                const pre = document.createElement('pre');
+                pre.textContent = passwords.join('\n');
+                output.appendChild(pre);
+
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function testPassword() {
+            const input = document.getElementById('testPassword').value.trim().toLowerCase();
+            output.innerHTML = `<h2>Testing "${input}"...</h2>`;
+
+            if (!input) {
+                log('⚠️ Ingresa una clave', 'warning');
+                return;
+            }
+
+            try {
+                // Test admin
+                if (input === 'admin') {
+                    log('✅ MATCH: Admin password valid!', 'success');
+                    return;
+                }
+
+                // Test help
+                if (input === 'help') {
+                    log('✅ MATCH: Help command detected!', 'success');
+                    await showAllPasswords();
+                    return;
+                }
+
+                // Test couple
+                const { data, error } = await supabase.from('projects').select('*');
+                if (error) throw error;
+
+                let found = false;
+                data.forEach(p => {
+                    const codes = getProjectCodes(p);
+                    log(`\nProyecto: ${p.bride_name} & ${p.groom_name}`);
+                    log(`  Passwords válidas: ${codes.join(', ')}`);
+                    log(`  Input normalizado: "${input}"`);
+
+                    if (codes.includes(input)) {
+                        log(`  ✅ MATCH! Este proyecto coincide`, 'success');
+                        found = true;
+
+                        const pre = document.createElement('pre');
+                        pre.className = 'success';
+                        pre.textContent = `Acceso autorizado a:
+ID: ${p.id}
+Pareja: ${p.couple_name || p.bride_name + ' & ' + p.groom_name}
+Fecha: ${p.wedding_date}`;
+                        output.appendChild(pre);
+                    } else {
+                        log(`  ❌ No match`, 'error');
+                    }
+                });
+
+                if (!found) {
+                    log('\n❌ NO SE ENCONTRÓ NINGÚN PROYECTO CON ESA CLAVE', 'error');
+                }
+
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        // Auto-load projects on page load
+        window.addEventListener('load', () => {
+            setTimeout(loadAllProjects, 500);
+        });
+    </script>
+</body>
+
+</html>
