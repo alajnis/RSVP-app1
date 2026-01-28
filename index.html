@@ -3,32 +3,52 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=login-v3.html">
-    <title>RSVP - Events Boutique</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP Seating - Events Boutique</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Bodoni Moda', Georgia, serif;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            margin: 0;
+            min-height: 100vh;
             background: linear-gradient(135deg, #C42745 0%, #1A1A1A 100%);
             color: white;
         }
 
-        .loader {
+        .container {
             text-align: center;
+            max-width: 500px;
+            padding: 40px;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            font-family: 'Pinyon Script', cursive;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
         }
 
         .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
+            border: 4px solid rgba(255, 255, 255, 0.2);
             border-radius: 50%;
             border-top: 4px solid white;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 30px auto;
         }
 
         @keyframes spin {
@@ -41,31 +61,30 @@
             }
         }
 
-        h1 {
-            font-family: Georgia, serif;
-            font-size: 2.5em;
-            margin: 0;
-        }
-
         p {
-            font-size: 1.2em;
+            font-family: 'Work Sans', sans-serif;
+            font-size: 1rem;
             opacity: 0.9;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
         }
     </style>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;700&family=Pinyon+Script&family=Work+Sans:wght@300;400&display=swap"
+        rel="stylesheet">
 </head>
 
 <body>
-    <div class="loader">
+    <div class="container">
+        <h1>RSVP</h1>
+        <div class="subtitle">Events Boutique</div>
         <div class="spinner"></div>
-        <h1>Events Boutique</h1>
-        <p>Redirigiendo...</p>
+        <p>Redirigiendo al login...</p>
     </div>
 
     <script>
-        // Fallback if meta refresh doesn't work
-        setTimeout(() => {
-            window.location.href = 'login-v3.html';
-        }, 100);
+        // Redirect to login immediately
+        window.location.replace('login-v3.html');
     </script>
 </body>
 
