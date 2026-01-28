@@ -124,8 +124,10 @@
                         const { data, error: err } = await supabaseClient.from('projects').select('*');
 
                         if (err) {
-                            debugMsg.value = 'Fallo al leer projects: ' + JSON.stringify(err);
-                            throw err;
+                            debugMsg.value = 'Advertencia: No se pudieron cargar proyectos. Admin sigue funcionando.';
+                            console.error('Error loading projects:', err);
+                            // Don't block login - admin can still work
+                            return;
                         }
 
                         debugMsg.value = `Conectado. ${data.length} bodas encontradas.`;
@@ -135,13 +137,14 @@
                             id: p.id,
                             brideName: p.bride_name,
                             groomName: p.groom_name,
-                            coupleName: p.couple_name,
+                            coupleName: p.couple_name || `${p.bride_name} & ${p.groom_name}`,
                             weddingDate: p.wedding_date
                         }));
 
                     } catch (e) {
-                        console.error('Error loading projects:', e);
-                        error.value = 'Error de conexión: No se pudieron cargar los datos.';
+                        console.error('Exception loading projects:', e);
+                        debugMsg.value = 'Advertencia: Fallo al cargar proyectos. Solo login de admin disponible.';
+                        // Don't set error.value - allow admin login to proceed
                     }
                 });
 
@@ -173,6 +176,19 @@
                             return;
                         }
 
+                        // HELP command - show all passwords (internal use only)
+                        if (input === 'help') {
+                            const passwords = ['admin'];
+                            projects.value.forEach(p => {
+                                const codes = getProjectCodes(p);
+                                if (codes.length > 0) {
+                                    passwords.push(`${codes[0]} (${p.coupleName || p.brideName + ' & ' + p.groomName})`);
+                                }
+                            });
+                            alert('🔑 Claves disponibles:\n\n' + passwords.join('\n'));
+                            return;
+                        }
+
                         // 1. Admin Login
                         if (input === 'admin') {
                             localStorage.setItem('rsvp_session', JSON.stringify({ role: 'admin' }));
@@ -190,14 +206,14 @@
                             // Log Entry usando el cliente local
                             await supabaseClient.from('login_logs').insert({
                                 project_id: foundProject.id,
-                                couple_name: foundProject.coupleName
+                                couple_name: foundProject.coupleName || `${foundProject.brideName} & ${foundProject.groomName}`
                             });
 
                             // Set Session
                             localStorage.setItem('rsvp_session', JSON.stringify({
                                 role: 'couple',
                                 projectId: foundProject.id,
-                                coupleName: foundProject.coupleName
+                                coupleName: foundProject.coupleName || `${foundProject.brideName} & ${foundProject.groomName}`
                             }));
                             window.location.href = 'dashboard.html';
                         } else {
