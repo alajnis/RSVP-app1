@@ -119,7 +119,7 @@
                 </div>
 
                 <div v-else-if="step === 1" key="step1" class="p-8">
-                    <form @submit.prevent="findGuest">
+                    <form @submit.prevent="findInvitation">
                         <div class="space-y-6">
                             <div>
                                 <label
@@ -293,6 +293,12 @@
                 const showFuzzyModal = ref(false);
                 const fuzzyCandidate = ref(null);
 
+                // Search flow variables
+                const loading = ref(false);
+                const lastNameSearch = ref('');
+                const searchResults = ref([]);
+                const selectedGuest = ref(null);
+
                 // Load Data
                 onMounted(async () => {
                     const urlParams = new URLSearchParams(window.location.search);
@@ -337,7 +343,7 @@
                         return;
                     }
 
-                    const inputCode = accessCode.value.trim().toLowerCase();
+                    const inputCode = code.value.trim().toLowerCase();
                     const expectedCode = generateProjectCode(currentProject.value);
                     const expectedRevCode = generateProjectCode({ brideName: currentProject.value.groomName, groomName: currentProject.value.brideName }); // Reverse check
 
@@ -394,23 +400,25 @@
                     }
 
                     try {
-                        const q = lastNameSearch.value.trim().toLowerCase();
-                        if (q.length < 2) {
+                        const firstName = normalize(form.firstName);
+                        const lastName = normalize(form.lastName);
+
+                        if (lastName.length < 2) {
                             error.value = 'Ingresa al menos 2 letras del apellido.';
                             loading.value = false;
                             return;
                         }
 
-                        const { data: guests, error: err } = await supabase
+                        const { data: guestsList, error: err } = await supabase
                             .from('guests')
                             .select('*')
-                            .eq('project_id', currentProject.value.id)
-                            .ilike('last_name', `%${q}%`); // Search by partial last name
+                            .eq('project_id', currentProject.value.id);
 
                         if (err) throw err;
 
-                        if (guests && guests.length > 0) {
-                            searchResults.value = guests.map(g => ({
+                        if (guestsList && guestsList.length > 0) {
+                            // Map to local format
+                            guests.value = guestsList.map(g => ({
                                 id: g.id,
                                 firstName: g.first_name,
                                 lastName: g.last_name,
@@ -422,13 +430,36 @@
                                 dietary: g.dietary
                             }));
 
-                            if (searchResults.value.length === 1) {
-                                selectGuest(searchResults.value[0]);
+                            // Try exact match first
+                            let matchedGuest = guests.value.find(g =>
+                                normalize(g.lastName) === lastName &&
+                                normalize(g.firstName) === firstName
+                            );
+
+                            // If no exact match, try partial last name match
+                            if (!matchedGuest) {
+                                const partialMatches = guests.value.filter(g =>
+                                    normalize(g.lastName).includes(lastName)
+                                );
+
+                                if (partialMatches.length === 1) {
+                                    matchedGuest = partialMatches[0];
+                                } else if (partialMatches.length > 1) {
+                                    // Multiple matches, show fuzzy modal for first one
+                                    fuzzyCandidate.value = partialMatches[0];
+                                    showFuzzyModal.value = true;
+                                    loading.value = false;
+                                    return;
+                                }
+                            }
+
+                            if (matchedGuest) {
+                                selectGuest(matchedGuest);
                             } else {
-                                step.value = 2; // Show list of results
+                                error.value = 'No encontramos tu invitación. Verifica el nombre y apellido.';
                             }
                         } else {
-                            error.value = 'No encontramos tu invitación. Verifica el apellido.';
+                            error.value = 'No se encontraron invitados para este evento.';
                         }
 
                     } catch (e) {
@@ -478,8 +509,8 @@
                         return sg;
                     });
 
-                    selectedGuest.value = g;
-                    step.value = 3; // Proceed to confirmation step
+                    guest.value = g;
+                    step.value = 2; // Proceed to confirmation step
                     error.value = ''; // Clear any previous errors
                 };
 
@@ -493,26 +524,46 @@
                     error.value = "Por favor intenta buscar nuevamente con el nombre exacto.";
                 };
 
-                const confirmAttendance = () => {
-                    if (guest.value && currentProject.value) {
-                        const idx = guests.value.findIndex(g => g.id === guest.value.id);
-                        if (idx !== -1) {
-                            // Update the main guest object in the list
-                            const updatedGuest = { ...guest.value };
-
-                            // Determine overall status based on sub_guests
-                            const confirmedCount = updatedGuest.sub_guests.filter(sg => sg.status === 'Confirmed').length;
-                            updatedGuest.rsvp_status = confirmedCount > 0 ? 'Confirmed' : (updatedGuest.sub_guests.every(sg => sg.status === 'Declined') ? 'Declined' : 'Pending');
-
-                            // IMPORTANT: Update legacy count for display in lists
-                            // updatedGuest.guests_confirmed = confirmedCount > 0 ? confirmedCount : 0;
-
-                            guests.value[idx] = updatedGuest;
-                            const guestKey = `project_${currentProject.value.id}_guests`;
-                            localStorage.setItem(guestKey, JSON.stringify(guests.value));
-                        }
+                const confirmAttendance = async () => {
+                    if (!guest.value || !currentProject.value) {
+                        error.value = 'Error: no se encontró la información del invitado.';
+                        return;
                     }
-                    step.value = 3;
+
+                    try {
+                        loading.value = true;
+
+                        // Determine overall status based on sub_guests
+                        const confirmedCount = guest.value.sub_guests.filter(sg => sg.status === 'Confirmed').length;
+                        const declinedCount = guest.value.sub_guests.filter(sg => sg.status === 'Declined').length;
+
+                        let overallStatus = 'Pending';
+                        if (confirmedCount > 0) {
+                            overallStatus = 'Confirmed';
+                        } else if (declinedCount === guest.value.sub_guests.length) {
+                            overallStatus = 'Declined';
+                        }
+
+                        // Update guest in Supabase
+                        const { error: updateError } = await supabase
+                            .from('guests')
+                            .update({
+                                rsvp_status: overallStatus,
+                                sub_guests: guest.value.sub_guests,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', guest.value.id);
+
+                        if (updateError) throw updateError;
+
+                        step.value = 3; // Success step
+                        loading.value = false;
+
+                    } catch (e) {
+                        console.error('Error saving attendance:', e);
+                        error.value = 'Error al guardar la confirmación. Por favor, inténtalo de nuevo.';
+                        loading.value = false;
+                    }
                 };
 
                 const formatDate = (dateString) => {
@@ -522,8 +573,11 @@
                 };
 
                 return {
-                    step, code, form, error, guest, findGuest, confirmAttendance, currentProject, formatDate,
-                    showFuzzyModal, fuzzyCandidate, acceptFuzzyMatch, rejectFuzzyMatch, getFullName, validateCode
+                    step, code, form, error, guest, guests,
+                    findInvitation, confirmAttendance, currentProject, formatDate,
+                    showFuzzyModal, fuzzyCandidate, acceptFuzzyMatch, rejectFuzzyMatch,
+                    getFullName, validateCode,
+                    loading, lastNameSearch, searchResults, selectedGuest
                 };
             }
         }).mount('#app');
