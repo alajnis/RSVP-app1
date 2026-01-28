@@ -83,16 +83,24 @@
     </div>
 
     <script>
-        // Check for existing session
-        const session = localStorage.getItem('rsvp_session');
+        // Suppress any errors during redirect
+        window.onerror = function () { return true; };
 
-        if (session) {
-            // User is logged in - go to dashboard
-            document.getElementById('status').textContent = 'Redirigiendo al dashboard...';
-            window.location.replace('dashboard.html');
-        } else {
-            // No session - go to login
-            document.getElementById('status').textContent = 'Redirigiendo al login...';
+        try {
+            // Check for existing session
+            const session = localStorage.getItem('rsvp_session');
+
+            if (session) {
+                // User is logged in - go to dashboard
+                document.getElementById('status').textContent = 'Redirigiendo al dashboard...';
+                window.location.replace('dashboard.html');
+            } else {
+                // No session - go to login
+                document.getElementById('status').textContent = 'Redirigiendo al login...';
+                window.location.replace('login-v3.html');
+            }
+        } catch (e) {
+            // Fallback: always go to login on error
             window.location.replace('login-v3.html');
         }
     </script>
