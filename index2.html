@@ -414,7 +414,16 @@
                             .select('*')
                             .eq('project_id', currentProject.value.id);
 
-                        if (err) throw err;
+                        console.log('🔍 Búsqueda de invitados:');
+                        console.log('  Project ID:', currentProject.value.id);
+                        console.log('  Nombre buscado:', form.firstName, form.lastName);
+                        console.log('  Resultado:', guestsList);
+                        console.log('  Error:', err);
+
+                        if (err) {
+                            console.error('❌ Error en query:', err);
+                            throw err;
+                        }
 
                         if (guestsList && guestsList.length > 0) {
                             // Map to local format

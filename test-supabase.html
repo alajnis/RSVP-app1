@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Test Supabase Connection</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+</head>
+
+<body>
+    <h1>Test de Conexión Supabase</h1>
+    <button onclick="testConnection()">Probar Conexión</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testConnection() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Probando...\n';
+
+            try {
+                // Test 1: Verificar que supabase esté definido
+                resultEl.textContent += `✅ Cliente Supabase: ${typeof supabase}\n`;
+
+                // Test 2: Consultar proyectos
+                const { data: projects, error: projError } = await supabase
+                    .from('projects')
+                    .select('*');
+
+                resultEl.textContent += `\n📋 Proyectos:\n`;
+                if (projError) {
+                    resultEl.textContent += `❌ Error: ${JSON.stringify(projError)}\n`;
+                } else {
+                    resultEl.textContent += `✅ Total: ${projects?.length || 0}\n`;
+                    projects?.forEach(p => {
+                        resultEl.textContent += `  - ${p.couple_name} (ID: ${p.id})\n`;
+                    });
+                }
+
+                // Test 3: Consultar invitados del proyecto específico
+                const projectId = '434a1b06-e1cb-446b-af8a-d5c0f4057b06';
+                const { data: guests, error: guestError } = await supabase
+                    .from('guests')
+                    .select('*')
+                    .eq('project_id', projectId);
+
+                resultEl.textContent += `\n👥 Invitados del proyecto ${projectId}:\n`;
+                if (guestError) {
+                    resultEl.textContent += `❌ Error: ${JSON.stringify(guestError)}\n`;
+                } else {
+                    resultEl.textContent += `✅ Total: ${guests?.length || 0}\n`;
+                    guests?.forEach(g => {
+                        resultEl.textContent += `  - ${g.first_name} ${g.last_name}\n`;
+                    });
+                }
+
+            } catch (e) {
+                resultEl.textContent += `\n❌ Error general: ${e.message}\n`;
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+
+</html>
