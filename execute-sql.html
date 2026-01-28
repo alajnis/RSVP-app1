@@ -105,6 +105,7 @@
 
                 const guests = [
                     {
+                        id: crypto.randomUUID(),
                         project_id: '434a1b06-e1cb-446b-af8a-d5c0f4057b06',
                         first_name: 'Sofia',
                         last_name: 'Fauda',
@@ -112,12 +113,12 @@
                         phone: null,
                         guests_confirmed: 1,
                         rsvp_status: 'Pending',
-                        dietary: 'None',
                         sub_guests: [
                             { firstName: "Sofia", lastName: "Fauda", status: "Pending", dietary: "None" }
                         ]
                     },
                     {
+                        id: crypto.randomUUID(),
                         project_id: '434a1b06-e1cb-446b-af8a-d5c0f4057b06',
                         first_name: 'Ale',
                         last_name: 'Lajnis',
@@ -125,12 +126,12 @@
                         phone: '555-0102',
                         guests_confirmed: 1,
                         rsvp_status: 'Pending',
-                        dietary: 'None',
                         sub_guests: [
                             { firstName: "Ale", lastName: "Lajnis", status: "Pending", dietary: "None" }
                         ]
                     },
                     {
+                        id: crypto.randomUUID(),
                         project_id: '434a1b06-e1cb-446b-af8a-d5c0f4057b06',
                         first_name: 'Martin',
                         last_name: 'Lajnis',
@@ -138,13 +139,13 @@
                         phone: '555-0101',
                         guests_confirmed: 2,
                         rsvp_status: 'Pending',
-                        dietary: 'None',
                         sub_guests: [
                             { firstName: "Martin", lastName: "Lajnis", status: "Pending", dietary: "None" },
                             { firstName: "", lastName: "", status: "Pending", dietary: "None" }
                         ]
                     },
                     {
+                        id: crypto.randomUUID(),
                         project_id: '434a1b06-e1cb-446b-af8a-d5c0f4057b06',
                         first_name: 'Alicia',
                         last_name: 'Lerner',
@@ -152,9 +153,8 @@
                         phone: '555-0103',
                         guests_confirmed: 2,
                         rsvp_status: 'Pending',
-                        dietary: 'None',
                         sub_guests: [
-                            { firstName: "Alicia", lastName: "Lerner", status: "Pending", dietary: "None" },
+                            { firstName: "Alicia", "lastName": "Lerner", status: "Pending", dietary: "None" },
                             { firstName: "", lastName: "", status: "Pending", dietary: "None" }
                         ]
                     }
