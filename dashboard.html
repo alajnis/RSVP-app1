@@ -205,14 +205,14 @@
                         <div class="text-left border-r border-brand-pink/30 pr-4">
                             <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
                                 Invitados</div>
-                            <div class="text-xl font-serif font-bold text-brand-dark">{{
-                                getProjectStats(project.id).totalGuests }}</div>
+                            <div class="text-xl font-serif font-bold text-brand-dark">{{ (projectStats[project.id] &&
+                                projectStats[project.id].totalGuests) || 0 }}</div>
                         </div>
-                        <div class="text-left">
+                        <div class="text-left pl-4">
                             <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
                                 Confirm.</div>
-                            <div class="text-xl font-serif font-bold text-brand-dark">{{
-                                getProjectStats(project.id).confirmed }}</div>
+                            <div class="text-xl font-serif font-bold text-brand-dark">{{ (projectStats[project.id] &&
+                                projectStats[project.id].confirmed) || 0 }}</div>
                         </div>
                     </div>
 
