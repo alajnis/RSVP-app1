@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ejecutar SQL - Crear Proyecto</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+
+        button:hover {
+            background: #059669;
+        }
+
+        #result {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        .step {
+            color: #60a5fa;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🚀 Crear Proyecto y Invitados en Supabase</h1>
+    <p>Este script creará el proyecto "Lara & Ale" (ID: 434a1b06...) y 4 invitados.</p>
+
+    <button onclick="executeSQL()">▶️ Ejecutar SQL</button>
+
+    <div id="result">Presiona el botón para ejecutar...</div>
+
+    <script>
+        async function executeSQL() {
+            const resultEl = document.getElementById('result');
+            resultEl.innerHTML = '🔄 Iniciando...\n\n';
+
+            try {
+                // Verificar cliente
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Cliente Supabase no está definido');
+                }
+
+                resultEl.innerHTML += '<span class="step">✓ Cliente Supabase conectado</span>\n\n';
+
+                // Paso 1: Crear Proyecto
+                resultEl.innerHTML += '<span class="step">📋 Paso 1: Creando proyecto...</span>\n';
+
+                const { data: project, error: projError } = await supabase
+                    .from('projects')
+                    .upsert({
+                        id: '434a1b06-e1cb-446b-af8a-d5c0f4057b06',
+                        bride_name: 'Lara',
+                        groom_name: 'Ale',
+                        couple_name: 'Lara & Ale',
+                        wedding_date: '2026-11-20',
+                        venue: 'Palacio Sans Souci'
+                    }, {
+                        onConflict: 'id'
+                    })
+                    .select();
+
+                if (projError) throw new Error(`Error creando proyecto: ${projError.message}`);
+
+                resultEl.innerHTML += '<span class="success">✓ Proyecto creado exitosamente</span>\n';
+                resultEl.innerHTML += `  ID: 434a1b06-e1cb-446b-af8a-d5c0f4057b06\n`;
+                resultEl.innerHTML += `  Nombre: Lara & Ale\n\n`;
+
+                // Paso 2: Crear Invitados
+                resultEl.innerHTML += '<span class="step">👥 Paso 2: Creando invitados...</span>\n';
+
+                const guests = [
+                    {
+                        project_id: '434a1b06-e1cb-446b-af8a-d5c0f4057b06',
+                        first_name: 'Sofia',
+                        last_name: 'Fauda',
+                        email: 'dlcaprio3@gmail.com',
+                        phone: null,
+                        guests_confirmed: 1,
+                        rsvp_status: 'Pending',
+                        dietary: 'None',
+                        sub_guests: [
+                            { firstName: "Sofia", lastName: "Fauda", status: "Pending", dietary: "None" }
+                        ]
+                    },
+                    {
+                        project_id: '434a1b06-e1cb-446b-af8a-d5c0f4057b06',
+                        first_name: 'Ale',
+                        last_name: 'Lajnis',
+                        email: 'brad7@hollywood.com',
+                        phone: '555-0102',
+                        guests_confirmed: 1,
+                        rsvp_status: 'Pending',
+                        dietary: 'None',
+                        sub_guests: [
+                            { firstName: "Ale", lastName: "Lajnis", status: "Pending", dietary: "None" }
+                        ]
+                    },
+                    {
+                        project_id: '434a1b06-e1cb-446b-af8a-d5c0f4057b06',
+                        first_name: 'Martin',
+                        last_name: 'Lajnis',
+                        email: 'jv2@msnbc.com',
+                        phone: '555-0101',
+                        guests_confirmed: 2,
+                        rsvp_status: 'Pending',
+                        dietary: 'None',
+                        sub_guests: [
+                            { firstName: "Martin", lastName: "Lajnis", status: "Pending", dietary: "None" },
+                            { firstName: "", lastName: "", status: "Pending", dietary: "None" }
+                        ]
+                    },
+                    {
+                        project_id: '434a1b06-e1cb-446b-af8a-d5c0f4057b06',
+                        first_name: 'Alicia',
+                        last_name: 'Lerner',
+                        email: 'taylor4@jora.com',
+                        phone: '555-0103',
+                        guests_confirmed: 2,
+                        rsvp_status: 'Pending',
+                        dietary: 'None',
+                        sub_guests: [
+                            { firstName: "Alicia", lastName: "Lerner", status: "Pending", dietary: "None" },
+                            { firstName: "", lastName: "", status: "Pending", dietary: "None" }
+                        ]
+                    }
+                ];
+
+                const { data: guestData, error: guestError } = await supabase
+                    .from('guests')
+                    .insert(guests)
+                    .select();
+
+                if (guestError) throw new Error(`Error creando invitados: ${guestError.message}`);
+
+                resultEl.innerHTML += '<span class="success">✓ Invitados creados exitosamente</span>\n';
+                resultEl.innerHTML += `  Total: ${guests.length} invitados\n`;
+                guests.forEach(g => {
+                    resultEl.innerHTML += `  - ${g.first_name} ${g.last_name} (${g.guests_confirmed} asientos)\n`;
+                });
+
+                // Paso 3: Verificar
+                resultEl.innerHTML += '\n<span class="step">🔍 Paso 3: Verificando datos...</span>\n';
+
+                const { data: verifyGuests, error: verifyError } = await supabase
+                    .from('guests')
+                    .select('first_name, last_name, guests_confirmed, rsvp_status')
+                    .eq('project_id', '434a1b06-e1cb-446b-af8a-d5c0f4057b06')
+                    .order('last_name');
+
+                if (verifyError) throw verifyError;
+
+                resultEl.innerHTML += '<span class="success">✓ Verificación completa</span>\n';
+                resultEl.innerHTML += `  Total registros: ${verifyGuests.length}\n`;
+                resultEl.innerHTML += `  Total asientos: ${verifyGuests.reduce((sum, g) => sum + g.guests_confirmed, 0)}\n\n`;
+
+                resultEl.innerHTML += '\n<span class="success">========================================</span>\n';
+                resultEl.innerHTML += '<span class="success">✅ TODO COMPLETADO EXITOSAMENTE</span>\n';
+                resultEl.innerHTML += '<span class="success">========================================</span>\n\n';
+                resultEl.innerHTML += 'Ahora puedes probar el portal de invitados:\n';
+                resultEl.innerHTML += 'https://boutique-rsvp.com/index2.html?project=434a1b06-e1cb-446b-af8a-d5c0f4057b06\n';
+
+            } catch (e) {
+                resultEl.innerHTML += '\n<span class="error">========================================</span>\n';
+                resultEl.innerHTML += `<span class="error">❌ ERROR: ${e.message}</span>\n`;
+                resultEl.innerHTML += '<span class="error">========================================</span>\n';
+                console.error('Error completo:', e);
+            }
+        }
+    </script>
+</body>
+
+</html>
