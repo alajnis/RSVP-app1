@@ -7,8 +7,9 @@
 const SupabaseLib = window.supabase;
 
 const SUPABASE_CONFIG = {
-    // URL de Kong (API Gateway) - Tu dominio de producción
-    url: 'https://rsvp.boutique-rsvp.com',
+    // URL PÚBLICA de Supabase (desde SUPABASE_HOST en env)
+    // IMPORTANTE: Esta es la URL accesible desde el navegador
+    url: 'https://rsvp-app-supabase-dbf9f5-76-13-166-122.traefik.me',
 
     // Anon Key generada por Dockploy (desde supabase-env-DOKPLOY-CORREGIDO.env)
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk1NDY2MzIsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.4aBcS7MkWVZSZDHk2pnH1W3S2hjX02YxPqAxCoISoxE',
