@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inspect Assignments Schema</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+
+        h1 {
+            color: #0ff;
+        }
+
+        pre {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #0f0;
+        }
+
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            background: #0ff;
+        }
+
+        .error {
+            color: #f00;
+        }
+
+        .success {
+            color: #0f0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Assignments Table Inspector</h1>
+    <button onclick="checkSchema()">Check Schema</button>
+    <button onclick="checkData()">Check Data</button>
+    <button onclick="createAssignmentsTable()">Create Assignments Table</button>
+
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(msg, isError = false) {
+            const div = document.createElement('div');
+            div.className = isError ? 'error' : 'success';
+            div.textContent = msg;
+            output.appendChild(div);
+        }
+
+        async function checkSchema() {
+            output.innerHTML = '<h2>Checking Assignments Schema...</h2>';
+
+            try {
+                // Try to select from assignments
+                const { data, error } = await supabase
+                    .from('assignments')
+                    .select('*')
+                    .limit(1);
+
+                if (error) {
+                    log(`❌ Error: ${error.message}`, true);
+                    log(`Code: ${error.code}`, true);
+                    log(`Details: ${JSON.stringify(error.details)}`, true);
+                    log(`Hint: ${error.hint}`, true);
+                } else {
+                    log('✅ Table exists!');
+                    log(`Sample data: ${JSON.stringify(data, null, 2)}`);
+                }
+
+                // Try to get all tables
+                const { data: tables, error: tablesError } = await supabase
+                    .from('information_schema.tables')
+                    .select('table_name')
+                    .eq('table_schema', 'public');
+
+                if (!tablesError && tables) {
+                    const pre = document.createElement('pre');
+                    pre.textContent = 'Available tables:\n' + tables.map(t => t.table_name).join('\n');
+                    output.appendChild(pre);
+                }
+
+            } catch (e) {
+                log(`❌ Exception: ${e.message}`, true);
+            }
+        }
+
+        async function checkData() {
+            output.innerHTML = '<h2>Checking All Tables Data...</h2>';
+
+            const tables = ['projects', 'guests', 'tables', 'assignments'];
+
+            for (const table of tables) {
+                const { data, error, count } = await supabase
+                    .from(table)
+                    .select('*', { count: 'exact' })
+                    .limit(3);
+
+                const section = document.createElement('div');
+                section.innerHTML = `<h3>${table}</h3>`;
+
+                if (error) {
+                    section.innerHTML += `<pre class="error">Error: ${error.message}</pre>`;
+                } else {
+                    section.innerHTML += `<pre>Count: ${count}\nSample:\n${JSON.stringify(data, null, 2)}</pre>`;
+                }
+
+                output.appendChild(section);
+            }
+        }
+
+        async function createAssignmentsTable() {
+            output.innerHTML = '<h2>Creating Assignments Table...</h2>';
+
+            const sql = `
+CREATE TABLE IF NOT EXISTS assignments (
+    id TEXT PRIMARY KEY,
+    project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
+    table_id TEXT REFERENCES tables(id) ON DELETE CASCADE,
+    guest_id TEXT REFERENCES guests(id) ON DELETE CASCADE,
+    sub_guest_idx INT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+            `.trim();
+
+            log('⚠️ Cannot execute DDL from JS client');
+            log('Copy this SQL to Supabase Studio SQL Editor:');
+
+            const pre = document.createElement('pre');
+            pre.textContent = sql;
+            output.appendChild(pre);
+        }
+    </script>
+</body>
+
+</html>

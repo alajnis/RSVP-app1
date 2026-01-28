@@ -1102,54 +1102,45 @@
                 // METHODS - Assignments
                 // METHODS - Assignments
                 const assignGuest = async (guestId, subGuestIdx, tableId) => {
-                    // 1. Remove existing assignment for this specific person logic locally BUT must do it in DB first.
-                    // Actually, easiest valid DB approach: 
-                    // Delete any assignment where rsvp_id = X AND sub_guest_idx = Y (or null)
-
                     try {
                         const isMain = subGuestIdx === undefined;
-                        let deleteQuery = supabase.from('assignments').delete().eq('rsvp_id', guestId);
+                        let deleteQuery = supabase.from('assignments').delete().eq('guest_id', guestId);
 
-                        // If subGuestIdx is defined, match it. If undefined (legacy main), match that?
-                        // Actually, 'undefined' usually doesn't happen in updated logic, but safeguard:
                         if (isMain) {
-                            deleteQuery = deleteQuery.filter('sub_guest_idx', 'is', null); // or how we store it?
-                            // Wait, our new schema has sub_guest_idx. If we pass undefined, maybe we mean idx 0? 
-                            // Let's assume frontend passes valid index.
+                            deleteQuery = deleteQuery.filter('sub_guest_idx', 'is', null);
                         } else {
                             deleteQuery = deleteQuery.eq('sub_guest_idx', subGuestIdx);
                         }
 
-                        await deleteQuery; // Execute removal
+                        await deleteQuery;
 
-                        // Update local state (optimistic or refresh?)
-                        // Refresh is safer but slower. Let's update local
+                        // Update local state
                         if (subGuestIdx !== undefined) {
-                            assignments.value = assignments.value.filter(a => !(a.rsvp_id === guestId && a.sub_guest_idx === subGuestIdx));
+                            assignments.value = assignments.value.filter(a => !(a.guest_id === guestId && a.sub_guest_idx === subGuestIdx));
                         } else {
-                            assignments.value = assignments.value.filter(a => !(a.rsvp_id === guestId && a.sub_guest_idx === undefined));
+                            assignments.value = assignments.value.filter(a => !(a.guest_id === guestId && a.sub_guest_idx === null));
                         }
 
                         if (!tableId) { showToast('Desasignado', 'success'); return; }
 
-                        // 2. check Capacity (Local check is fine since we have data)
+                        // Check capacity
                         const table = tables.value.find(t => t.id === tableId);
                         if (table) {
                             const currentCount = assignments.value.filter(a => a.table_id === tableId).length;
                             if (currentCount >= table.capacity) {
-                                alert(`La mesa "${table.name}" está llena (${table.capacity}/${table.capacity}). No se puede agregar más personas.`);
+                                alert(`La mesa \"${table.name}\" está llena (${table.capacity}/${table.capacity}). No se puede agregar más personas.`);
                                 return;
                             }
                         } else {
                             return;
                         }
 
-                        // 3. Add Assignment DB
+                        // Add assignment
                         const newAsg = {
                             id: crypto.randomUUID(),
                             project_id: currentProjectId.value,
                             table_id: tableId,
-                            rsvp_id: guestId,
+                            guest_id: guestId,
                             sub_guest_idx: subGuestIdx !== undefined ? subGuestIdx : null
                         };
 

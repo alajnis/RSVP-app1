@@ -369,8 +369,9 @@
                 // STATE
                 const projects = ref([]);
                 const searchQuery = ref('');
-                const showProjectModal = ref(false);
+                const modalOpen = ref(false);
                 const editingProject = ref(null);
+                const projectStats = ref({}); // Store stats by project ID
                 const projectForm = reactive({
                     brideName: '',
                     groomName: '',
@@ -381,8 +382,8 @@
                 const session = ref(null);
 
                 // LOGS STATE
-                const showLogModal = ref(false);
-                const projectLogs = ref([]);
+                const logModalOpen = ref(false);
+                const currentLogEntries = ref([]);
                 const selectedProjectName = ref('');
 
                 // LOAD DATA
@@ -416,6 +417,11 @@
                     } else {
                         projects.value = allProjects;
                     }
+
+                    // Load stats for all projects
+                    for (const project of projects.value) {
+                        projectStats.value[project.id] = await getProjectStats(project.id);
+                    }
                 };
 
                 // saveProjects() removed - no longer needed, we save directly to Supabase
@@ -439,13 +445,15 @@
 
                 const totalGuestsAllProjects = computed(() => {
                     return projects.value.reduce((sum, project) => {
-                        return sum + getProjectStats(project.id).totalGuests;
+                        const stats = projectStats.value[project.id] || { totalGuests: 0 };
+                        return sum + stats.totalGuests;
                     }, 0);
                 });
 
                 const totalConfirmedAllProjects = computed(() => {
                     return projects.value.reduce((sum, project) => {
-                        return sum + getProjectStats(project.id).confirmed;
+                        const stats = projectStats.value[project.id] || { confirmed: 0 };
+                        return sum + stats.confirmed;
                     }, 0);
                 });
 
