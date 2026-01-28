@@ -396,28 +396,29 @@
                     loadProjects();
                 });
 
-                const loadProjects = () => {
-                    const saved = localStorage.getItem('rsvp_projects');
-                    if (saved) {
-                        let allProjects = JSON.parse(saved);
+                const loadProjects = async () => {
+                    const { data, error } = await supabase
+                        .from('projects')
+                        .select('*')
+                        .order('wedding_date', { ascending: false });
 
-                        // Filter for Couple
-                        if (session.value && session.value.role === 'couple') {
-                            projects.value = allProjects.filter(p => p.id === session.value.projectId);
-                        } else {
-                            projects.value = allProjects;
-                        }
+                    if (error) {
+                        console.error('Error loading projects:', error);
+                        projects.value = [];
+                        return;
+                    }
+
+                    let allProjects = data || [];
+
+                    // Filter for Couple role
+                    if (session.value && session.value.role === 'couple') {
+                        projects.value = allProjects.filter(p => p.id === session.value.projectId);
+                    } else {
+                        projects.value = allProjects;
                     }
                 };
 
-                const saveProjects = () => {
-                    // Safety check: Couples shouldn't be saving the full project list array directly
-                    // if they only have a slice, but since they can't create/delete, this is less risky
-                    // if we only assume Admin calls this or we rely on ID matching updates.
-                    // Ideally, we load fresh from LS, update specific item, then save back.
-                    // For now, only Admin has CREATE/DELETE buttons visible.
-                    localStorage.setItem('rsvp_projects', JSON.stringify(projects.value));
-                };
+                // saveProjects() removed - no longer needed, we save directly to Supabase
 
                 // COMPUTED
                 const modalTitle = computed(() => editingProject.value ? 'Editar Casamiento' : 'Nuevo Casamiento');
@@ -484,57 +485,31 @@
                 };
 
                 const saveProject = async () => {
-                    const coupleName = `${projectForm.brideName} & ${projectForm.groomName}`;
+                    if (!projectForm.brideName || !projectForm.groomName || !projectForm.weddingDate) {
+                        showToast('Complete todos los campos requeridos', 'error');
+                        return;
+                    }
 
                     try {
-                        if (editingProject.value) {
-                            // Update existing project
-                            const { error } = await supabase
-                                .from('projects')
-                                .update({
-                                    bride_name: projectForm.brideName,
-                                    groom_name: projectForm.groomName,
-                                    couple_name: coupleName,
-                                    wedding_date: projectForm.weddingDate,
-                                    venue: projectForm.venue,
-                                    updated_at: new Date().toISOString()
-                                })
-                                .eq('id', editingProject.value.id);
+                        const coupleName = `${projectForm.brideName} & ${projectForm.groomName}`;
+                        const projectData = {
+                            id: editingProject.value?.id || crypto.randomUUID(),
+                            couple_name: coupleName,
+                            wedding_date: projectForm.weddingDate,
+                            bride_name: projectForm.brideName,
+                            groom_name: projectForm.groomName,
+                            venue: projectForm.venue || ''
+                        };
 
-                            if (error) throw error;
-                            showToast('Casamiento actualizado');
-                        } else {
-                            // Create new project
-                            const newProjectData = {
-                                id: crypto.randomUUID(),
-                                bride_name: projectForm.brideName,
-                                groom_name: projectForm.groomName,
-                                couple_name: coupleName,
-                                wedding_date: projectForm.weddingDate,
-                                venue: projectForm.venue
-                            };
+                        const { error } = await supabase
+                            .from('projects')
+                            .upsert(projectData);
 
-                            const { data, error } = await supabase.from('projects').insert(newProjectData).select();
-                            if (error) throw error;
+                        if (error) throw error;
 
-                            // Add to local projects array and save to localStorage
-                            const formattedProject = {
-                                id: newProjectData.id,
-                                brideName: projectForm.brideName,
-                                groomName: projectForm.groomName,
-                                coupleName: coupleName,
-                                weddingDate: projectForm.weddingDate,
-                                venue: projectForm.venue || ''
-                            };
-                            projects.value.push(formattedProject);
-                            saveProjects();
-
-                            showToast('Casamiento creado');
-                        }
-
-                        loadProjects();
+                        await loadProjects(); // Reload from Supabase
                         closeProjectModal();
-
+                        showToast(editingProject.value ? 'Casamiento actualizado' : 'Casamiento creado');
                     } catch (e) {
                         console.error('Error saving project:', e);
                         showToast('Error al guardar: ' + e.message, 'error');
@@ -542,21 +517,18 @@
                 };
 
                 const deleteProject = async (id) => {
-                    if (!confirm('¿Estás seguro de eliminar este casamiento? Se perderán todos los datos asociados.')) return;
+                    if (!confirm('¿Eliminar este casamiento y todos sus datos?')) return;
 
                     try {
-                        const { error } = await supabase.from('projects').delete().eq('id', id);
+                        const { error } = await supabase
+                            .from('projects')
+                            .delete()
+                            .eq('id', id);
+
                         if (error) throw error;
 
+                        await loadProjects();
                         showToast('Casamiento eliminado');
-                        loadProjects();
-
-                        // Clean session if deleting current project (rare case in dashboard)
-                        const session = JSON.parse(localStorage.getItem('rsvp_session'));
-                        if (session && session.projectId === id) {
-                            localStorage.removeItem('rsvp_session');
-                        }
-
                     } catch (e) {
                         console.error('Error deleting project:', e);
                         showToast('Error al eliminar: ' + e.message, 'error');
