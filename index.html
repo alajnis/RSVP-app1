@@ -79,12 +79,22 @@
         <h1>RSVP</h1>
         <div class="subtitle">Events Boutique</div>
         <div class="spinner"></div>
-        <p>Redirigiendo al login...</p>
+        <p id="status">Verificando sesión...</p>
     </div>
 
     <script>
-        // Redirect to login immediately
-        window.location.replace('login-v3.html');
+        // Check for existing session
+        const session = localStorage.getItem('rsvp_session');
+
+        if (session) {
+            // User is logged in - go to dashboard
+            document.getElementById('status').textContent = 'Redirigiendo al dashboard...';
+            window.location.replace('dashboard.html');
+        } else {
+            // No session - go to login
+            document.getElementById('status').textContent = 'Redirigiendo al login...';
+            window.location.replace('login-v3.html');
+        }
     </script>
 </body>
 
