@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase URLs</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+
+        .test {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #0f0;
+            background: #000;
+        }
+
+        .success {
+            color: #0f0;
+        }
+
+        .error {
+            color: #f00;
+        }
+
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Supabase URL Tester</h1>
+    <p>Testing which Supabase URL is accessible from your browser...</p>
+
+    <button onclick="testAllURLs()">🚀 Test All URLs</button>
+    <button onclick="clearResults()">🗑️ Clear Results</button>
+
+    <div id="results"></div>
+
+    <script>
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk1NDY2MzIsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.4aBcS7MkWVZSZDHk2pnH1W3S2hjX02YxPqAxCoISoxE';
+
+        const urlsToTest = [
+            {
+                name: 'Traefik.me (Internal)',
+                url: 'https://rsvp-app-supabase-dbf9f5-76-13-166-122.traefik.me'
+            },
+            {
+                name: 'rsvp subdomain (Kong Gateway)',
+                url: 'https://rsvp.boutique-rsvp.com'
+            },
+            {
+                name: 'Direct REST API',
+                url: 'https://rsvp.boutique-rsvp.com/rest/v1'
+            }
+        ];
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testURL(config) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test';
+            resultDiv.innerHTML = `<strong>Testing: ${config.name}</strong><br>URL: ${config.url}<br>Status: Testing...`;
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                // Test 1: Basic fetch
+                console.log(`Testing ${config.url}...`);
+                const fetchStart = Date.now();
+
+                const response = await fetch(`${config.url}/rest/v1/projects`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': ANON_KEY,
+                        'Authorization': `Bearer ${ANON_KEY}`
+                    }
+                });
+
+                const fetchTime = Date.now() - fetchStart;
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <strong class="success">✅ ${config.name}</strong><br>
+                        URL: ${config.url}<br>
+                        Status: <span class="success">SUCCESS (${response.status})</span><br>
+                        Response Time: ${fetchTime}ms<br>
+                        Projects Found: ${data.length}<br>
+                        Data: <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                    return { success: true, url: config.url };
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML = `
+                        <strong class="error">❌ ${config.name}</strong><br>
+                        URL: ${config.url}<br>
+                        Status: <span class="error">HTTP ${response.status}</span><br>
+                        Error: ${errorText}
+                    `;
+                    return { success: false, url: config.url };
+                }
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <strong class="error">❌ ${config.name}</strong><br>
+                    URL: ${config.url}<br>
+                    Status: <span class="error">FAILED</span><br>
+                    Error: ${error.message}<br>
+                    Details: ${error.stack}
+                `;
+                return { success: false, url: config.url };
+            }
+        }
+
+        async function testAllURLs() {
+            clearResults();
+
+            const results = [];
+            for (const config of urlsToTest) {
+                const result = await testURL(config);
+                results.push(result);
+            }
+
+            // Summary
+            const successfulURLs = results.filter(r => r.success);
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'test';
+            summaryDiv.style.borderColor = successfulURLs.length > 0 ? '#0f0' : '#f00';
+
+            if (successfulURLs.length > 0) {
+                summaryDiv.innerHTML = `
+                    <h2 class="success">🎯 WORKING URL FOUND!</h2>
+                    <p>Use this URL in supabase-client.js:</p>
+                    <pre style="background: #222; padding: 10px;">${successfulURLs[0].url}</pre>
+                `;
+            } else {
+                summaryDiv.innerHTML = `
+                    <h2 class="error">⚠️ NO WORKING URLs FOUND</h2>
+                    <p>None of the tested URLs are accessible from your browser.</p>
+                    <p>Possible issues:</p>
+                    <ul>
+                        <li>Dokploy Supabase not exposed publicly</li>
+                        <li>Firewall blocking access</li>
+                        <li>DNS not configured correctly</li>
+                        <li>Need to use service_role key instead of anon key</li>
+                    </ul>
+                `;
+            }
+
+            document.getElementById('results').insertBefore(summaryDiv, document.getElementById('results').firstChild);
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            console.log('Page loaded. Click "Test All URLs" to begin.');
+        });
+    </script>
+</body>
+
+</html>
