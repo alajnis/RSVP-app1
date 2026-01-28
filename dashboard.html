@@ -409,7 +409,17 @@
                         return;
                     }
 
-                    let allProjects = data || [];
+                    // Map snake_case from DB to camelCase for UI
+                    let allProjects = (data || []).map(p => ({
+                        id: p.id,
+                        brideName: p.bride_name,
+                        groomName: p.groom_name,
+                        coupleName: p.couple_name || `${p.bride_name || ''} & ${p.groom_name || ''}`.trim(),
+                        weddingDate: p.wedding_date,
+                        venue: p.venue,
+                        created_at: p.created_at,
+                        updated_at: p.updated_at
+                    }));
 
                     // Filter for Couple role
                     if (session.value && session.value.role === 'couple') {
