@@ -301,14 +301,27 @@
 
                 // Load Data
                 onMounted(async () => {
+                    console.log('🔄 Iniciando carga del proyecto...');
+                    console.log('  Supabase client:', typeof supabase);
+
                     const urlParams = new URLSearchParams(window.location.search);
                     const pid = urlParams.get('project');
+                    console.log('  Project ID de URL:', pid);
 
                     if (pid) {
                         try {
+                            console.log('  Consultando proyecto en Supabase...');
                             const { data: proj, error: dbError } = await supabase.from('projects').select('*').eq('id', pid).single();
 
-                            if (dbError) throw dbError;
+                            console.log('  Respuesta de Supabase:');
+                            console.log('    Data:', proj);
+                            console.log('    Error:', dbError);
+
+                            if (dbError) {
+                                console.error('❌ Error de Supabase:', dbError);
+                                alert(`Error al cargar proyecto: ${dbError.message}`);
+                                throw dbError;
+                            }
 
                             if (proj) {
                                 currentProject.value = {
@@ -318,13 +331,19 @@
                                     weddingDate: proj.wedding_date,
                                     coupleName: proj.couple_name
                                 };
+                                console.log('✅ Proyecto cargado:', currentProject.value);
                             } else {
+                                console.error('❌ Proyecto no encontrado');
                                 alert('Proyecto inválido o no encontrado');
                             }
                         } catch (e) {
-                            console.error("Error loading project:", e);
-                            error.value = "Error al cargar el proyecto.";
+                            console.error("❌ Error loading project:", e);
+                            error.value = `Error al cargar el proyecto: ${e.message}`;
+                            alert(`Error crítico: ${e.message}`);
                         }
+                    } else {
+                        console.error('❌ No hay project ID en la URL');
+                        alert('Falta el ID del proyecto en la URL');
                     }
                 });
 
