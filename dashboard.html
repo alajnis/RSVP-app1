@@ -19,9 +19,10 @@
         href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap"
         rel="stylesheet">
     <script>
+        // Error logging (console only, no alerts)
         window.onerror = function (msg, url, lineNo, columnNo, error) {
-            alert('Error: ' + msg + '\nLínea: ' + lineNo + '\nArchivo: ' + url);
-            return false;
+            console.error('Error:', msg, 'at', url, 'line', lineNo);
+            return true; // Suppress default browser error handling
         };
         tailwind.config = {
             theme: {
@@ -229,8 +230,8 @@
             </div>
         </div>
 
-        <!-- EMPTY STATE -->
-        <div v-if="projects.length === 0"
+        <!-- EMPTY STATE (only show if not loading) -->
+        <div v-if="!isLoading && projects.length === 0"
             class="bg-white border border-brand-pink p-20 text-center max-w-2xl mx-auto mt-12 shadow-sm">
             <h3 class="text-4xl font-serif font-bold text-brand-dark mb-4 tracking-tight">Bienvenido a Events Boutique
             </h3>
@@ -372,6 +373,7 @@
             setup() {
                 // STATE
                 const projects = ref([]);
+                const isLoading = ref(true); // Add loading state to prevent flash
                 const searchQuery = ref('');
                 const modalOpen = ref(false);
                 const editingProject = ref(null);
@@ -402,6 +404,7 @@
                 });
 
                 const loadProjects = async () => {
+                    isLoading.value = true; // Start loading
                     const { data, error } = await supabase
                         .from('projects')
                         .select('*')
@@ -410,6 +413,7 @@
                     if (error) {
                         console.error('Error loading projects:', error);
                         projects.value = [];
+                        isLoading.value = false;
                         return;
                     }
 
@@ -436,6 +440,8 @@
                     for (const project of projects.value) {
                         projectStats.value[project.id] = await getProjectStats(project.id);
                     }
+
+                    isLoading.value = false; // Done loading
                 };
 
                 // saveProjects() removed - no longer needed, we save directly to Supabase
@@ -738,6 +744,7 @@
 
                 return {
                     projects,
+                    isLoading, // Add loading state
                     projectStats,
                     searchQuery,
                     modalOpen,

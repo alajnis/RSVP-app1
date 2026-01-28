@@ -5,6 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RSVP Seating - Events Boutique</title>
+
+    <!-- CRITICAL: Suppress cross-origin errors BEFORE loading external resources -->
+    <script>
+        window.onerror = function () { return true; };
+    </script>
+
     <style>
         * {
             margin: 0;
@@ -83,9 +89,6 @@
     </div>
 
     <script>
-        // Suppress any errors during redirect
-        window.onerror = function () { return true; };
-
         try {
             // Check for existing session
             const session = localStorage.getItem('rsvp_session');
