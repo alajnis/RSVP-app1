@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Inspeccionar Schema - Supabase</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        #result {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            margin-top: 20px;
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        .info {
+            color: #60a5fa;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Inspeccionar Schema de Supabase</h1>
+    <p>Esta herramienta te muestra qué columnas tienen las tablas en producción.</p>
+
+    <button onclick="inspectSchema()">🔍 Inspeccionar Tablas</button>
+
+    <div id="result">Presiona el botón para inspeccionar...</div>
+
+    <script>
+        async function inspectSchema() {
+            const resultEl = document.getElementById('result');
+            resultEl.innerHTML = '🔄 Inspeccionando schema...\n\n';
+
+            try {
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Cliente Supabase no está definido');
+                }
+
+                resultEl.innerHTML += '<span class="success">✓ Cliente Supabase conectado</span>\n\n';
+
+                // Inspeccionar tabla PROJECTS
+                resultEl.innerHTML += '<span class="info">═══════════════════════════════════════</span>\n';
+                resultEl.innerHTML += '<span class="info">📋 TABLA: projects</span>\n';
+                resultEl.innerHTML += '<span class="info">═══════════════════════════════════════</span>\n';
+
+                const { data: projects, error: projError } = await supabase
+                    .from('projects')
+                    .select('*')
+                    .limit(1);
+
+                if (projError) {
+                    resultEl.innerHTML += `<span class="error">❌ Error: ${projError.message}</span>\n\n`;
+                } else if (projects && projects.length > 0) {
+                    const columns = Object.keys(projects[0]);
+                    resultEl.innerHTML += `<span class="success">✓ Columnas (${columns.length}):</span>\n`;
+                    columns.forEach(col => {
+                        const value = projects[0][col];
+                        const type = typeof value;
+                        resultEl.innerHTML += `  - ${col} (${type})\n`;
+                    });
+                    resultEl.innerHTML += `\n<span class="info">Ejemplo de registro:</span>\n${JSON.stringify(projects[0], null, 2)}\n\n`;
+                } else {
+                    resultEl.innerHTML += '<span class="error">⚠️ Tabla vacía</span>\n\n';
+                }
+
+                // Inspeccionar tabla GUESTS
+                resultEl.innerHTML += '<span class="info">═══════════════════════════════════════</span>\n';
+                resultEl.innerHTML += '<span class="info">👥 TABLA: guests</span>\n';
+                resultEl.innerHTML += '<span class="info">═══════════════════════════════════════</span>\n';
+
+                const { data: guests, error: guestError } = await supabase
+                    .from('guests')
+                    .select('*')
+                    .limit(1);
+
+                if (guestError) {
+                    resultEl.innerHTML += `<span class="error">❌ Error: ${guestError.message}</span>\n\n`;
+                } else if (guests && guests.length > 0) {
+                    const columns = Object.keys(guests[0]);
+                    resultEl.innerHTML += `<span class="success">✓ Columnas (${columns.length}):</span>\n`;
+                    columns.forEach(col => {
+                        const value = guests[0][col];
+                        const type = typeof value;
+                        resultEl.innerHTML += `  - ${col} (${type})\n`;
+                    });
+                    resultEl.innerHTML += `\n<span class="info">Ejemplo de registro:</span>\n${JSON.stringify(guests[0], null, 2)}\n\n`;
+                } else {
+                    resultEl.innerHTML += '<span class="error">⚠️ Tabla vacía - mostrando schema esperado</span>\n';
+                    resultEl.innerHTML += `Columnas esperadas según 00-init.sql:\n`;
+                    resultEl.innerHTML += '  - id (text)\n';
+                    resultEl.innerHTML += '  - project_id (text)\n';
+                    resultEl.innerHTML += '  - first_name (text)\n';
+                    resultEl.innerHTML += '  - last_name (text)\n';
+                    resultEl.innerHTML += '  - email (text)\n';
+                    resultEl.innerHTML += '  - phone (text)\n';
+                    resultEl.innerHTML += '  - guests_confirmed (int)\n';
+                    resultEl.innerHTML += '  - rsvp_status (text)\n';
+                    resultEl.innerHTML += '  - dietary (text)\n';
+                    resultEl.innerHTML += '  - sub_guests (jsonb)\n';
+                    resultEl.innerHTML += '  - created_at (timestamptz)\n\n';
+                }
+
+                // Inspeccionar tabla TABLES
+                resultEl.innerHTML += '<span class="info">═══════════════════════════════════════</span>\n';
+                resultEl.innerHTML += '<span class="info">🪑 TABLA: tables</span>\n';
+                resultEl.innerHTML += '<span class="info">═══════════════════════════════════════</span>\n';
+
+                const { data: tables, error: tablesError } = await supabase
+                    .from('tables')
+                    .select('*')
+                    .limit(1);
+
+                if (tablesError) {
+                    resultEl.innerHTML += `<span class="error">❌ Error: ${tablesError.message}</span>\n\n`;
+                } else if (tables && tables.length > 0) {
+                    const columns = Object.keys(tables[0]);
+                    resultEl.innerHTML += `<span class="success">✓ Columnas (${columns.length}):</span>\n`;
+                    columns.forEach(col => {
+                        const value = tables[0][col];
+                        const type = typeof value;
+                        resultEl.innerHTML += `  - ${col} (${type})\n`;
+                    });
+                    resultEl.innerHTML += `\n<span class="info">Ejemplo de registro:</span>\n${JSON.stringify(tables[0], null, 2)}\n\n`;
+                } else {
+                    resultEl.innerHTML += '<span class="error">⚠️ Tabla vacía</span>\n\n';
+                }
+
+                // Inspeccionar tabla ASSIGNMENTS
+                resultEl.innerHTML += '<span class="info">═══════════════════════════════════════</span>\n';
+                resultEl.innerHTML += '<span class="info">📍 TABLA: assignments</span>\n';
+                resultEl.innerHTML += '<span class="info">═══════════════════════════════════════</span>\n';
+
+                const { data: assignments, error: assignError } = await supabase
+                    .from('assignments')
+                    .select('*')
+                    .limit(1);
+
+                if (assignError) {
+                    resultEl.innerHTML += `<span class="error">❌ Error: ${assignError.message}</span>\n\n`;
+                } else if (assignments && assignments.length > 0) {
+                    const columns = Object.keys(assignments[0]);
+                    resultEl.innerHTML += `<span class="success">✓ Columnas (${columns.length}):</span>\n`;
+                    columns.forEach(col => {
+                        const value = assignments[0][col];
+                        const type = typeof value;
+                        resultEl.innerHTML += `  - ${col} (${type})\n`;
+                    });
+                    resultEl.innerHTML += `\n<span class="info">Ejemplo de registro:</span>\n${JSON.stringify(assignments[0], null, 2)}\n\n`;
+                } else {
+                    resultEl.innerHTML += '<span class="error">⚠️ Tabla vacía</span>\n\n';
+                }
+
+                resultEl.innerHTML += '\n<span class="success">══════════════════════════════════════</span>\n';
+                resultEl.innerHTML += '<span class="success">✅ INSPECCIÓN COMPLETA</span>\n';
+                resultEl.innerHTML += '<span class="success">══════════════════════════════════════</span>\n';
+
+            } catch (e) {
+                resultEl.innerHTML += `\n<span class="error">❌ ERROR: ${e.message}</span>\n`;
+                console.error('Error completo:', e);
+            }
+        }
+    </script>
+</body>
+
+</html>
