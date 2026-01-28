@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico Assignments</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #000;
+            color: #0f0;
+        }
+
+        h1 {
+            color: #0ff;
+        }
+
+        pre {
+            background: #111;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #0f0;
+        }
+
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            background: #0ff;
+        }
+
+        .error {
+            color: #f00;
+        }
+
+        .success {
+            color: #0f0;
+        }
+
+        .warning {
+            color: #ff0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Diagnóstico Assignments Table</h1>
+
+    <button onclick="testAssignmentInsert()">Test Assignment Insert</button>
+    <button onclick="checkTables()">Check All Tables</button>
+    <button onclick="viewAssignments()">View Assignments</button>
+
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(msg, className = 'success') {
+            const div = document.createElement('div');
+            div.className = className;
+            div.innerHTML = msg;
+            output.appendChild(div);
+        }
+
+        async function testAssignmentInsert() {
+            output.innerHTML = '<h2>Testing Assignment Insert...</h2>';
+
+            try {
+                // First, get a real project, table, and guest
+                const { data: projects } = await supabase.from('projects').select('id').limit(1);
+                const { data: tables } = await supabase.from('tables').select('id').limit(1);
+                const { data: guests } = await supabase.from('guests').select('id').limit(1);
+
+                if (!projects || !tables || !guests || projects.length === 0 || tables.length === 0 || guests.length === 0) {
+                    log('⚠️ Missing required data: projects, tables, or guests', 'warning');
+                    log(`Projects: ${projects?.length || 0}`, 'warning');
+                    log(`Tables: ${tables?.length || 0}`, 'warning');
+                    log(`Guests: ${guests?.length || 0}`, 'warning');
+                    return;
+                }
+
+                const testAssignment = {
+                    id: crypto.randomUUID(),
+                    project_id: projects[0].id,
+                    table_id: tables[0].id,
+                    guest_id: guests[0].id,
+                    sub_guest_idx: null
+                };
+
+                log('Attempting to insert:');
+                const pre1 = document.createElement('pre');
+                pre1.textContent = JSON.stringify(testAssignment, null, 2);
+                output.appendChild(pre1);
+
+                const { data, error } = await supabase
+                    .from('assignments')
+                    .insert(testAssignment)
+                    .select();
+
+                if (error) {
+                    log(`❌ INSERT ERROR:`, 'error');
+                    const pre2 = document.createElement('pre');
+                    pre2.className = 'error';
+                    pre2.textContent = JSON.stringify(error, null, 2);
+                    output.appendChild(pre2);
+
+                    // Try to get more info about the table structure
+                    log('\\nAttempting to describe table...', 'warning');
+                    const { data: sample } = await supabase
+                        .from('assignments')
+                        .select('*')
+                        .limit(1);
+
+                    if (sample && sample.length > 0) {
+                        log('Sample assignment structure:');
+                        const pre3 = document.createElement('pre');
+                        pre3.textContent = JSON.stringify(sample[0], null, 2);
+                        output.appendChild(pre3);
+                    }
+                } else {
+                    log('✅ INSERT SUCCESSFUL!', 'success');
+                    const pre2 = document.createElement('pre');
+                    pre2.textContent = JSON.stringify(data, null, 2);
+                    output.appendChild(pre2);
+
+                    // Clean up test data
+                    await supabase.from('assignments').delete().eq('id', testAssignment.id);
+                    log('Test assignment removed', 'success');
+                }
+            } catch (e) {
+                log(`❌ Exception: ${e.message}`, 'error');
+                console.error(e);
+            }
+        }
+
+        async function checkTables() {
+            output.innerHTML = '<h2>Checking Tables...</h2>';
+
+            const tables = ['projects', 'guests', 'tables', 'assignments'];
+
+            for (const table of tables) {
+                const { data, error, count } = await supabase
+                    .from(table)
+                    .select('*', { count: 'exact' })
+                    .limit(1);
+
+                log(`\\n<strong>${table}:</strong>`);
+
+                if (error) {
+                    log(`  ❌ Error: ${error.message}`, 'error');
+                } else {
+                    log(`  ✅ Exists, Count: ${count}`, 'success');
+                    if (data && data.length > 0) {
+                        const pre = document.createElement('pre');
+                        pre.textContent = '  Sample:\n' + JSON.stringify(data[0], null, 2);
+                        output.appendChild(pre);
+                    }
+                }
+            }
+        }
+
+        async function viewAssignments() {
+            output.innerHTML = '<h2>View All Assignments...</h2>';
+
+            const { data, error } = await supabase
+                .from('assignments')
+                .select('*');
+
+            if (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                const pre = document.createElement('pre');
+                pre.className = 'error';
+                pre.textContent = JSON.stringify(error, null, 2);
+                output.appendChild(pre);
+            } else {
+                log(`✅ Found ${data.length} assignments`, 'success');
+                const pre = document.createElement('pre');
+                pre.textContent = JSON.stringify(data, null, 2);
+                output.appendChild(pre);
+            }
+        }
+    </script>
+</body>
+
+</html>
