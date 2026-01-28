@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Migrar Tabla Guests</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+
+        button {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+
+        button:hover {
+            background: #d97706;
+        }
+
+        #result {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        .warning {
+            color: #f59e0b;
+        }
+
+        .step {
+            color: #60a5fa;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>⚠️ Migrar Tabla Guests</h1>
+    <p><strong>Esta herramienta agrega las columnas faltantes a la tabla guests:</strong></p>
+    <ul>
+        <li><code>guests_confirmed</code> (INT)</li>
+        <li><code>rsvp_status</code> (TEXT)</li>
+        <li><code>sub_guests</code> (JSONB)</li>
+    </ul>
+
+    <button onclick="migrateTable()">🔄 Ejecutar Migración</button>
+
+    <div id="result">Presiona el botón para ejecutar la migración...</div>
+
+    <script>
+        async function migrateTable() {
+            const resultEl = document.getElementById('result');
+            resultEl.innerHTML = '🔄 Iniciando migración...\n\n';
+
+            try {
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Cliente Supabase no está definido');
+                }
+
+                resultEl.innerHTML += '<span class="success">✓ Cliente Supabase conectado</span>\n\n';
+
+                // Ejecutar SQL de migración usando la API RPC o directamente
+                // Como el cliente JS no permite ALTER TABLE directamente, 
+                // usamos una estrategia diferente: verificar si ya existen las columnas
+
+                resultEl.innerHTML += '<span class="step">📋 Verificando estructura actual...</span>\n';
+
+                const { data: testGuest, error: testError } = await supabase
+                    .from('guests')
+                    .select('*')
+                    .limit(1);
+
+                if (testError) throw testError;
+
+                const currentColumns = testGuest && testGuest.length > 0 ? Object.keys(testGuest[0]) : [];
+
+                resultEl.innerHTML += `<span class="success">✓ Columnas actuales (${currentColumns.length}):</span>\n`;
+                resultEl.innerHTML += `${currentColumns.join(', ')}\n\n`;
+
+                const requiredColumns = ['guests_confirmed', 'rsvp_status', 'sub_guests'];
+                const missingColumns = requiredColumns.filter(col => !currentColumns.includes(col));
+
+                if (missingColumns.length === 0) {
+                    resultEl.innerHTML += '<span class="success">✅ Todas las columnas requeridas ya existen!</span>\n';
+                    resultEl.innerHTML += 'No se necesita migración.\n';
+                    return;
+                }
+
+                resultEl.innerHTML += `<span class="warning">⚠️ Columnas faltantes: ${missingColumns.join(', ')}</span>\n\n`;
+
+                resultEl.innerHTML += '<span class="error">═══════════════════════════════════════</span>\n';
+                resultEl.innerHTML += '<span class="error">❌ MIGRACIÓN SQL REQUERIDA</span>\n';
+                resultEl.innerHTML += '<span class="error">═══════════════════════════════════════</span>\n\n';
+
+                resultEl.innerHTML += '<span class="warning">El cliente JavaScript de Supabase no puede ejecutar ALTER TABLE.</span>\n';
+                resultEl.innerHTML += '<span class="warning">Debes ejecutar el siguiente SQL manualmente en Supabase Studio:</span>\n\n';
+
+                resultEl.innerHTML += '<span class="step">-- Copiar y pegar en SQL Editor de Supabase Studio:</span>\n';
+                resultEl.innerHTML += `
+ALTER TABLE guests 
+  ADD COLUMN IF NOT EXISTS guests_confirmed INT DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS rsvp_status TEXT DEFAULT 'Pending',
+  ADD COLUMN IF NOT EXISTS sub_guests JSONB DEFAULT '[]'::jsonb;
+
+-- Verificar:
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'guests' 
+  AND column_name IN ('guests_confirmed', 'rsvp_status', 'sub_guests');
+`;
+
+                resultEl.innerHTML += '\n<span class="warning">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>\n';
+                resultEl.innerHTML += '<span class="warning">PASOS PARA EJECUTAR:</span>\n';
+                resultEl.innerHTML += '<span class="warning">1. Abre Supabase Studio</span>\n';
+                resultEl.innerHTML += '<span class="warning">2. Ve a SQL Editor</span>\n';
+                resultEl.innerHTML += '<span class="warning">3. Copia el SQL de arriba</span>\n';
+                resultEl.innerHTML += '<span class="warning">4. Ejecuta (Run)</span>\n';
+                resultEl.innerHTML += '<span class="warning">5. Vuelve aquí y presiona el botón de nuevo para verificar</span>\n';
+                resultEl.innerHTML += '<span class="warning">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>\n';
+
+            } catch (e) {
+                resultEl.innerHTML += '\n<span class="error">═══════════════════════════════════════</span>\n';
+                resultEl.innerHTML += `<span class="error">❌ ERROR: ${e.message}</span>\n`;
+                resultEl.innerHTML += '<span class="error">═══════════════════════════════════════</span>\n';
+                console.error('Error completo:', e);
+            }
+        }
+    </script>
+</body>
+
+</html>
