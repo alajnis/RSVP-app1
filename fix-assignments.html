@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Assignments Table</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            color: #333;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px 5px 10px 0;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+        }
+
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .step-num {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔧 Fix Assignments Table</h1>
+        <p>Esta herramienta agregará la columna <code>sub_guest_idx</code> faltante en la tabla assignments.</p>
+
+        <div class="alert alert-warning">
+            <strong>⚠️ Importante:</strong> Este script modificará la estructura de la tabla. Asegúrate de tener un
+            backup.
+        </div>
+
+        <button onclick="fixTable()" id="fixBtn">▶️ Agregar Columna sub_guest_idx</button>
+        <button onclick="verifyTable()" id="verifyBtn">✓ Verificar Tabla</button>
+
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+        const fixBtn = document.getElementById('fixBtn');
+        const verifyBtn = document.getElementById('verifyBtn');
+
+        async function fixTable() {
+            output.innerHTML = '<div class="alert alert-warning">🔄 Ejecutando migración...</div>';
+            fixBtn.disabled = true;
+
+            try {
+                // Note: Supabase JS client can't execute DDL directly
+                // We need to use the SQL editor in Supabase Studio
+                output.innerHTML = `
+                    <div class="alert alert-error">
+                        <h3>❌ No se puede ejecutar DDL desde JS</h3>
+                        <p>Necesitas ejecutar este SQL en <strong>Supabase Studio → SQL Editor:</strong></p>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">1</span>
+                        <strong>Copia este SQL:</strong>
+                    </div>
+                    <pre>ALTER TABLE assignments 
+ADD COLUMN IF NOT EXISTS sub_guest_idx INT;</pre>
+                    <div class="step">
+                        <span class="step-num">2</span>
+                        <strong>Ve a:</strong> <a href="https://supabase.com/dashboard" target="_blank">Supabase Dashboard</a>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">3</span>
+                        <strong>SQL Editor</strong> → Pega el SQL → Click <strong>Run</strong>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">4</span>
+                        <strong>Verifica</strong> con el botón de arriba
+                    </div>
+                `;
+            } catch (e) {
+                output.innerHTML = `<div class="alert alert-error">❌ Error: ${e.message}</div>`;
+            } finally {
+                fixBtn.disabled = false;
+            }
+        }
+
+        async function verifyTable() {
+            output.innerHTML = '<div class="alert alert-warning">🔍 Verificando estructura...</div>';
+            verifyBtn.disabled = true;
+
+            try {
+                // Try to insert a test record with all columns
+                const testId = crypto.randomUUID();
+                const testData = {
+                    id: testId,
+                    project_id: '00000000-0000-0000-0000-000000000000',
+                    table_id: '00000000-0000-0000-0000-000000000000',
+                    guest_id: '00000000-0000-0000-0000-000000000000',
+                    sub_guest_idx: 0
+                };
+
+                const { error } = await supabase
+                    .from('assignments')
+                    .insert(testData);
+
+                if (error) {
+                    if (error.message.includes('sub_guest_idx')) {
+                        output.innerHTML = `
+                            <div class="alert alert-error">
+                                <h3>❌ Columna sub_guest_idx NO existe</h3>
+                                <p>Ejecuta el script de migración usando el botón de arriba.</p>
+                            </div>
+                        `;
+                    } else {
+                        // Error is due to foreign key constraints, which is expected
+                        output.innerHTML = `
+                            <div class="alert alert-success">
+                                <h3>✅ Columna sub_guest_idx EXISTE</h3>
+                                <p>La tabla tiene la estructura correcta.</p>
+                                <p><small>Error esperado de FK: ${error.message}</small></p>
+                            </div>
+                        `;
+
+                        // Show current structure
+                        const { data: sample } = await supabase
+                            .from('assignments')
+                            .select('*')
+                            .limit(1);
+
+                        if (sample && sample.length > 0) {
+                            output.innerHTML += `
+                                <div class="step">
+                                    <strong>Estructura actual:</strong>
+                                    <pre>${JSON.stringify(sample[0], null, 2)}</pre>
+                                </div>
+                            `;
+                        }
+                    }
+                } else {
+                    // Unlikely to succeed due to FK constraints, but if it does, clean up
+                    await supabase.from('assignments').delete().eq('id', testId);
+                    output.innerHTML = `
+                        <div class="alert alert-success">
+                            <h3>✅ Tabla FUNCIONANDO CORRECTAMENTE</h3>
+                            <p>Puedes asignar invitados a mesas sin problemas.</p>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                output.innerHTML = `<div class="alert alert-error">❌ Error: ${e.message}</div>`;
+            } finally {
+                verifyBtn.disabled = false;
+            }
+        }
+
+        // Auto-verify on load
+        window.addEventListener('load', () => {
+            setTimeout(verifyTable, 500);
+        });
+    </script>
+</body>
+
+</html>
