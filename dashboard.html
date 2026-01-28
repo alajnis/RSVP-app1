@@ -376,6 +376,7 @@
                 const isLoading = ref(true); // Add loading state to prevent flash
                 const searchQuery = ref('');
                 const modalOpen = ref(false);
+                const showProjectModal = ref(false); // FIX: Modal state for create/edit
                 const editingProject = ref(null);
                 const projectStats = ref({}); // Store stats by project ID
                 const projectForm = reactive({
@@ -748,6 +749,7 @@
                     projectStats,
                     searchQuery,
                     modalOpen,
+                    showProjectModal, // FIX: Export modal state
                     editingProject,
                     projectForm,
                     toast,
