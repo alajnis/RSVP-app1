@@ -353,6 +353,60 @@
             </div>
         </div>
 
+        <!-- MODAL: LOG DE ACCESOS -->
+        <div v-if="logModalOpen"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm"
+            @click.self="closeLogModal">
+            <div
+                class="bg-white shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all animate-fade-in border border-brand-pink">
+                <div
+                    class="px-8 py-6 border-b border-brand-pink/30 flex justify-between items-center bg-brand-beige/50">
+                    <div>
+                        <h3 class="text-2xl font-serif font-bold text-brand-dark">Log de Accesos</h3>
+                        <p class="text-xs text-slate-500 mt-1">{{ selectedProjectName }}</p>
+                    </div>
+                    <button @click="closeLogModal"
+                        class="text-brand-dark/40 hover:text-brand-crimson transition-colors">
+                        <i class="ph ph-x text-2xl"></i>
+                    </button>
+                </div>
+
+                <div class="p-8 max-h-[70vh] overflow-y-auto">
+                    <div v-if="currentLogEntries.length === 0" class="text-center py-12 text-slate-400">
+                        <i class="ph-bold ph-clock-counter-clockwise text-6xl mb-4 block"></i>
+                        <p class="text-sm font-bold uppercase tracking-widest">No hay registros de acceso</p>
+                    </div>
+
+                    <div v-else class="space-y-3">
+                        <div v-for="(log, index) in currentLogEntries" :key="index"
+                            class="flex items-center justify-between p-4 bg-brand-beige/30 border border-brand-pink/20 hover:bg-brand-beige/50 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-brand-crimson/10 flex items-center justify-center">
+                                    <i class="ph-fill ph-user text-brand-crimson"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-brand-dark">{{ log.userName || 'Usuario' }}</p>
+                                    <p class="text-xs text-slate-500">{{ log.method || 'Acceso directo' }}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-brand-dark">{{ formatDateTime(log.timestamp) }}</p>
+                                <p v-if="log.ipAddress" class="text-xs text-slate-400 font-mono">{{ log.ipAddress }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-8 py-5 border-t border-brand-pink/30 bg-slate-50 flex justify-end">
+                    <button @click="closeLogModal"
+                        class="px-6 py-3 bg-brand-dark hover:bg-brand-crimson text-white font-bold text-xs uppercase tracking-widest transition-all">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- TOAST -->
         <transition name="slide">
             <div v-if="toast.show"
@@ -726,17 +780,18 @@
                     const allLogs = JSON.parse(localStorage.getItem('login_logs') || '[]');
                     // Filter logs for this project
                     // Sort descending by timestamp
-                    projectLogs.value = allLogs
+                    currentLogEntries.value = allLogs
                         .filter(l => l.projectId === project.id)
                         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
                     selectedProjectName.value = project.coupleName;
-                    showLogModal.value = true;
+                    logModalOpen.value = true;
                 };
 
                 const closeLogModal = () => {
-                    showLogModal.value = false;
-                    projectLogs.value = [];
+                    logModalOpen.value = false;
+                    currentLogEntries.value = [];
+                    selectedProjectName.value = '';
                 };
 
                 const formatDateTime = (isoString) => {
