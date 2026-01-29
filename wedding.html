@@ -1238,11 +1238,11 @@
                     reader.onload = async (e) => { // FIX: async
                         try {
                             // Validate projectId FIRST
-                            if (!projectId) {
+                            if (!currentProjectId.value) {
                                 showToast('Error: No se pudo obtener el ID del proyecto. Recarga la página.', 'error');
                                 return;
                             }
-                            console.log('📦 Import Excel - Project ID:', projectId);
+                            console.log('📦 Import Excel - Project ID:', currentProjectId.value);
 
                             const data = new Uint8Array(e.target.result);
                             const workbook = XLSX.read(data, { type: 'array' });
@@ -1273,7 +1273,7 @@
                                     }
 
                                     guestsToInsert.push({
-                                        project_id: projectId, // FIX: usar projectId de URL, no currentProjectId.value
+                                        project_id: currentProjectId.value, // FIX: usar currentProjectId.value que se carga en loadData()
                                         first_name: fName,
                                         last_name: lName,
                                         guests_confirmed: count,
