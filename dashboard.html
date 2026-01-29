@@ -96,31 +96,36 @@
 
     <div id="app" class="p-4 md:p-8 max-w-[1800px] mx-auto">
 
-        <header class="mb-12 border-b border-brand-pink/30 pb-8">
+        <header class="mb-6 md:mb-12 border-b border-brand-pink/30 pb-4 md:pb-8">
             <div class="flex flex-col md:flex-row justify-between items-baseline gap-4">
                 <div>
                     <h1
-                        class="text-5xl md:text-6xl font-serif font-bold text-brand-dark tracking-tight flex items-baseline gap-3">
+                        class="text-3xl md:text-6xl font-serif font-bold text-brand-dark tracking-tight flex items-baseline gap-3">
                         RSVP<span class="text-brand-crimson italic">Seating</span>
                     </h1>
-                    <p class="font-script text-3xl text-brand-crimson mt-2">Events Boutique Wedding Planners</p>
+                    <p class="font-script text-xl md:text-3xl text-brand-crimson mt-2">Events Boutique Wedding Planners
+                    </p>
                 </div>
-                <div class="flex gap-4" v-if="isAdmin">
+                <!-- Loader -->
+                <div v-if="isLoading"
+                    class="text-brand-crimson font-bold text-xs uppercase tracking-widest animate-pulse">
+                    Cargando eventos...
+                </div>
+                <div class="flex flex-wrap gap-2 md:gap-4" v-if="isAdmin && !isLoading">
                     <button @click="handleExportAll"
-                        class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-xs hover:text-brand-crimson transition-all">
+                        class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-brand-crimson transition-all">
                         Export All
                     </button>
                     <button @click="openProjectModal()"
-                        class="bg-brand-crimson hover:bg-brand-dark text-white px-8 py-3 rounded-none font-bold tracking-widest uppercase text-xs transition-all shadow-xl">
+                        class="bg-brand-crimson hover:bg-brand-dark text-white px-4 md:px-8 py-2 md:py-3 rounded-none font-bold tracking-widest uppercase text-[10px] md:text-xs transition-all shadow-xl">
                         Nuevo Casamiento
                     </button>
                     <button @click="logout"
-                        class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-xs hover:text-brand-crimson transition-all">
-                        Cerrar Sesión
+                        class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-brand-crimson transition-all">
+                        Salir
                     </button>
                 </div>
-                <!-- Optional: Logout button for everyone -->
-                <div v-else class="flex gap-4">
+                <div v-else-if="!isAdmin && !isLoading" class="flex gap-4">
                     <button @click="logout"
                         class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-xs hover:text-brand-crimson transition-all">
                         Cerrar Sesión
@@ -154,11 +159,12 @@
         </div>
 
         <!-- SEARCH BAR -->
-        <div v-if="projects.length > 0" class="mb-12">
-            <div class="relative max-w-md">
+        <!-- SEARCH BAR -->
+        <div v-if="projects.length > 0" class="mb-8 md:mb-12">
+            <div class="relative w-full md:max-w-md">
                 <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" v-model="searchQuery" placeholder="Buscar evento..."
-                    class="w-full pl-12 pr-4 py-4 bg-white border border-brand-pink focus:border-brand-crimson outline-none transition-all placeholder:text-[10px] placeholder:uppercase placeholder:tracking-widest">
+                    class="w-full pl-12 pr-4 py-3 md:py-4 bg-white border border-brand-pink focus:border-brand-crimson outline-none transition-all placeholder:text-[10px] placeholder:uppercase placeholder:tracking-widest">
             </div>
         </div>
 
