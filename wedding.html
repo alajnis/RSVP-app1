@@ -1237,6 +1237,13 @@
                     const reader = new FileReader();
                     reader.onload = async (e) => { // FIX: async
                         try {
+                            // Validate projectId FIRST
+                            if (!projectId) {
+                                showToast('Error: No se pudo obtener el ID del proyecto. Recarga la página.', 'error');
+                                return;
+                            }
+                            console.log('📦 Import Excel - Project ID:', projectId);
+
                             const data = new Uint8Array(e.target.result);
                             const workbook = XLSX.read(data, { type: 'array' });
                             const firstSheetName = workbook.SheetNames[0];
@@ -1288,8 +1295,10 @@
                                     throw new Error(error.message || 'Error al guardar invitados en base de datos');
                                 }
 
+                                console.log('✅ Invitados insertados exitosamente');
                                 // Reload data from DB
                                 await loadData();
+                                console.log('✅ Datos recargados');
                                 showToast(`¡Importado ${guestsToInsert.length} invitados exitosamente!`);
                             } else {
                                 showToast('No se encontraron filas válidas. Formato: Apellido, Nombre, Cantidad...', 'error');
