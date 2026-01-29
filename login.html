@@ -6,13 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RSVP - Login</title>
 
-    <!-- Suppress ALL errors -->
+    <!-- Suprimir TODOS los errores PRIMERO -->
     <script>
         window.onerror = function () { return true; };
-        window.addEventListener('error', function (e) { e.preventDefault(); return true; }, true);
+        window.addEventListener('error', function (e) { e.preventDefault(); e.stopPropagation(); }, true);
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+
     <link
         href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap"
         rel="stylesheet">
@@ -41,24 +45,25 @@
 </head>
 
 <body class="bg-brand-beige min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-md">
+    <div id="app" class="w-full max-w-md">
         <div class="bg-white shadow-2xl border border-brand-pink p-8 text-center relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-2 bg-brand-crimson"></div>
 
             <h1 class="text-4xl font-serif font-bold text-brand-dark mb-2 mt-4">Bienvenido</h1>
             <p class="font-script text-2xl text-brand-crimson mb-8">Events Boutique</p>
 
-            <form id="loginForm" onsubmit="return handleLogin(event)">
+            <form @submit.prevent="login">
                 <div class="mb-8">
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
                         Ingresa tu clave
                     </label>
-                    <input type="text" id="password"
+                    <input type="text" v-model="password"
                         class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all text-center tracking-widest text-lg"
                         placeholder="" autofocus>
                 </div>
 
-                <div id="error" class="mb-6 text-xs font-bold text-brand-crimson uppercase tracking-widest hidden">
+                <div v-if="error" class="mb-6 text-xs font-bold text-brand-crimson uppercase tracking-widest">
+                    {{ error }}
                 </div>
 
                 <button type="submit"
@@ -70,53 +75,132 @@
     </div>
 
     <script>
-        // Simplified login - NO external dependencies
-        function handleLogin(event) {
-            event.preventDefault();
+        const { createApp, ref, onMounted } = Vue;
 
-            const input = document.getElementById('password').value.trim().toLowerCase();
-            const errorDiv = document.getElementById('error');
+        createApp({
+            setup() {
+                const password = ref('');
+                const error = ref('');
+                const projects = ref([]);
 
-            errorDiv.classList.add('hidden');
+                // Cargar proyectos de Supabase al iniciar
+                onMounted(async () => {
+                    try {
+                        if (!window.supabase) {
+                            console.error('Supabase client no disponible');
+                            return;
+                        }
 
-            if (!input) {
-                showError('Por favor ingresa una clave');
-                return false;
+                        const { data, error: err } = await window.supabase
+                            .from('projects')
+                            .select('*');
+
+                        if (err) {
+                            console.error('Error cargando proyectos:', err);
+                            return;
+                        }
+
+                        projects.value = (data || []).map(p => ({
+                            id: p.id,
+                            brideName: p.bride_name,
+                            groomName: p.groom_name,
+                            coupleName: p.couple_name || `${p.bride_name} & ${p.groom_name}`,
+                            weddingDate: p.wedding_date
+                        }));
+
+                        console.log(`✅ ${projects.value.length} proyectos cargados`);
+                    } catch (e) {
+                        console.error('Error en onMounted:', e);
+                    }
+                });
+
+                // Generar códigos de pareja
+                const getProjectCodes = (project) => {
+                    try {
+                        if (!project.brideName || !project.groomName) return [];
+                        const clean = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+                        const b = clean(project.brideName);
+                        const g = clean(project.groomName);
+
+                        return [
+                            `${b}${g}`,    // brendaylucas
+                            `${g}${b}`,    // lucasbrenda
+                            `${b}y${g}`,   // brendaylucas
+                            `${g}y${b}`    // lucasybrenda
+                        ];
+                    } catch (e) {
+                        return [];
+                    }
+                };
+
+                const login = async () => {
+                    try {
+                        error.value = '';
+                        const input = password.value.trim().toLowerCase();
+
+                        if (!input) {
+                            error.value = 'Por favor ingresa una clave';
+                            return;
+                        }
+
+                        // Help command
+                        if (input === 'help') {
+                            const codes = ['• admin'];
+                            projects.value.forEach(p => {
+                                const projectCodes = getProjectCodes(p);
+                                if (projectCodes.length > 0) {
+                                    codes.push(`• ${projectCodes[0]} (${p.coupleName})`);
+                                }
+                            });
+                            alert(`Códigos disponibles:\n\n${codes.join('\n')}`);
+                            return;
+                        }
+
+                        // Admin login
+                        if (input === 'admin') {
+                            localStorage.setItem('rsvp_session', JSON.stringify({ role: 'admin' }));
+                            window.location.href = 'dashboard.html';
+                            return;
+                        }
+
+                        // Couple login - buscar en proyectos
+                        const foundProject = projects.value.find(p => {
+                            const codes = getProjectCodes(p);
+                            return codes.includes(input);
+                        });
+
+                        if (foundProject) {
+                            // Guardar sesión con ID real del proyecto
+                            localStorage.setItem('rsvp_session', JSON.stringify({
+                                role: 'couple',
+                                projectId: foundProject.id,
+                                coupleName: foundProject.coupleName
+                            }));
+
+                            // Log de ingreso
+                            try {
+                                await window.supabase.from('login_logs').insert({
+                                    project_id: foundProject.id,
+                                    couple_name: foundProject.coupleName
+                                });
+                            } catch (e) {
+                                console.error('Error logging entrada:', e);
+                            }
+
+                            window.location.href = 'dashboard.html';
+                        } else {
+                            error.value = 'Clave incorrecta';
+                        }
+                    } catch (e) {
+                        console.error('Error en login:', e);
+                        error.value = 'Error al ingresar';
+                    }
+                };
+
+                return { password, error, login };
             }
-
-            // Help command
-            if (input === 'help') {
-                alert('Códigos disponibles:\n\n• admin\n• larayale\n• alelara');
-                return false;
-            }
-
-            // Admin login
-            if (input === 'admin') {
-                localStorage.setItem('rsvp_session', JSON.stringify({ role: 'admin' }));
-                window.location.href = 'dashboard.html';
-                return false;
-            }
-
-            // Couple logins (hardcoded for now)
-            if (input === 'larayale' || input === 'alelara' || input === 'lara&ale' || input === 'ale&lara') {
-                localStorage.setItem('rsvp_session', JSON.stringify({
-                    role: 'couple',
-                    projectId: '1',
-                    coupleName: 'Lara & Ale'
-                }));
-                window.location.href = 'dashboard.html';
-                return false;
-            }
-
-            showError('Clave incorrecta');
-            return false;
-        }
-
-        function showError(msg) {
-            const errorDiv = document.getElementById('error');
-            errorDiv.textContent = msg;
-            errorDiv.classList.remove('hidden');
-        }
+        }).mount('#app');
     </script>
 </body>
 
