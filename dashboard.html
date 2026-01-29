@@ -469,7 +469,22 @@
 
                 const loadProjects = async () => {
                     isLoading.value = true; // Start loading
+
+                    // Wait for Supabase to be ready (Script loading race condition fix)
+                    let attempts = 0;
+                    while (!window.supabaseClient && attempts < 30) { // Wait up to 3s
+                        await new Promise(r => setTimeout(r, 100));
+                        attempts++;
+                    }
+
                     const supabase = window.supabaseClient;
+
+                    if (!supabase) {
+                        console.error('Supabase library not loaded');
+                        showToast('Error de sistema: Librería no cargada. Recargue la página.', 'error');
+                        isLoading.value = false;
+                        return;
+                    }
 
                     try {
                         // Safety timeout 10s
