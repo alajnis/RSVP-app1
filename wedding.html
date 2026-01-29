@@ -248,8 +248,8 @@
                                 <template v-for="(assignment, i) in getTableAssignments(table.id).slice(0, 5)"
                                     :key="assignment.id">
                                     <div class="inline-block h-6 w-6 ring-2 ring-white bg-brand-pink flex items-center justify-center text-[8px] font-bold text-brand-dark"
-                                        :title="getFullName(getGuestById(assignment.rsvp_id))">
-                                        {{ getGuestInitials(assignment.rsvp_id) }}
+                                        :title="getFullName(getGuestById(assignment.guest_id))">
+                                        {{ getGuestInitials(assignment.guest_id) }}
                                     </div>
                                 </template>
                                 <div v-if="getTableAssignments(table.id).length > 5"
@@ -831,7 +831,7 @@
                                 // If legacy assignment exists without sub_guest_idx, we might treat it as assigning ALL?
                                 // The prompt implies we should switch to granular.
 
-                                const assignment = assignments.value.find(a => a.rsvp_id === g.id && a.sub_guest_idx === idx);
+                                const assignment = assignments.value.find(a => a.guest_id === g.id && a.sub_guest_idx === idx); // FIX: rsvp_id → guest_id
 
                                 items.push({
                                     id: `${g.id}_${idx}`, // unique UI key
@@ -848,7 +848,7 @@
                         } else {
                             // Fallback for legacy guests without sub_guests structure (rare due to loadTestData logic, but possible)
                             // Treat as single person
-                            const assignment = assignments.value.find(a => a.rsvp_id === g.id && a.sub_guest_idx === undefined);
+                            const assignment = assignments.value.find(a => a.guest_id === g.id && a.sub_guest_idx === undefined); // FIX: rsvp_id → guest_id
                             items.push({
                                 id: `${g.id}_main`,
                                 guestId: g.id,
