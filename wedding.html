@@ -1280,9 +1280,13 @@
                             }
 
                             if (guestsToInsert.length > 0) {
-                                // FIX: Bulk insert en Supabase
-                                const { error } = await supabase.from('guests').insert(guestsToInsert);
-                                if (error) throw error;
+                                // FIX: Bulk insert en Supabase (sin especificar id, Supabase lo genera)
+                                const { data, error } = await supabase.from('guests').insert(guestsToInsert);
+
+                                if (error) {
+                                    console.error('Error insertando invitados:', error);
+                                    throw new Error(error.message || 'Error al guardar invitados en base de datos');
+                                }
 
                                 // Reload data from DB
                                 await loadData();
