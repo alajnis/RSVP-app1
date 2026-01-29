@@ -110,7 +110,7 @@
                     }
                 });
 
-                // Generar códigos de pareja
+                // Generar códigos de pareja (formato consistente con portal RSVP)
                 const getProjectCodes = (project) => {
                     try {
                         if (!project.brideName || !project.groomName) return [];
@@ -119,11 +119,10 @@
                         const b = clean(project.brideName);
                         const g = clean(project.groomName);
 
+                        // MISMO formato que portal RSVP (index2.html)
                         return [
-                            `${b}${g}`,    // brendaylucas
-                            `${g}${b}`,    // lucasbrenda
-                            `${b}y${g}`,   // brendaylucas
-                            `${g}y${b}`    // lucasybrenda
+                            `${b}y${g}`,   // brendaylucas (CON "y")
+                            `${g}y${b}`    // lucasybrenda (CON "y")
                         ];
                     } catch (e) {
                         return [];
