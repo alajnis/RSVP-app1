@@ -226,6 +226,22 @@
                                         <option value="Otro">Otro (especificar luego)</option>
                                     </select>
                                 </div>
+
+                                <!-- Age Category (Only if Confirmed) -->
+                                <div v-if="sg.status !== 'Declined'" class="mt-4">
+                                    <label
+                                        class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <i class="ph ph-baby"></i> Edad / Categoría
+                                    </label>
+                                    <select v-model="sg.ageCategory"
+                                        class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="Adulto">Adulto (&gt;18)</option>
+                                        <option value="Teen">Teen (13-17)</option>
+                                        <option value="Niño">Niño (3-12)</option>
+                                        <option value="Bebé">Bebé (0-2)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
