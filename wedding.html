@@ -921,6 +921,13 @@
                 const saveTable = async () => {
                     try {
                         if (editingTable.value) {
+                            // VALIDACIÓN: No permitir reducir capacidad si excede asignaciones actuales
+                            const currentAssignments = getTableAssignments(editingTable.value.id).length;
+                            if (tableForm.capacity < currentAssignments) {
+                                showToast(`No se puede reducir la capacidad a ${tableForm.capacity}. Hay ${currentAssignments} invitados asignados. Primero reasigna invitados.`, 'error');
+                                return;
+                            }
+
                             const { error } = await supabase.from('tables').update({
                                 name: tableForm.name,
                                 capacity: tableForm.capacity
