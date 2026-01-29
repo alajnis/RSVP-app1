@@ -3,18 +3,13 @@
 // ============================================
 // URL verificada con test-supabase-urls.html el 2026-01-28
 
-// IMPORTANTE: Guardar referencia a la librería ANTES de sobrescribirla
-const SupabaseLib = window.supabase;
+// ============================================
+// SUPABASE CLIENT - ASYNC INIT QUEUE
+// ============================================
 
 const SUPABASE_CONFIG = {
-    // ✅ URL VERIFICADA - Kong Gateway (probado y funcionando)
-    // Test results: SUCCESS (200), 531ms response time, 1 project found
     url: 'https://rsvp.boutique-rsvp.com',
-
-    // Anon Key generada por Dockploy
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Njk1NDY2MzIsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.4aBcS7MkWVZSZDHk2pnH1W3S2hjX02YxPqAxCoISoxE',
-
-    // Opciones de cliente
     options: {
         auth: {
             autoRefreshToken: false,
@@ -33,16 +28,34 @@ const SUPABASE_CONFIG = {
     }
 };
 
-// Crear cliente de Supabase usando la librería guardada
-const supabaseClient = SupabaseLib.createClient(
-    SUPABASE_CONFIG.url,
-    SUPABASE_CONFIG.anonKey,
-    SUPABASE_CONFIG.options
-);
+// Async Initialization Loop
+(async function initSupabase() {
+    let attempts = 0;
+    while (!window.supabase && attempts < 100) { // Wait up to 10 seconds for CDN
+        await new Promise(r => setTimeout(r, 100));
+        attempts++;
+    }
 
-// Exportar para uso global (ambas variables para compatibilidad)
-window.supabaseClient = supabaseClient;
-window.supabase = supabaseClient; // Para compatibilidad con dashboard.html
+    if (!window.supabase) {
+        console.error('❌ CRITICAL: Supabase library failed to load from CDN');
+        return;
+    }
+
+    const SupabaseLib = window.supabase;
+
+    // Create Client
+    const supabaseClient = SupabaseLib.createClient(
+        SUPABASE_CONFIG.url,
+        SUPABASE_CONFIG.anonKey,
+        SUPABASE_CONFIG.options
+    );
+
+    // Export globally
+    window.supabaseClient = supabaseClient;
+    window.supabase = supabaseClient; // For legacy compatibility
+
+    console.log('✅ Supabase Client initialized asynchronously');
+})();
 
 // Función de diagnóstico
 async function testSupabaseConnection() {
