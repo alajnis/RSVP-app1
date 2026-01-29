@@ -108,18 +108,21 @@
                 </div>
                 <!-- Loader -->
                 <div v-if="isLoading"
-                    class="text-brand-crimson font-bold text-xs uppercase tracking-widest animate-pulse">
-                    Cargando eventos...
+                    class="text-brand-crimson font-bold text-xs uppercase tracking-widest animate-pulse flex items-center gap-2">
+                    <i class="ph-bold ph-spinner animate-spin"></i> Cargando eventos...
                 </div>
-                <div class="flex flex-wrap gap-2 md:gap-4" v-if="isAdmin && !isLoading">
-                    <button @click="handleExportAll"
-                        class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-brand-crimson transition-all">
-                        Export All
-                    </button>
-                    <button @click="openProjectModal()"
-                        class="bg-brand-crimson hover:bg-brand-dark text-white px-4 md:px-8 py-2 md:py-3 rounded-none font-bold tracking-widest uppercase text-[10px] md:text-xs transition-all shadow-xl">
-                        Nuevo Casamiento
-                    </button>
+                <!-- Admin Actions -->
+                <div class="flex flex-wrap gap-2 md:gap-4" v-if="isAdmin">
+                    <template v-if="!isLoading">
+                        <button @click="handleExportAll"
+                            class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-brand-crimson transition-all">
+                            Export All
+                        </button>
+                        <button @click="openProjectModal()"
+                            class="bg-brand-crimson hover:bg-brand-dark text-white px-4 md:px-8 py-2 md:py-3 rounded-none font-bold tracking-widest uppercase text-[10px] md:text-xs transition-all shadow-xl">
+                            Nuevo Casamiento
+                        </button>
+                    </template>
                     <button @click="logout"
                         class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-brand-crimson transition-all">
                         Salir
@@ -466,43 +469,69 @@
 
                 const loadProjects = async () => {
                     isLoading.value = true; // Start loading
-                    const { data, error } = await supabase
-                        .from('projects')
-                        .select('*')
-                        .order('wedding_date', { ascending: false });
 
-                    if (error) {
-                        console.error('Error loading projects:', error);
+                    try {
+                        // Safety timeout 10s
+                        const timeoutPromise = new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error('TIMEOUT')), 10000)
+                        );
+
+                        const fetchPromise = supabase
+                            .from('projects')
+                            .select('*')
+                            .order('wedding_date', { ascending: false });
+
+                        // Race condition
+                        const result = await Promise.race([fetchPromise, timeoutPromise]);
+                        const { data, error } = result;
+
+                        if (error) throw error;
+
+                        if (!data) {
+                            projects.value = [];
+                            return;
+                        }
+
+                        // Map snake_case from DB to camelCase for UI
+                        let allProjects = (data || []).map(p => ({
+                            id: p.id,
+                            brideName: p.bride_name,
+                            groomName: p.groom_name,
+                            coupleName: p.couple_name || `${p.bride_name || ''} & ${p.groom_name || ''}`.trim(),
+                            weddingDate: p.wedding_date,
+                            venue: p.venue,
+                            created_at: p.created_at,
+                            updated_at: p.updated_at
+                        }));
+
+                        // Filter for Couple role
+                        if (session.value && session.value.role === 'couple') {
+                            projects.value = allProjects.filter(p => p.id === session.value.projectId);
+                        } else {
+                            projects.value = allProjects;
+                        }
+
+                        // Load stats for all projects
+                        for (const project of projects.value) {
+                            // Use safe call for stats
+                            try {
+                                projectStats.value[project.id] = await getProjectStats(project.id);
+                            } catch (err) {
+                                console.warn('Error loading stats for', project.id, err);
+                            }
+                        }
+
+                    } catch (e) {
+                        console.error('Error loading projects:', e);
+                        if (e.message === 'TIMEOUT') {
+                            showToast('La conexión es lenta. Intente recargar.', 'error');
+                        } else {
+                            showToast('Error cargando eventos: ' + e.message, 'error');
+                        }
                         projects.value = [];
+                    } finally {
                         isLoading.value = false;
-                        return;
                     }
-
-                    // Map snake_case from DB to camelCase for UI
-                    let allProjects = (data || []).map(p => ({
-                        id: p.id,
-                        brideName: p.bride_name,
-                        groomName: p.groom_name,
-                        coupleName: p.couple_name || `${p.bride_name || ''} & ${p.groom_name || ''}`.trim(),
-                        weddingDate: p.wedding_date,
-                        venue: p.venue,
-                        created_at: p.created_at,
-                        updated_at: p.updated_at
-                    }));
-
-                    // Filter for Couple role
-                    if (session.value && session.value.role === 'couple') {
-                        projects.value = allProjects.filter(p => p.id === session.value.projectId);
-                    } else {
-                        projects.value = allProjects;
-                    }
-
-                    // Load stats for all projects
-                    for (const project of projects.value) {
-                        projectStats.value[project.id] = await getProjectStats(project.id);
-                    }
-
-                    isLoading.value = false; // Done loading
                 };
 
                 // saveProjects() removed - no longer needed, we save directly to Supabase
