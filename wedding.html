@@ -1291,26 +1291,43 @@
                             const worksheet = workbook.Sheets[firstSheetName];
                             const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Array of Arrays
 
-                            // Structure assumption:
-                            // Col 0 = Apellido, Col 1 = Nombre, Col 2 = Cantidad, Col 3 = Email, Col 4 = Tel, Col 5 = Dieta, Col 6 = Edad
+
+                            // Detect Column Indexes dynamically based on headers
+                            const headers = jsonData[0] || [];
+                            const findIdx = (str) => headers.findIndex(h => h && String(h).toLowerCase().includes(str));
+
+                            // Default indexes
+                            let idxLast = 0, idxFirst = 1, idxCount = 2, idxEmail = 3, idxPhone = 4, idxDiet = 5;
+                            // Try to find age column (can be 6, or 8 if export format)
+                            let idxAge = findIdx('edad');
+                            if (idxAge === -1) idxAge = headers.length > 7 ? 8 : 6; // Fallback to 8 if wide (export), else 6
+
+                            // Optional: Detect other columns if headers exist
+                            if (findIdx('apellido') > -1) idxLast = findIdx('apellido');
+                            if (findIdx('nombre') > -1) idxFirst = findIdx('nombre');
+
                             const guestsToInsert = [];
 
                             for (let i = 1; i < jsonData.length; i++) {
                                 const row = jsonData[i];
                                 if (!row || row.length < 2) continue;
 
-                                // Row format: [Last, First, Count, Email, Phone, Dietary, Age]
-                                const lName = (row[0] || '').toString().trim();
-                                const fName = (row[1] || '').toString().trim();
-                                const count = parseInt(row[2]) || 1;
-                                const email = (row[3] || '').toString().trim();
-                                const phone = (row[4] || '').toString().trim();
-                                const dietary = (row[5] || '').toString().trim();
+                                // Row format based on indexes
+                                const lName = (row[idxLast] || '').toString().trim();
+                                const fName = (row[idxFirst] || '').toString().trim();
+                                const count = parseInt(row[idxCount]) || 1;
+                                const email = (row[idxEmail] || '').toString().trim();
+                                const phone = (row[idxPhone] || '').toString().trim();
+                                const dietVal = (row[idxDiet] || '').toString().trim();
+                                // Clean up diet value (ignore header-like values if mistaken)
+                                const dietary = ['Vegano', 'Vegetariano', 'Celiaco', 'Kosher', 'None'].some(d => dietVal.includes(d)) ? dietVal : 'None';
 
                                 // Age validation
-                                let ageCat = (row[6] || '').toString().trim();
+                                let ageCat = (row[idxAge] || '').toString().trim();
                                 const validAges = ['Adulto', 'Teen', 'Niño', 'Bebé'];
-                                if (!validAges.includes(ageCat)) ageCat = '';
+                                // Case insensitive match attempt
+                                const matchAge = validAges.find(a => a.toLowerCase() === ageCat.toLowerCase());
+                                ageCat = matchAge || '';
 
                                 if (!lName && !fName) continue;
 
