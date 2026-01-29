@@ -592,7 +592,7 @@
                         <label
                             class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Restricciones
                             Alimentarias</label>
-                        <select v-model="guestForm.dietary"
+                        <select v-model="guestForm.dietary" @change="syncMainGuestDietary"
                             class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all bg-white font-sans text-sm">
                             <option value="None">Ninguna</option>
                             <option value="Celiaco">Celiaquía</option>
@@ -1005,6 +1005,13 @@
                         sub_guests: [{ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '' }]
                     });
                     showGuestModal.value = true;
+                };
+
+                const syncMainGuestDietary = () => {
+                    // Sync main dietary selection to first sub-guest (Main Guest)
+                    if (guestForm.sub_guests && guestForm.sub_guests.length > 0) {
+                        guestForm.sub_guests[0].dietary = guestForm.dietary;
+                    }
                 };
 
                 const addSubGuest = () => {
@@ -1454,6 +1461,7 @@
                     addSubGuest, removeSubGuest,
                     getIndividualConfirmedCount,
                     assignGuest, handleFileUpload, handleExport, resetData,
+                    syncMainGuestDietary,
                     getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials,
                     getStatusBadgeClass, getProgressBarClass, getAvatarColor,
                     backToDashboard, formatDate,
