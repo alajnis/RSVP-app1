@@ -1104,7 +1104,7 @@
                 const assignGuest = async (guestId, subGuestIdx, tableId) => {
                     try {
                         const isMain = subGuestIdx === undefined;
-                        let deleteQuery = supabase.from('assignments').delete().eq('guest_id', guestId);
+                        let deleteQuery = supabase.from('assignments').delete().eq('rsvp_id', guestId); // FIX: guest_id → rsvp_id
 
                         if (isMain) {
                             deleteQuery = deleteQuery.filter('sub_guest_idx', 'is', null);
@@ -1116,9 +1116,9 @@
 
                         // Update local state
                         if (subGuestIdx !== undefined) {
-                            assignments.value = assignments.value.filter(a => !(a.guest_id === guestId && a.sub_guest_idx === subGuestIdx));
+                            assignments.value = assignments.value.filter(a => !(a.rsvp_id === guestId && a.sub_guest_idx === subGuestIdx)); // FIX
                         } else {
-                            assignments.value = assignments.value.filter(a => !(a.guest_id === guestId && a.sub_guest_idx === null));
+                            assignments.value = assignments.value.filter(a => !(a.rsvp_id === guestId && a.sub_guest_idx === null)); // FIX
                         }
 
                         if (!tableId) { showToast('Desasignado', 'success'); return; }
@@ -1140,7 +1140,7 @@
                             id: crypto.randomUUID(),
                             project_id: currentProjectId.value,
                             table_id: tableId,
-                            guest_id: guestId,
+                            rsvp_id: guestId,  // FIX: guest_id → rsvp_id
                             sub_guest_idx: subGuestIdx !== undefined ? subGuestIdx : null
                         };
 
