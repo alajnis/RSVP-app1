@@ -175,10 +175,15 @@
 
                             // Log de ingreso
                             try {
-                                await window.supabase.from('login_logs').insert({
-                                    project_id: foundProject.id,
-                                    couple_name: foundProject.coupleName
+                                const logs = JSON.parse(localStorage.getItem('login_logs') || '[]');
+                                logs.push({
+                                    projectId: foundProject.id,
+                                    userName: foundProject.coupleName,
+                                    method: `Código: ${input}`,
+                                    timestamp: new Date().toISOString(),
+                                    ipAddress: null
                                 });
+                                localStorage.setItem('login_logs', JSON.stringify(logs));
                             } catch (e) {
                                 console.error('Error logging entrada:', e);
                             }
