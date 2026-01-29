@@ -1167,10 +1167,16 @@
                         // 1. Alphabetical List (All Individual Guests)
                         const allIndividuals = [];
                         guests.value.forEach(g => {
-                            const tableName = g.assignment ? getTableName(g.assignment.table_id) : 'Sin asignar';
+                            // FIX: Buscar asignación en assignments.value
+                            const mainAssignment = assignments.value.find(a => a.guest_id === g.id && (a.sub_guest_idx === null || a.sub_guest_idx === undefined));
+                            const tableName = mainAssignment ? getTableName(mainAssignment.table_id) : 'Sin asignar';
 
                             if (g.sub_guests && g.sub_guests.length > 0) {
                                 g.sub_guests.forEach((sg, idx) => {
+                                    // Check if this sub-guest has specific assignment
+                                    const subAssignment = assignments.value.find(a => a.guest_id === g.id && a.sub_guest_idx === idx);
+                                    const subTableName = subAssignment ? getTableName(subAssignment.table_id) : tableName; // Fall back to main
+
                                     const rsvpStatus = sg.status === 'Confirmed' ? 'CONFIRMADO' : (sg.status === 'Declined' ? 'CANCELADO' : 'PENDIENTE');
                                     allIndividuals.push({
                                         'Invitación (Apellido)': g.lastName || '',
@@ -1179,13 +1185,13 @@
                                         'Integrante (Nombre)': sg.firstName || (idx === 0 ? g.firstName : `Acompañante ${idx}`),
                                         'Asistencia': rsvpStatus,
                                         'Dieta': sg.dietary || 'Normal',
-                                        'Mesa': tableName,
+                                        'Mesa': subTableName,
                                         'Email Contácto': g.email || '-',
                                         'Teléfono Contácto': g.phone || '-'
                                     });
                                 });
                             } else {
-                                // Fallback for legacy data without sub_guests
+                                //Fallback for legacy data without sub_guests
                                 const rsvpStatus = g.rsvp_status === 'Confirmed' ? 'CONFIRMADO' : (g.rsvp_status === 'Declined' ? 'CANCELADO' : 'PENDIENTE');
                                 allIndividuals.push({
                                     'Invitación (Apellido)': g.lastName || g.name || '-',
@@ -1224,12 +1230,12 @@
                     }
                 };
 
-                const handleFileUpload = (event) => {
+                const handleFileUpload = async (event) => { // FIX: async
                     const file = event.target.files[0];
                     if (!file) return;
 
                     const reader = new FileReader();
-                    reader.onload = (e) => {
+                    reader.onload = async (e) => { // FIX: async
                         try {
                             const data = new Uint8Array(e.target.result);
                             const workbook = XLSX.read(data, { type: 'array' });
@@ -1239,7 +1245,7 @@
 
                             // Structure assumption: 
                             // Col 0 = Apellido, Col 1 = Nombre, Col 2 = Cantidad, Col 3 = Email, Col 4 = Tel, Col 5 = Dieta
-                            let importedCount = 0;
+                            const guestsToInsert = [];
 
                             for (let i = 1; i < jsonData.length; i++) {
                                 const row = jsonData[i];
@@ -1259,29 +1265,35 @@
                                         subGuests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None' });
                                     }
 
-                                    guests.value.push({
-                                        id: Date.now().toString() + Math.random(),
-                                        firstName: fName,
-                                        lastName: lName,
+                                    guestsToInsert.push({
+                                        project_id: currentProjectId.value, // FIX: usar project_id de BD
+                                        first_name: fName,
+                                        last_name: lName,
                                         guests_confirmed: count,
-                                        email: row[3] || '',
-                                        phone: row[4] || '',
+                                        email: row[3] || null,
+                                        phone: row[4] || null,
                                         rsvp_status: 'Pending',
-                                        sub_guests: subGuests
+                                        dietary: row[5] || 'None',
+                                        sub_guests: subGuests // JSONB
                                     });
-                                    importedCount++;
                                 }
                             }
 
-                            if (importedCount > 0) {
-                                showToast(`¡Importado ${importedCount} invitados exitosamente!`);
+                            if (guestsToInsert.length > 0) {
+                                // FIX: Bulk insert en Supabase
+                                const { error } = await supabase.from('guests').insert(guestsToInsert);
+                                if (error) throw error;
+
+                                // Reload data from DB
+                                await loadData();
+                                showToast(`¡Importado ${guestsToInsert.length} invitados exitosamente!`);
                             } else {
                                 showToast('No se encontraron filas válidas. Formato: Apellido, Nombre, Cantidad...', 'error');
                             }
 
                         } catch (err) {
-                            console.error(err);
-                            showToast('Error reading Excel file', 'error');
+                            console.error('Error import Excel:', err);
+                            showToast('Error: ' + (err.message || 'Error importando'), 'error');
                         }
                     };
                     reader.readAsArrayBuffer(file);
