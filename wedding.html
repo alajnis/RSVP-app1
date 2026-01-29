@@ -1104,7 +1104,7 @@
                 const assignGuest = async (guestId, subGuestIdx, tableId) => {
                     try {
                         const isMain = subGuestIdx === undefined;
-                        let deleteQuery = supabase.from('assignments').delete().eq('rsvp_id', guestId); // FIX: guest_id → rsvp_id
+                        let deleteQuery = supabase.from('assignments').delete().eq('guest_id', guestId);
 
                         if (isMain) {
                             deleteQuery = deleteQuery.filter('sub_guest_idx', 'is', null);
@@ -1114,21 +1114,25 @@
 
                         await deleteQuery;
 
-                        // Update local state
-                        if (subGuestIdx !== undefined) {
-                            assignments.value = assignments.value.filter(a => !(a.rsvp_id === guestId && a.sub_guest_idx === subGuestIdx)); // FIX
-                        } else {
-                            assignments.value = assignments.value.filter(a => !(a.rsvp_id === guestId && a.sub_guest_idx === null)); // FIX
+                        if (!tableId) {
+                            // Reload all data to sync UI
+                            await loadData();
+                            showToast('Desasignado', 'success');
+                            return;
                         }
-
-                        if (!tableId) { showToast('Desasignado', 'success'); return; }
 
                         // Check capacity
                         const table = tables.value.find(t => t.id === tableId);
                         if (table) {
-                            const currentCount = assignments.value.filter(a => a.table_id === tableId).length;
+                            // Re-fetch assignments to get accurate count
+                            const { data: currentAsgs } = await supabase
+                                .from('assignments')
+                                .select('id')
+                                .eq('table_id', tableId);
+
+                            const currentCount = (currentAsgs || []).length;
                             if (currentCount >= table.capacity) {
-                                alert(`La mesa \"${table.name}\" está llena (${table.capacity}/${table.capacity}). No se puede agregar más personas.`);
+                                showToast(`Mesa "${table.name}" llena (${table.capacity}/${table.capacity})`, 'error');
                                 return;
                             }
                         } else {
@@ -1137,21 +1141,21 @@
 
                         // Add assignment
                         const newAsg = {
-                            id: crypto.randomUUID(),
                             project_id: currentProjectId.value,
                             table_id: tableId,
-                            rsvp_id: guestId,  // FIX: guest_id → rsvp_id
+                            guest_id: guestId,
                             sub_guest_idx: subGuestIdx !== undefined ? subGuestIdx : null
                         };
 
                         const { error } = await supabase.from('assignments').insert(newAsg);
                         if (error) throw error;
 
-                        assignments.value.push(newAsg);
+                        // Reload all data to sync UI with DB
+                        await loadData();
                         showToast('Asignado exitosamente');
                     } catch (e) {
-                        console.error(e);
-                        showToast('Error asignando: ' + e.message, 'error');
+                        console.error('Error en assignGuest:', e);
+                        showToast('Error: ' + (e.message || 'Error desconocido'), 'error');
                     }
                 };
 
