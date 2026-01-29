@@ -29,10 +29,11 @@
         href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap"
         rel="stylesheet">
 
+    <!-- Error Handler: Log to console only, NO alerts -->
     <script>
         window.onerror = function (msg, url, lineNo, columnNo, error) {
-            alert('Error: ' + msg + '\nLínea: ' + lineNo + '\nArchivo: ' + url);
-            return false;
+            console.error('Script error (suppressed):', { msg, url, lineNo, columnNo, error });
+            return true; // Prevent default browser error handling
         };
         tailwind.config = {
             theme: {
