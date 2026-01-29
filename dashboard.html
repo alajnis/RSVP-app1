@@ -644,13 +644,13 @@
                 };
 
                 // METHODS - Excel Export
-                const handleExportAll = () => {
+                const handleExportAll = async () => { // FIX: Make async
                     try {
                         const wb = XLSX.utils.book_new();
 
                         // Overview Sheet
-                        const overviewData = projects.value.map(p => {
-                            const stats = getProjectStats(p.id);
+                        const overviewData = await Promise.all(projects.value.map(async (p) => { // FIX: await Promise.all
+                            const stats = await getProjectStats(p.id); // FIX: await stats
                             return {
                                 'Pareja': p.coupleName,
                                 'Fecha': formatDate(p.weddingDate),
@@ -660,29 +660,43 @@
                                 'Mesas': stats.tables,
                                 'Lugar': p.venue || '-'
                             };
-                        }).sort((a, b) => a['Días Restantes'] - b['Días Restantes']);
+                        }));
+
+                        // Sort by days remaining
+                        overviewData.sort((a, b) => a['Días Restantes'] - b['Días Restantes']);
 
                         const wsOverview = XLSX.utils.json_to_sheet(overviewData);
                         XLSX.utils.book_append_sheet(wb, wsOverview, "Resumen");
 
-                        // Individual project sheets
-                        projects.value.forEach(project => {
-                            const guests = JSON.parse(localStorage.getItem(`project_${project.id}_guests`) || '[]');
-                            const assignments = JSON.parse(localStorage.getItem(`project_${project.id}_assignments`) || '[]');
-                            const tables = JSON.parse(localStorage.getItem(`project_${project.id}_tables`) || '[]');
+                        // Individual project sheets - fetch from Supabase
+                        for (const project of projects.value) {
+                            const { data: guests } = await supabase
+                                .from('guests')
+                                .select('*')
+                                .eq('project_id', project.id);
+
+                            const { data: assignments } = await supabase
+                                .from('assignments')
+                                .select('*')
+                                .eq('project_id', project.id);
+
+                            const { data: tables } = await supabase
+                                .from('tables')
+                                .select('*')
+                                .eq('project_id', project.id);
 
                             const getTableName = (tableId) => {
-                                const table = tables.find(t => t.id === tableId);
+                                const table = (tables || []).find(t => t.id === tableId);
                                 return table ? table.name : 'Sin asignar';
                             };
 
-                            const sheetData = guests.map(g => {
-                                const assignment = assignments.find(a => a.rsvp_id === g.id);
+                            const sheetData = (guests || []).map(g => {
+                                const assignment = (assignments || []).find(a => a.rsvp_id === g.id);
                                 return {
-                                    'Apellido': g.lastName || g.name || '-',
-                                    'Nombre': g.firstName || '-',
+                                    'Apellido': g.last_name || g.name || '-',
+                                    'Nombre': g.first_name || '-',
                                     'RSVP': g.rsvp_status === 'Confirmed' ? 'Confirmado' : (g.rsvp_status === 'Declined' ? 'Declinado' : 'Pendiente'),
-                                    'Cantidad': g.guests_confirmed,
+                                    'Cantidad': g.guests_confirmed || 0,
                                     'Email': g.email || '',
                                     'Teléfono': g.phone || '',
                                     'Restricciones': g.dietary || 'Ninguna',
@@ -696,7 +710,7 @@
                                 const sheetName = project.coupleName.substring(0, 31);
                                 XLSX.utils.book_append_sheet(wb, ws, sheetName);
                             }
-                        });
+                        }
 
                         XLSX.writeFile(wb, `RSVP_Dashboard_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
                         showToast('Exportación exitosa!');
