@@ -469,6 +469,7 @@
 
                 const loadProjects = async () => {
                     isLoading.value = true; // Start loading
+                    const supabase = window.supabaseClient;
 
                     try {
                         // Safety timeout 10s
@@ -619,7 +620,7 @@
                             venue: projectForm.venue || ''
                         };
 
-                        const { error } = await supabase
+                        const { error } = await window.supabaseClient
                             .from('projects')
                             .upsert(projectData);
 
