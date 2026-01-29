@@ -472,7 +472,7 @@
 
                     // Wait for Supabase to be ready (Script loading race condition fix)
                     let attempts = 0;
-                    while (!window.supabaseClient && attempts < 30) { // Wait up to 3s
+                    while (!window.supabaseClient && attempts < 150) { // Wait up to 15s (Network slow start)
                         await new Promise(r => setTimeout(r, 100));
                         attempts++;
                     }
