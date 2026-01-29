@@ -1280,7 +1280,7 @@
                                         email: row[3] || null,
                                         phone: row[4] || null,
                                         rsvp_status: 'Pending',
-                                        dietary: row[5] || 'None',
+                                        // dietary: removido - causa error de schema, está en sub_guests de todas formas
                                         sub_guests: subGuests // JSONB
                                     });
                                 }
