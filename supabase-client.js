@@ -28,33 +28,52 @@ const SUPABASE_CONFIG = {
     }
 };
 
-// Async Initialization Loop
-(async function initSupabase() {
-    let attempts = 0;
-    while (!window.supabase && attempts < 100) { // Wait up to 10 seconds for CDN
-        await new Promise(r => setTimeout(r, 100));
-        attempts++;
+// Sync Initialization
+(function initSupabase() {
+    // Check if Supabase library is loaded (should be there if script is blocking)
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+        init(window.supabase);
+    } else {
+        console.warn('⚠️ Supabase lib not ready immediately. Waiting...');
+        // Fallback for async loading scenarios
+        let attempts = 0;
+        const interval = setInterval(() => {
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                clearInterval(interval);
+                init(window.supabase);
+            } else if (attempts > 50) { // 5 seconds max
+                clearInterval(interval);
+                console.error('❌ CRITICAL: Supabase library failed to load');
+                // Show error on UI if possible
+                if (document.body) {
+                    const errDiv = document.createElement('div');
+                    errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:red;color:white;padding:10px;z-index:9999;text-align:center;';
+                    errDiv.textContent = 'Error crítico: No se pudo cargar la librería Supabase. Recargue la página.';
+                    document.body.appendChild(errDiv);
+                }
+            }
+            attempts++;
+        }, 100);
     }
 
-    if (!window.supabase) {
-        console.error('❌ CRITICAL: Supabase library failed to load from CDN');
-        return;
+    function init(SupabaseLib) {
+        try {
+            // Create Client
+            const supabaseClient = SupabaseLib.createClient(
+                SUPABASE_CONFIG.url,
+                SUPABASE_CONFIG.anonKey,
+                SUPABASE_CONFIG.options
+            );
+
+            // Export globally
+            window.supabaseClient = supabaseClient;
+            window.supabase = supabaseClient; // Overwrite library with client instance
+
+            console.log('✅ Supabase Client initialized globally');
+        } catch (e) {
+            console.error('❌ Error initializing Supabase client:', e);
+        }
     }
-
-    const SupabaseLib = window.supabase;
-
-    // Create Client
-    const supabaseClient = SupabaseLib.createClient(
-        SUPABASE_CONFIG.url,
-        SUPABASE_CONFIG.anonKey,
-        SUPABASE_CONFIG.options
-    );
-
-    // Export globally
-    window.supabaseClient = supabaseClient;
-    window.supabase = supabaseClient; // For legacy compatibility
-
-    console.log('✅ Supabase Client initialized asynchronously');
 })();
 
 // Función de diagnóstico
