@@ -343,13 +343,13 @@
                                 <input type="text" v-model="evt.label" placeholder="Nombre evento (Ej: Brunch)"
                                     class="w-full px-3 py-2 bg-white text-brand-dark text-xs border border-brand-pink focus:border-brand-crimson outline-none rounded-r">
 
-                                <button type="button" @click="removeExtraEvent(idx)"
+                                <button type="button" @click="removeNewEvent(idx)"
                                     class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-brand-crimson transition-colors">
                                     <i class="ph-bold ph-x"></i>
                                 </button>
                             </div>
 
-                            <button type="button" @click="addExtraEvent"
+                            <button type="button" @click="addNewEvent"
                                 class="text-[10px] font-bold text-brand-crimson uppercase tracking-widest hover:text-brand-dark transition-colors flex items-center mt-2">
                                 <i class="ph-bold ph-plus-circle mr-1"></i> Agregar Evento
                             </button>
@@ -504,6 +504,7 @@
                 const session = ref(null);
 
                 // LOGS STATE
+                console.log("🚀 DASHBOARD VERSION: 2.1 - MULTI-EVENT FIX APPLIED");
                 const logModalOpen = ref(false);
                 const currentLogEntries = ref([]);
                 const selectedProjectName = ref('');
@@ -653,12 +654,19 @@
                 });
 
                 // MULTI-EVENT METHODS
-                const addExtraEvent = () => {
-                    projectForm.extraEvents.push({ label: '' });
+                const addNewEvent = () => {
+                    console.log('CLICK: addNewEvent triggered');
+                    if (!projectForm.extraEvents) projectForm.extraEvents = [];
+                    // Force reactivity update
+                    projectForm.extraEvents = [...projectForm.extraEvents, { label: '' }];
                 };
 
-                const removeExtraEvent = (index) => {
-                    projectForm.extraEvents.splice(index, 1);
+                const removeNewEvent = (index) => {
+                    console.log('CLICK: removeNewEvent triggered', index);
+                    if (!projectForm.extraEvents) return;
+                    const newEvents = [...projectForm.extraEvents];
+                    newEvents.splice(index, 1);
+                    projectForm.extraEvents = newEvents;
                 };
 
                 // METHODS - Project CRUD
@@ -1006,7 +1014,10 @@
                     selectedProjectName,
                     viewLogs,
                     closeLogModal,
-                    formatDateTime
+                    formatDateTime,
+                    // Multi-Event
+                    addNewEvent,
+                    removeNewEvent
                 };
             }
         }).mount('#app');
