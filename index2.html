@@ -191,7 +191,35 @@
                                 <div class="text-center">
                                     <label
                                         class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.15em] mb-4">¿Asistirá?</label>
-                                    <div class="flex flex-wrap justify-center gap-3">
+
+                                    <!-- MULTI-EVENT UI -->
+                                    <div v-if="currentProject && currentProject.eventsConfig && currentProject.eventsConfig.multi_event"
+                                        class="space-y-3 text-left bg-slate-50 p-4 border border-slate-200">
+                                        <div v-for="evt in currentProject.eventsConfig.events" :key="evt.id"
+                                            class="flex items-center justify-between p-3 bg-white border border-slate-100 hover:border-brand-pink transition-colors cursor-pointer"
+                                            @click="sg.rsvp_answers[evt.id] = (sg.rsvp_answers[evt.id] === 'confirmed' ? 'declined' : 'confirmed')">
+
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-5 h-5 border-2 flex items-center justify-center transition-colors"
+                                                    :class="sg.rsvp_answers[evt.id] === 'confirmed' ? 'bg-brand-crimson border-brand-crimson text-white' : 'border-slate-300 bg-white'">
+                                                    <i v-if="sg.rsvp_answers[evt.id] === 'confirmed'"
+                                                        class="ph-bold ph-check text-[10px]"></i>
+                                                </div>
+                                                <span
+                                                    class="text-xs font-bold text-brand-dark uppercase tracking-wide">{{
+                                                    evt.label }}</span>
+                                            </div>
+
+                                            <span class="text-[9px] font-bold uppercase tracking-widest"
+                                                :class="sg.rsvp_answers[evt.id] === 'confirmed' ? 'text-green-600' : 'text-slate-300'">
+                                                {{ sg.rsvp_answers[evt.id] === 'confirmed' ? 'CONFIRMADO' : 'NO ASISTE'
+                                                }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- SINGLE-EVENT UI (Legacy Buttons) -->
+                                    <div v-else class="flex flex-wrap justify-center gap-3">
                                         <button @click="sg.status = 'Confirmed'"
                                             class="flex-1 min-w-[80px] py-3.5 flex flex-col items-center justify-center gap-1 transition-all border font-bold text-[9px] uppercase tracking-widest"
                                             :class="sg.status === 'Confirmed' ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg scale-105 z-10' : 'bg-white text-slate-400 border-slate-100 hover:border-emerald-600/30'">
@@ -346,7 +374,8 @@
                                     brideName: proj.bride_name,
                                     groomName: proj.groom_name,
                                     weddingDate: proj.wedding_date,
-                                    coupleName: proj.couple_name
+                                    coupleName: proj.couple_name,
+                                    eventsConfig: proj.events_config // Load Multi-Event config
                                 };
                                 console.log('✅ Proyecto cargado:', currentProject.value);
                             } else {
@@ -516,43 +545,58 @@
                 };
 
                 const selectGuest = (matchedGuest) => {
-                    // Initialize sub_guests if they don't exist or are empty
+                    // Deep copy to avoid mutating original list until save
                     const g = JSON.parse(JSON.stringify(matchedGuest));
 
+                    const projectConfig = currentProject.value.eventsConfig || {};
+                    const isMultiEvent = !!projectConfig.multi_event;
+
+                    // Initialize sub_guests list if empty
                     if (!g.sub_guests || g.sub_guests.length === 0) {
+                        // Main guest first
                         g.sub_guests = [{
                             firstName: g.firstName,
                             lastName: g.lastName,
-                            status: 'Pending',
-                            dietary: g.dietary || 'None'
+                            status: g.rsvp_status || 'Pending', // Inherit status if available
+                            dietary: g.dietary || 'None',
+                            rsvp_answers: g.rsvp_answers || {} // Load existing answers if any
                         }];
 
-                        // Add additional placeholders based on allocation
-                        const totalSlots = g.guests_confirmed || 1;
+                        // Add placeholders for allocated slots
+                        // We subtract 1 because we already added the main guest
+                        const totalSlots = (g.guests_confirmed || 1);
                         for (let i = 1; i < totalSlots; i++) {
-                            g.sub_guests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None' });
+                            g.sub_guests.push({
+                                firstName: '',
+                                lastName: '',
+                                status: 'Pending',
+                                dietary: 'None',
+                                rsvp_answers: {}
+                            });
                         }
+                    } else {
+                        // If sub_guests exist, ensure they have necessary fields
+                        g.sub_guests = g.sub_guests.map(sg => {
+                            if (!sg.firstName && !sg.lastName) {
+                                sg.firstName = g.firstName;
+                                sg.lastName = g.lastName;
+                            }
+                            if (!sg.rsvp_answers) sg.rsvp_answers = {};
+                            return sg;
+                        });
                     }
 
-                    // Deep hydration to ensure reactive properties exist for ALL sub_guests
-                    g.sub_guests = g.sub_guests.map((sg, idx) => {
-                        // Ensure object integrity
-                        if (!sg) sg = { status: 'Pending', dietary: 'None' };
-
-                        // Default properties
-                        if (!sg.status) sg.status = 'Pending';
-
-                        // Ensure dietary exists. If it's missing, default to None.
-                        if (sg.dietary === undefined || sg.dietary === null) {
-                            // If index 0, try to inherit from main guest object if available
-                            if (idx === 0 && g.dietary) {
-                                sg.dietary = g.dietary;
-                            } else {
-                                sg.dietary = 'None';
-                            }
-                        }
-                        return sg;
-                    });
+                    // Ensure all sub_guests have rsvp_answers initialized for all events
+                    if (isMultiEvent && projectConfig.events) {
+                        g.sub_guests.forEach(sg => {
+                            projectConfig.events.forEach(evt => {
+                                if (!sg.rsvp_answers[evt.id]) {
+                                    // Default to 'pending' or whatever logic you prefer
+                                    sg.rsvp_answers[evt.id] = 'pending';
+                                }
+                            });
+                        });
+                    }
 
                     guest.value = g;
                     step.value = 2; // Proceed to confirmation step
@@ -578,9 +622,31 @@
                     try {
                         loading.value = true;
 
+                        const projectConfig = currentProject.value.eventsConfig || {};
+                        const isMultiEvent = !!projectConfig.multi_event;
+
                         // Determine overall status based on sub_guests
-                        const confirmedCount = guest.value.sub_guests.filter(sg => sg.status === 'Confirmed').length;
-                        const declinedCount = guest.value.sub_guests.filter(sg => sg.status === 'Declined').length;
+                        let confirmedCount = 0;
+                        let declinedCount = 0;
+
+                        guest.value.sub_guests.forEach(sg => {
+                            if (isMultiEvent) {
+                                // En multi-evento, status depende de si va a AL MENOS un evento
+                                const answers = Object.values(sg.rsvp_answers || {});
+                                const isGoingToAny = answers.some(ans => ans === 'confirmed');
+
+                                // Actualizar status individual legacy para compatibilidad
+                                sg.status = isGoingToAny ? 'Confirmed' : 'Declined';
+
+                                if (isGoingToAny) confirmedCount++;
+                                else declinedCount++;
+                            } else {
+                                // Lógica Legacy Single Event
+                                if (sg.status === 'Confirmed') confirmedCount++;
+                                else if (sg.status === 'Declined') declinedCount++;
+                            }
+                        });
+
 
                         let overallStatus = 'Pending';
                         if (confirmedCount > 0) {
@@ -589,14 +655,28 @@
                             overallStatus = 'Declined';
                         }
 
+                        // Preparar datos para update
+                        const updatePayload = {
+                            rsvp_status: overallStatus,
+                            sub_guests: guest.value.sub_guests,
+                            updated_at: new Date().toISOString()
+                        };
+
+                        // Update rsvp_answers en tabla guests solo para el main guest (merge de todos)
+                        // Ojo: En este modelo simple, guardamos todo en sub_guests JSON.
+                        // Pero también actualizamos la columna rsvp_answers del invitado principal como resumen
+                        if (isMultiEvent) {
+                            // Usamos las respuestas del primer sub-guest (que suele ser el principal) como resumen
+                            // o podríamos hacer un merge. Por simplicidad, guardamos el raw JSON del principal.
+                            if (guest.value.sub_guests.length > 0) {
+                                updatePayload.rsvp_answers = guest.value.sub_guests[0].rsvp_answers;
+                            }
+                        }
+
                         // Update guest in Supabase
                         const { error: updateError } = await supabase
                             .from('guests')
-                            .update({
-                                rsvp_status: overallStatus,
-                                sub_guests: guest.value.sub_guests,
-                                updated_at: new Date().toISOString()
-                            })
+                            .update(updatePayload)
                             .eq('id', guest.value.id);
 
                         if (updateError) throw updateError;
