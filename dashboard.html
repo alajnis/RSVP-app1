@@ -194,12 +194,8 @@
                                 class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-crimson transition-colors">
                                 <i class="ph-bold ph-pencil-simple text-sm"></i>
                             </button>
-                            <button v-if="isAdmin" @click="viewLogs(project)"
-                                class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-dark transition-colors"
-                                title="Ver accesos">
-                                <i class="ph-bold ph-clock-counter-clockwise text-sm"></i>
-                            </button>
-                            <button @click="deleteProject(project.id)"
+                            <!-- Removed View Logs button -->
+                            <button v-if="isAdmin" @click="deleteProject(project.id)"
                                 class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-crimson transition-colors">
                                 <i class="ph-bold ph-trash text-sm"></i>
                             </button>
