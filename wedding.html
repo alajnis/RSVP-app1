@@ -843,6 +843,25 @@
                     }
                 });
 
+                // Sync primary guest dietary (Bidirectional)
+                watch(() => guestForm.dietary, (newVal) => {
+                    if (guestForm.sub_guests && guestForm.sub_guests.length > 0) {
+                        if (guestForm.sub_guests[0].dietary !== newVal) {
+                            guestForm.sub_guests[0].dietary = newVal;
+                        }
+                    }
+                });
+
+                // Watch for changes deeply in sub_guests to sync back to main dietary if idx 0 changes
+                watch(() => guestForm.sub_guests, (newVal) => {
+                    if (newVal && newVal.length > 0) {
+                        const mainGuestDiet = newVal[0].dietary;
+                        if (mainGuestDiet !== guestForm.dietary) {
+                            guestForm.dietary = mainGuestDiet;
+                        }
+                    }
+                }, { deep: true });
+
                 const tableModalTitle = computed(() => editingTable.value ? 'Editar Mesa' : 'Nueva Mesa');
                 const guestModalTitle = computed(() => editingGuest.value ? 'Editar Invitado' : 'Nuevo Invitado');
 
