@@ -886,7 +886,7 @@
 
                 const guestsWithAssignments = computed(() => {
                     return guests.value.map(guest => {
-                        const assignment = assignments.value.find(a => a.rsvp_id === guest.id);
+                        const assignment = assignments.value.find(a => a.guest_id === guest.id);
                         return { ...guest, assignment };
                     }).sort((a, b) => {
                         const lnA = (a.lastName || '').toLowerCase();
@@ -1186,7 +1186,7 @@
                             if (error) throw error;
 
                             guests.value = guests.value.filter(g => g.id !== id);
-                            assignments.value = assignments.value.filter(a => a.rsvp_id !== id);
+                            assignments.value = assignments.value.filter(a => a.guest_id !== id);
                             showToast('Invitado eliminado');
                         } catch (e) {
                             console.error(e);
