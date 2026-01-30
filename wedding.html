@@ -1273,8 +1273,21 @@
 
                         // 1. Alphabetical List (All Individual Guests)
                         const allIndividuals = [];
+                        const eventsConfig = currentProject.value.eventsConfig;
+                        const isMulti = eventsConfig && eventsConfig.multi_event;
+
                         guests.value.forEach(g => {
-                            // FIX: Buscar asignación en assignments.value
+                            // Helper to get answers for dynamic columns
+                            const getAnswersObj = (answersState) => {
+                                if (!isMulti || !eventsConfig.events) return {};
+                                const obj = {};
+                                eventsConfig.events.forEach(evt => {
+                                    const status = (answersState && answersState[evt.id]) ? answersState[evt.id].toUpperCase() : 'PENDIENTE';
+                                    obj[`Evento: ${evt.label}`] = status === 'CONFIRMED' ? 'CONFIRMADO' : (status === 'DECLINED' ? 'CANCELADO' : 'PENDIENTE');
+                                });
+                                return obj;
+                            };
+
                             const mainAssignment = assignments.value.find(a => a.guest_id === g.id && (a.sub_guest_idx === null || a.sub_guest_idx === undefined));
                             const tableName = mainAssignment ? getTableName(mainAssignment.table_id) : 'Sin asignar';
 
@@ -1282,37 +1295,41 @@
                                 g.sub_guests.forEach((sg, idx) => {
                                     // Check if this sub-guest has specific assignment
                                     const subAssignment = assignments.value.find(a => a.guest_id === g.id && a.sub_guest_idx === idx);
-                                    const subTableName = subAssignment ? getTableName(subAssignment.table_id) : tableName; // Fall back to main
+                                    const subTableName = subAssignment ? getTableName(subAssignment.table_id) : tableName;
 
                                     const rsvpStatus = sg.status === 'Confirmed' ? 'CONFIRMADO' : (sg.status === 'Declined' ? 'CANCELADO' : 'PENDIENTE');
-                                    allIndividuals.push({
+
+                                    const baseRow = {
                                         'Invitación (Apellido)': g.lastName || '',
                                         'Invitación (Nombre)': g.firstName || '',
                                         'Integrante (Apellido)': sg.lastName || '(Vacio)',
                                         'Integrante (Nombre)': sg.firstName || (idx === 0 ? g.firstName : `Acompañante ${idx}`),
-                                        'Asistencia': rsvpStatus,
+                                        'Asistencia General': rsvpStatus,
                                         'Dieta': sg.dietary || 'Normal',
-                                        'Edad': sg.ageCategory || 'Adulto', // Fallback for existing
+                                        'Edad': sg.ageCategory || 'Adulto',
                                         'Mesa': subTableName,
                                         'Email Contácto': g.email || '-',
                                         'Teléfono Contácto': g.phone || '-'
-                                    });
+                                    };
+                                    // Merge dynamic event columns
+                                    allIndividuals.push({ ...baseRow, ...getAnswersObj(sg.rsvp_answers) });
                                 });
                             } else {
                                 //Fallback for legacy data without sub_guests
                                 const rsvpStatus = g.rsvp_status === 'Confirmed' ? 'CONFIRMADO' : (g.rsvp_status === 'Declined' ? 'CANCELADO' : 'PENDIENTE');
-                                allIndividuals.push({
+                                const baseRow = {
                                     'Invitación (Apellido)': g.lastName || g.name || '-',
                                     'Invitación (Nombre)': g.firstName || '-',
                                     'Integrante (Apellido)': g.lastName || '-',
                                     'Integrante (Nombre)': g.firstName || '-',
-                                    'Asistencia': rsvpStatus,
+                                    'Asistencia General': rsvpStatus,
                                     'Dieta': g.dietary || 'Normal',
-                                    'Edad': 'Adulto', // Default for legacy main guest
+                                    'Edad': 'Adulto',
                                     'Mesa': tableName,
                                     'Email Contácto': g.email || '-',
                                     'Teléfono Contácto': g.phone || '-'
-                                });
+                                };
+                                allIndividuals.push({ ...baseRow, ...getAnswersObj(g.rsvp_answers) });
                             }
                         });
 
@@ -1323,7 +1340,8 @@
                         XLSX.utils.book_append_sheet(wb, ws1, "Lista Completa");
 
                         // 2. Summary by Table (Only Confirmed)
-                        const confirmedOnly = allIndividuals.filter(i => i.Asistencia === 'CONFIRMADO');
+                        // Note: Changed from 'Asistencia' to 'Asistencia General' to match baseRow
+                        const confirmedOnly = allIndividuals.filter(i => i['Asistencia General'] === 'CONFIRMADO');
                         const ws2 = XLSX.utils.json_to_sheet(confirmedOnly.sort((a, b) =>
                             (a.Mesa || '').localeCompare(b.Mesa || '') ||
                             (a['Integrante (Apellido)'] || '').localeCompare(b['Integrante (Apellido)'] || '')
