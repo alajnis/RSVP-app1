@@ -436,7 +436,7 @@
                                         </div>
 
                                         <!-- Multi-Event Badges -->
-                                        <div v-if="project.events_config && project.events_config.multi_event && sg.rsvp_answers"
+                                        <div v-if="project && project.events_config && project.events_config.multi_event && sg.rsvp_answers"
                                             class="flex flex-wrap gap-1 ml-4">
                                             <span v-for="evt in project.events_config.events" :key="evt.id"
                                                 class="text-[8px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1"
@@ -1177,9 +1177,40 @@
 
                 // METHODS - Assignments
                 // METHODS - Assignments
+                // METHODS - Assignments
                 const assignGuest = async (guestId, subGuestIdx, tableId) => {
+                    // OPTIMISTIC UPDATE HELPER
+                    const updateLocalState = (gId, sIdx, tId) => {
+                        // Remove existing assignment locally
+                        assignments.value = assignments.value.filter(a => {
+                            if (subGuestIdx === undefined || subGuestIdx === null) {
+                                // Main guest: remote entry with same guest_id AND null sub_guest_idx
+                                return !(a.guest_id === gId && (a.sub_guest_idx === null || a.sub_guest_idx === undefined));
+                            } else {
+                                // Sub guest: remove entry with same guest_id AND same sub_guest_idx
+                                return !(a.guest_id === gId && a.sub_guest_idx === sIdx);
+                            }
+                        });
+
+                        // Add new if tableId provided
+                        if (tId) {
+                            assignments.value.push({
+                                id: 'temp_' + Date.now(), // Temporary ID until reload
+                                project_id: currentProjectId.value,
+                                table_id: tId,
+                                guest_id: gId,
+                                sub_guest_idx: sIdx !== undefined ? sIdx : null
+                            });
+                        }
+                    };
+
                     try {
-                        const isMain = subGuestIdx === undefined;
+                        const isMain = subGuestIdx === undefined || subGuestIdx === null;
+
+                        // 1. Local Optimistic Update
+                        updateLocalState(guestId, subGuestIdx, tableId);
+
+                        // 2. Database Operation
                         let deleteQuery = supabase.from('assignments').delete().eq('guest_id', guestId);
 
                         if (isMain) {
@@ -1191,31 +1222,25 @@
                         await deleteQuery;
 
                         if (!tableId) {
-                            // Reload all data to sync UI
-                            await loadData();
                             showToast('Desasignado', 'success');
                             return;
                         }
 
-                        // Check capacity
+                        // Check capacity (Backend check, although we could do it frontend too)
                         const table = tables.value.find(t => t.id === tableId);
                         if (table) {
-                            // Re-fetch assignments to get accurate count
-                            const { data: currentAsgs } = await supabase
-                                .from('assignments')
-                                .select('id')
-                                .eq('table_id', tableId);
-
-                            const currentCount = (currentAsgs || []).length;
-                            if (currentCount >= table.capacity) {
-                                showToast(`Mesa "${table.name}" llena (${table.capacity}/${table.capacity})`, 'error');
+                            const currentAsgsCount = assignments.value.filter(a => a.table_id === tableId).length;
+                            // Note: currentAsgsCount includes our optimistic addition, so it might be +1 if we didn't filter properly above.
+                            // Actually, since we updated local state, we can trust it mostly.
+                            if (currentAsgsCount > table.capacity) {
+                                // Revert if full (simplified revert: reload)
+                                await loadData();
+                                showToast(`Mesa "${table.name}" llena`, 'error');
                                 return;
                             }
-                        } else {
-                            return;
                         }
 
-                        // Add assignment
+                        // Add assignment to DB
                         const newAsg = {
                             project_id: currentProjectId.value,
                             table_id: tableId,
@@ -1223,15 +1248,21 @@
                             sub_guest_idx: subGuestIdx !== undefined ? subGuestIdx : null
                         };
 
-                        const { error } = await supabase.from('assignments').insert(newAsg);
+                        const { data, error } = await supabase.from('assignments').insert(newAsg).select();
                         if (error) throw error;
 
-                        // Reload all data to sync UI with DB
-                        await loadData();
+                        // Update temp ID with real ID if possible, or just leave it until next reload
+                        if (data && data[0]) {
+                            const tempIdx = assignments.value.findIndex(a => a.id.startsWith('temp_') && a.guest_id === guestId);
+                            if (tempIdx !== -1) assignments.value[tempIdx].id = data[0].id;
+                        }
+
                         showToast('Asignado exitosamente');
                     } catch (e) {
                         console.error('Error en assignGuest:', e);
                         showToast('Error: ' + (e.message || 'Error desconocido'), 'error');
+                        // Rollback on error
+                        await loadData();
                     }
                 };
 
