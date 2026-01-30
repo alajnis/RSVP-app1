@@ -631,7 +631,7 @@
                             Alimentarias</label>
                         <select v-model="guestForm.dietary" @change="syncMainGuestDietary"
                             class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all bg-white font-sans text-sm">
-                            <option value="None">Ninguna</option>
+                            <option value="None">Sin Restricción</option>
                             <option value="Celiaco">Celiaquía</option>
                             <option value="Vegano">Vegano</option>
                             <option value="Vegetariano">Vegetariano</option>
@@ -696,7 +696,7 @@
                                                 class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Dieta</label>
                                             <select v-model="sg.dietary"
                                                 class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson">
-                                                <option value="None">Normal</option>
+                                                <option value="None">Sin Restricción</option>
                                                 <option value="Celiaco">Celíaco</option>
                                                 <option value="Vegano">Vegano</option>
                                                 <option value="Vegetariano">Vegetariano</option>
@@ -1303,7 +1303,7 @@
                                 const obj = {};
                                 eventsConfig.events.forEach(evt => {
                                     const status = (answersState && answersState[evt.id]) ? answersState[evt.id].toUpperCase() : 'PENDIENTE';
-                                    obj[`Evento: ${evt.label}`] = status === 'CONFIRMED' ? 'CONFIRMADO' : (status === 'DECLINED' ? 'CANCELADO' : 'PENDIENTE');
+                                    obj[`Evento: ${evt.label}`] = status === 'CONFIRMED' ? 'CONFIRMADO' : (status === 'DECLINED' ? 'NO ASISTIRÁ' : 'PENDIENTE');
                                 });
                                 return obj;
                             };
@@ -1317,7 +1317,7 @@
                                     const subAssignment = assignments.value.find(a => a.guest_id === g.id && a.sub_guest_idx === idx);
                                     const subTableName = subAssignment ? getTableName(subAssignment.table_id) : tableName;
 
-                                    const rsvpStatus = sg.status === 'Confirmed' ? 'CONFIRMADO' : (sg.status === 'Declined' ? 'CANCELADO' : 'PENDIENTE');
+                                    const rsvpStatus = sg.status === 'Confirmed' ? 'CONFIRMADO' : (sg.status === 'Declined' ? 'NO ASISTIRÁ' : 'PENDIENTE');
 
                                     const baseRow = {
                                         'Invitación (Apellido)': g.lastName || '',
