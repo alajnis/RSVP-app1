@@ -92,34 +92,9 @@
         <!-- CARD -->
         <div class="bg-white shadow-2xl border border-brand-pink relative">
 
-            <!-- STEP 0: VALIDATE CODE -->
+            <!-- STEP 1: FIND INVITATION (Default) -->
             <transition name="fade" mode="out-in">
-                <div v-if="step === 0" key="step0" class="p-8">
-                    <div class="text-center mb-8">
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Bienvenido</p>
-                        <i class="ph-thin ph-key text-4xl text-brand-crimson mb-4"></i>
-                        <h3 class="font-serif text-2xl text-brand-dark">Ingresa el código de la boda</h3>
-                    </div>
-                    <form @submit.prevent="validateCode">
-                        <div class="mb-6">
-                            <input type="text" v-model="code" required
-                                class="w-full px-4 py-4 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300 text-center uppercase tracking-[0.3em] font-bold text-lg"
-                                placeholder="AB12345678">
-                        </div>
-
-                        <div v-if="error"
-                            class="mb-6 p-4 bg-brand-pink/20 text-brand-crimson text-xs font-bold uppercase tracking-widest border border-brand-pink/50 text-center">
-                            {{ error }}
-                        </div>
-
-                        <button type="submit"
-                            class="w-full bg-brand-dark text-white font-bold py-5 tracking-[0.2em] uppercase text-xs hover:bg-brand-crimson transition-all shadow-xl">
-                            Continuar
-                        </button>
-                    </form>
-                </div>
-
-                <div v-else-if="step === 1" key="step1" class="p-8">
+                <div v-if="step === 1" key="step1" class="p-8">
                     <form @submit.prevent="findInvitation">
                         <div class="space-y-6">
                             <div>
@@ -325,8 +300,7 @@
         createApp({
             setup() {
                 // STATE
-                const step = ref(0); // Start at Step 0 (Code)
-                const code = ref('');
+                const step = ref(1); // Start directly at Step 1 (Search)
                 const form = reactive({ firstName: '', lastName: '' });
                 const guests = ref([]);
                 const guest = ref(null);
@@ -392,33 +366,6 @@
                         alert('Falta el ID del proyecto en la URL');
                     }
                 });
-
-                const generateProjectCode = (project) => {
-                    if (!project || !project.brideName || !project.groomName) return null;
-                    const clean = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    const b = clean(project.brideName);
-                    const g = clean(project.groomName);
-                    return `${b}y${g}`;
-                };
-
-                const validateCode = async () => {
-                    error.value = '';
-                    if (!currentProject.value) {
-                        error.value = "No se ha cargado el proyecto. Asegúrate de que la URL contenga '?project=ID_DEL_PROYECTO'.";
-                        return;
-                    }
-
-                    const inputCode = code.value.trim().toLowerCase();
-                    const expectedCode = generateProjectCode(currentProject.value);
-                    const expectedRevCode = generateProjectCode({ brideName: currentProject.value.groomName, groomName: currentProject.value.brideName }); // Reverse check
-
-                    if (inputCode === expectedCode || inputCode === expectedRevCode) {
-                        step.value = 1; // Proceed to Name Search
-                        error.value = '';
-                    } else {
-                        error.value = 'Código de boda incorrecto. Por favor verifique.';
-                    }
-                };
 
                 const normalize = (str) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : '';
                 const getFullName = (item) => {
@@ -698,10 +645,10 @@
                 };
 
                 return {
-                    step, code, form, error, guest, guests,
+                    step, form, error, guest, guests,
                     findInvitation, confirmAttendance, currentProject, formatDate,
                     showFuzzyModal, fuzzyCandidate, acceptFuzzyMatch, rejectFuzzyMatch,
-                    getFullName, validateCode,
+                    getFullName,
                     loading, lastNameSearch, searchResults, selectedGuest
                 };
             }
