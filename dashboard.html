@@ -294,7 +294,7 @@
                     <div>
                         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Fecha
                             del Casamiento</label>
-                        <input type="date" v-model="projectForm.weddingDate" required
+                        <input type="date" v-model="projectForm.weddingDate" :min="minDate" required
                             class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all">
                     </div>
 
@@ -479,6 +479,11 @@
             </div>
         </transition>
 
+        <!-- VERSION FOOTER -->
+        <div class="fixed bottom-2 left-2 text-[10px] text-slate-300 font-mono pointer-events-none z-50">
+            v2.2 - Multi-Event Fix
+        </div>
+
     </div>
 
     <script>
@@ -502,6 +507,7 @@
                 });
                 const toast = reactive({ show: false, message: '', type: 'success' });
                 const session = ref(null);
+                const minDate = new Date().toISOString().split('T')[0];
 
                 // LOGS STATE
                 console.log("🚀 DASHBOARD VERSION: 2.1 - MULTI-EVENT FIX APPLIED");
@@ -1017,7 +1023,8 @@
                     formatDateTime,
                     // Multi-Event
                     addNewEvent,
-                    removeNewEvent
+                    removeNewEvent,
+                    minDate
                 };
             }
         }).mount('#app');

@@ -741,6 +741,11 @@
             </div>
         </transition>
 
+        <!-- VERSION FOOTER -->
+        <div class="fixed bottom-2 left-2 text-[10px] text-brand-dark/20 font-mono pointer-events-none z-50">
+            v2.2 - Excel & Date Fix
+        </div>
+
     </div>
 
     <script>
@@ -1260,7 +1265,8 @@
                         showToast('Asignado exitosamente');
                     } catch (e) {
                         console.error('Error en assignGuest:', e);
-                        showToast('Error: ' + (e.message || 'Error desconocido'), 'error');
+                        const msg = (e.message || (e.error && e.error.message) || JSON.stringify(e) || 'Error desconocido');
+                        showToast('Error: ' + msg, 'error');
                         // Rollback on error
                         await loadData();
                     }
@@ -1272,9 +1278,23 @@
                         const wb = XLSX.utils.book_new();
 
                         // 1. Alphabetical List (All Individual Guests)
+                        // Prepare data for export
                         const allIndividuals = [];
+                        const eventsConfig = currentProject.value.eventsConfig; // Get config
+                        const isMulti = eventsConfig && eventsConfig.multi_event;
+
                         guests.value.forEach(g => {
-                            // FIX: Buscar asignación en assignments.value
+                            // Helper to get answers
+                            const getAnswersObj = (answersState) => {
+                                if (!isMulti || !eventsConfig.events) return {};
+                                const obj = {};
+                                eventsConfig.events.forEach(evt => {
+                                    const status = (answersState && answersState[evt.id]) ? answersState[evt.id].toUpperCase() : 'PENDIENTE';
+                                    obj[`Evento: ${evt.label}`] = status === 'CONFIRMED' ? 'CONFIRMADO' : (status === 'DECLINED' ? 'CANCELADO' : 'PENDIENTE');
+                                });
+                                return obj;
+                            };
+
                             const mainAssignment = assignments.value.find(a => a.guest_id === g.id && (a.sub_guest_idx === null || a.sub_guest_idx === undefined));
                             const tableName = mainAssignment ? getTableName(mainAssignment.table_id) : 'Sin asignar';
 
@@ -1285,273 +1305,296 @@
                                     const subTableName = subAssignment ? getTableName(subAssignment.table_id) : tableName; // Fall back to main
 
                                     const rsvpStatus = sg.status === 'Confirmed' ? 'CONFIRMADO' : (sg.status === 'Declined' ? 'CANCELADO' : 'PENDIENTE');
-                                    allIndividuals.push({
+
+                                    const baseRow = {
                                         'Invitación (Apellido)': g.lastName || '',
                                         'Invitación (Nombre)': g.firstName || '',
                                         'Integrante (Apellido)': sg.lastName || '(Vacio)',
                                         'Integrante (Nombre)': sg.firstName || (idx === 0 ? g.firstName : `Acompañante ${idx}`),
-                                        'Asistencia': rsvpStatus,
+                                        'Asistencia General': rsvpStatus,
                                         'Dieta': sg.dietary || 'Normal',
                                         'Edad': sg.ageCategory || 'Adulto', // Fallback for existing
                                         'Mesa': subTableName,
                                         'Email Contácto': g.email || '-',
                                         'Teléfono Contácto': g.phone || '-'
-                                    });
+                                    };
+
+                                    // Merge dynamic event columns
+                                    allIndividuals.push({ ...baseRow, ...getAnswersObj(sg.rsvp_answers) });
                                 });
                             } else {
                                 //Fallback for legacy data without sub_guests
                                 const rsvpStatus = g.rsvp_status === 'Confirmed' ? 'CONFIRMADO' : (g.rsvp_status === 'Declined' ? 'CANCELADO' : 'PENDIENTE');
-                                allIndividuals.push({
+                                const baseRow = {
                                     'Invitación (Apellido)': g.lastName || g.name || '-',
                                     'Invitación (Nombre)': g.firstName || '-',
                                     'Integrante (Apellido)': g.lastName || '-',
                                     'Integrante (Nombre)': g.firstName || '-',
-                                    'Asistencia': rsvpStatus,
+                                    'Asistencia General': rsvpStatus,
                                     'Dieta': g.dietary || 'Normal',
                                     'Edad': 'Adulto', // Default for legacy main guest
                                     'Mesa': tableName,
                                     'Email Contácto': g.email || '-',
                                     'Teléfono Contácto': g.phone || '-'
-                                });
+                                };
+                                // Merge dynamic event columns (using main guest answers if stored there, though usually in sub_guests)
+                                allIndividuals.push({ ...baseRow, ...getAnswersObj(g.rsvp_answers) });
                             }
                         });
+                    } else {
+                        //Fallback for legacy data without sub_guests
+                        const rsvpStatus = g.rsvp_status === 'Confirmed' ? 'CONFIRMADO' : (g.rsvp_status === 'Declined' ? 'CANCELADO' : 'PENDIENTE');
+                        allIndividuals.push({
+                            'Invitación (Apellido)': g.lastName || g.name || '-',
+                            'Invitación (Nombre)': g.firstName || '-',
+                            'Integrante (Apellido)': g.lastName || '-',
+                            'Integrante (Nombre)': g.firstName || '-',
+                            'Asistencia': rsvpStatus,
+                            'Dieta': g.dietary || 'Normal',
+                            'Edad': 'Adulto', // Default for legacy main guest
+                            'Mesa': tableName,
+                            'Email Contácto': g.email || '-',
+                            'Teléfono Contácto': g.phone || '-'
+                        });
+                    }
+        });
 
-                        const ws1 = XLSX.utils.json_to_sheet(allIndividuals.sort((a, b) =>
-                            (a['Invitación (Apellido)'] || '').localeCompare(b['Invitación (Apellido)'] || '') ||
-                            (a['Invitación (Nombre)'] || '').localeCompare(b['Invitación (Nombre)'] || '')
-                        ));
-                        XLSX.utils.book_append_sheet(wb, ws1, "Lista Completa");
+        const ws1 = XLSX.utils.json_to_sheet(allIndividuals.sort((a, b) =>
+            (a['Invitación (Apellido)'] || '').localeCompare(b['Invitación (Apellido)'] || '') ||
+            (a['Invitación (Nombre)'] || '').localeCompare(b['Invitación (Nombre)'] || '')
+        ));
+        XLSX.utils.book_append_sheet(wb, ws1, "Lista Completa");
 
-                        // 2. Summary by Table (Only Confirmed)
-                        const confirmedOnly = allIndividuals.filter(i => i.Asistencia === 'CONFIRMADO');
-                        const ws2 = XLSX.utils.json_to_sheet(confirmedOnly.sort((a, b) =>
-                            (a.Mesa || '').localeCompare(b.Mesa || '') ||
-                            (a['Integrante (Apellido)'] || '').localeCompare(b['Integrante (Apellido)'] || '')
-                        ));
-                        XLSX.utils.book_append_sheet(wb, ws2, "Por Mesa (Confirmados)");
+        // 2. Summary by Table (Only Confirmed)
+        const confirmedOnly = allIndividuals.filter(i => i.Asistencia === 'CONFIRMADO');
+        const ws2 = XLSX.utils.json_to_sheet(confirmedOnly.sort((a, b) =>
+            (a.Mesa || '').localeCompare(b.Mesa || '') ||
+            (a['Integrante (Apellido)'] || '').localeCompare(b['Integrante (Apellido)'] || '')
+        ));
+        XLSX.utils.book_append_sheet(wb, ws2, "Por Mesa (Confirmados)");
 
-                        XLSX.writeFile(wb, "RSVP_Guest_List_Export.xlsx");
-                        showToast('Export Successful!');
+        XLSX.writeFile(wb, "RSVP_Guest_List_Export.xlsx");
+        showToast('Export Successful!');
 
                     } catch (e) {
-                        console.error(e);
-                        showToast('Export failed: ' + e.message, 'error');
-                    }
+            console.error(e);
+            showToast('Export failed: ' + e.message, 'error');
+        }
                 };
 
-                const handleFileUpload = async (event) => { // FIX: async
-                    const file = event.target.files[0];
-                    if (!file) return;
+        const handleFileUpload = async (event) => { // FIX: async
+            const file = event.target.files[0];
+            if (!file) return;
 
-                    const reader = new FileReader();
-                    reader.onload = async (e) => { // FIX: async
-                        try {
-                            // Validate projectId FIRST
-                            if (!currentProjectId.value) {
-                                showToast('Error: No se pudo obtener el ID del proyecto. Recarga la página.', 'error');
-                                return;
-                            }
-                            console.log('📦 Import Excel - Project ID:', currentProjectId.value);
+            const reader = new FileReader();
+            reader.onload = async (e) => { // FIX: async
+                try {
+                    // Validate projectId FIRST
+                    if (!currentProjectId.value) {
+                        showToast('Error: No se pudo obtener el ID del proyecto. Recarga la página.', 'error');
+                        return;
+                    }
+                    console.log('📦 Import Excel - Project ID:', currentProjectId.value);
 
-                            const data = new Uint8Array(e.target.result);
-                            const workbook = XLSX.read(data, { type: 'array' });
-                            const firstSheetName = workbook.SheetNames[0];
-                            const worksheet = workbook.Sheets[firstSheetName];
-                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Array of Arrays
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Array of Arrays
 
 
-                            // Detect Column Indexes dynamically based on headers
-                            const headers = jsonData[0] || [];
-                            const findIdx = (str) => headers.findIndex(h => h && String(h).toLowerCase().includes(str));
+                    // Detect Column Indexes dynamically based on headers
+                    const headers = jsonData[0] || [];
+                    const findIdx = (str) => headers.findIndex(h => h && String(h).toLowerCase().includes(str));
 
-                            // Default indexes
-                            let idxLast = 0, idxFirst = 1, idxCount = 2, idxEmail = 3, idxPhone = 4, idxDiet = 5;
-                            // Try to find age column (can be 6, or 8 if export format)
-                            let idxAge = findIdx('edad');
-                            if (idxAge === -1) idxAge = headers.length > 7 ? 8 : 6; // Fallback to 8 if wide (export), else 6
+                    // Default indexes
+                    let idxLast = 0, idxFirst = 1, idxCount = 2, idxEmail = 3, idxPhone = 4, idxDiet = 5;
+                    // Try to find age column (can be 6, or 8 if export format)
+                    let idxAge = findIdx('edad');
+                    if (idxAge === -1) idxAge = headers.length > 7 ? 8 : 6; // Fallback to 8 if wide (export), else 6
 
-                            // Optional: Detect other columns if headers exist
-                            if (findIdx('apellido') > -1) idxLast = findIdx('apellido');
-                            if (findIdx('nombre') > -1) idxFirst = findIdx('nombre');
+                    // Optional: Detect other columns if headers exist
+                    if (findIdx('apellido') > -1) idxLast = findIdx('apellido');
+                    if (findIdx('nombre') > -1) idxFirst = findIdx('nombre');
 
-                            const guestsToInsert = [];
+                    const guestsToInsert = [];
 
-                            for (let i = 1; i < jsonData.length; i++) {
-                                const row = jsonData[i];
-                                if (!row || row.length < 2) continue;
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (!row || row.length < 2) continue;
 
-                                // Row format based on indexes
-                                const lName = (row[idxLast] || '').toString().trim();
-                                const fName = (row[idxFirst] || '').toString().trim();
-                                const count = parseInt(row[idxCount]) || 1;
-                                const email = (row[idxEmail] || '').toString().trim();
-                                const phone = (row[idxPhone] || '').toString().trim();
-                                const dietVal = (row[idxDiet] || '').toString().trim();
-                                // Clean up diet value (ignore header-like values if mistaken)
-                                const dietary = ['Vegano', 'Vegetariano', 'Celiaco', 'Kosher', 'None'].some(d => dietVal.includes(d)) ? dietVal : 'None';
+                        // Row format based on indexes
+                        const lName = (row[idxLast] || '').toString().trim();
+                        const fName = (row[idxFirst] || '').toString().trim();
+                        const count = parseInt(row[idxCount]) || 1;
+                        const email = (row[idxEmail] || '').toString().trim();
+                        const phone = (row[idxPhone] || '').toString().trim();
+                        const dietVal = (row[idxDiet] || '').toString().trim();
+                        // Clean up diet value (ignore header-like values if mistaken)
+                        const dietary = ['Vegano', 'Vegetariano', 'Celiaco', 'Kosher', 'None'].some(d => dietVal.includes(d)) ? dietVal : 'None';
 
-                                // Age validation
-                                let ageCat = (row[idxAge] || '').toString().trim();
-                                const validAges = ['Adulto', 'Teen', 'Niño', 'Bebé'];
-                                // Case insensitive match attempt
-                                const matchAge = validAges.find(a => a.toLowerCase() === ageCat.toLowerCase());
-                                ageCat = matchAge || '';
+                        // Age validation
+                        let ageCat = (row[idxAge] || '').toString().trim();
+                        const validAges = ['Adulto', 'Teen', 'Niño', 'Bebé'];
+                        // Case insensitive match attempt
+                        const matchAge = validAges.find(a => a.toLowerCase() === ageCat.toLowerCase());
+                        ageCat = matchAge || '';
 
-                                if (!lName && !fName) continue;
+                        if (!lName && !fName) continue;
 
-                                const subGuests = [];
-                                // Create sub_guests based on count
-                                for (let j = 0; j < count; j++) {
-                                    subGuests.push({
-                                        firstName: j === 0 ? fName : '',
-                                        lastName: j === 0 ? lName : '',
-                                        status: 'Pending',
-                                        dietary: j === 0 ? (dietary || 'None') : 'None',
-                                        ageCategory: ageCat
-                                    });
-                                }
-
-                                guestsToInsert.push({
-                                    project_id: currentProjectId.value,
-                                    first_name: fName,
-                                    last_name: lName,
-                                    guests_confirmed: count,
-                                    email: email || null,
-                                    phone: phone || null,
-                                    rsvp_status: 'Pending',
-                                    sub_guests: subGuests
-                                });
-                            } // End of for loop
-
-                            if (guestsToInsert.length > 0) {
-                                // FIX: Bulk insert en Supabase (sin especificar id, Supabase lo genera)
-                                const { data, error } = await supabase.from('guests').insert(guestsToInsert);
-
-                                if (error) {
-                                    console.error('Error insertando invitados:', error);
-                                    throw new Error(error.message || 'Error al guardar invitados en base de datos');
-                                }
-
-                                console.log('✅ Invitados insertados exitosamente');
-                                // Reload data from DB
-                                await loadData();
-                                console.log('✅ Datos recargados');
-                                showToast(`¡Importado ${guestsToInsert.length} invitados exitosamente!`);
-                            } else {
-                                showToast('No se encontraron filas válidas. Formato: Apellido, Nombre, Cantidad...', 'error');
-                            }
-
-                        } catch (err) {
-                            console.error('Error import Excel:', err);
-                            showToast('Error: ' + (err.message || 'Error importando'), 'error');
+                        const subGuests = [];
+                        // Create sub_guests based on count
+                        for (let j = 0; j < count; j++) {
+                            subGuests.push({
+                                firstName: j === 0 ? fName : '',
+                                lastName: j === 0 ? lName : '',
+                                status: 'Pending',
+                                dietary: j === 0 ? (dietary || 'None') : 'None',
+                                ageCategory: ageCat
+                            });
                         }
-                    };
-                    reader.readAsArrayBuffer(file);
-                    event.target.value = ''; // Reset input
-                };
 
-                // UTILS
-                const backToDashboard = () => {
-                    window.location.href = 'dashboard.html';
-                };
+                        guestsToInsert.push({
+                            project_id: currentProjectId.value,
+                            first_name: fName,
+                            last_name: lName,
+                            guests_confirmed: count,
+                            email: email || null,
+                            phone: phone || null,
+                            rsvp_status: 'Pending',
+                            sub_guests: subGuests
+                        });
+                    } // End of for loop
 
-                const formatDate = (dateString) => {
-                    const date = new Date(dateString);
-                    return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-                };
+                    if (guestsToInsert.length > 0) {
+                        // FIX: Bulk insert en Supabase (sin especificar id, Supabase lo genera)
+                        const { data, error } = await supabase.from('guests').insert(guestsToInsert);
 
-                const getTableName = (id) => tables.value.find(t => t.id === id)?.name || 'Unknown';
-                const getGuestById = (id) => guests.value.find(g => g.id === id);
-                const getFullName = (item) => {
-                    if (!item) return '';
-                    const f = item.firstName || '';
-                    const l = item.lastName || '';
-                    if (!f && !l) return item.name || ''; // Fallback legacy
-                    return `${l}${l && f ? ', ' : ''}${f}`.trim();
-                };
-                const getGuestInitials = (id) => {
-                    const g = getGuestById(id);
-                    if (!g) return '?';
-                    const f = (g.firstName || '').charAt(0);
-                    const l = (g.lastName || '').charAt(0);
-                    return (f + l).toUpperCase() || (g.name ? g.name.charAt(0).toUpperCase() : '?');
-                };
-                const showToast = (msg, type = 'success') => { toast.message = msg; toast.type = type; toast.show = true; setTimeout(() => toast.show = false, 3000); };
-                const getStatusBadgeClass = (table) => {
-                    const base = 'text-[9px] font-bold px-2 py-0.5 border uppercase tracking-[0.15em]';
-                    if (table.is_full) return `${base} bg-brand-crimson text-white border-brand-crimson`;
-                    if (table.occupancy_percentage >= 80) return `${base} bg-brand-magenta/10 text-brand-magenta border-brand-magenta/20`;
-                    return `${base} bg-brand-pink/20 text-brand-crimson border-brand-crimson/20`;
-                };
-                const getProgressBarClass = (table) => {
-                    if (table.is_full) return 'bg-brand-dark';
-                    if (table.occupancy_percentage >= 80) return 'bg-brand-crimson';
-                    return 'bg-brand-pink';
-                };
-                const getAvatarColor = (name) => {
-                    const colors = [
-                        'bg-brand-crimson text-white',
-                        'bg-brand-dark text-white',
-                        'bg-brand-pink text-brand-dark',
-                        'bg-brand-magenta text-white',
-                        'bg-brand-beige text-brand-dark'
-                    ];
-                    return colors[name.length % colors.length];
-                };
-                const getTableAssignments = (tableId) => assignments.value.filter(a => a.table_id === tableId);
-                const resetData = async () => {
-                    if (confirm('¿Resetear todos los datos de este casamiento?')) {
-                        try {
-                            // Supabase cascade delete handles referenced stuff if configured, 
-                            // but manual delete is safer.
-                            // Deleting tables cascades to assignments.
-                            // Deleting guests cascades to assignments.
+                        if (error) {
+                            console.error('Error insertando invitados:', error);
+                            throw new Error(error.message || 'Error al guardar invitados en base de datos');
+                        }
 
-                            // Let's delete all tables and guests for this project.
-                            await supabase.from('tables').delete().eq('project_id', currentProjectId.value);
-                            await supabase.from('guests').delete().eq('project_id', currentProjectId.value);
-
-                            tables.value = [];
-                            guests.value = [];
-                            assignments.value = [];
-                            showToast('Datos reseteados');
-                        } catch (e) { console.error(e); }
+                        console.log('✅ Invitados insertados exitosamente');
+                        // Reload data from DB
+                        await loadData();
+                        console.log('✅ Datos recargados');
+                        showToast(`¡Importado ${guestsToInsert.length} invitados exitosamente!`);
+                    } else {
+                        showToast('No se encontraron filas válidas. Formato: Apellido, Nombre, Cantidad...', 'error');
                     }
-                };
 
-                const getGuestPortalLink = () => {
-                    const url = new URL('index2.html', window.location.href);
-                    url.searchParams.set('project', currentProjectId.value);
-                    return url.toString();
-                };
+                } catch (err) {
+                    console.error('Error import Excel:', err);
+                    showToast('Error: ' + (err.message || 'Error importando'), 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            event.target.value = ''; // Reset input
+        };
 
-                const copyLink = () => {
-                    navigator.clipboard.writeText(getGuestPortalLink());
-                    showToast('Link copiado al portapapeles!');
-                };
+        // UTILS
+        const backToDashboard = () => {
+            window.location.href = 'dashboard.html';
+        };
+
+        const formatDate = (dateString) => {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+        };
+
+        const getTableName = (id) => tables.value.find(t => t.id === id)?.name || 'Unknown';
+        const getGuestById = (id) => guests.value.find(g => g.id === id);
+        const getFullName = (item) => {
+            if (!item) return '';
+            const f = item.firstName || '';
+            const l = item.lastName || '';
+            if (!f && !l) return item.name || ''; // Fallback legacy
+            return `${l}${l && f ? ', ' : ''}${f}`.trim();
+        };
+        const getGuestInitials = (id) => {
+            const g = getGuestById(id);
+            if (!g) return '?';
+            const f = (g.firstName || '').charAt(0);
+            const l = (g.lastName || '').charAt(0);
+            return (f + l).toUpperCase() || (g.name ? g.name.charAt(0).toUpperCase() : '?');
+        };
+        const showToast = (msg, type = 'success') => { toast.message = msg; toast.type = type; toast.show = true; setTimeout(() => toast.show = false, 3000); };
+        const getStatusBadgeClass = (table) => {
+            const base = 'text-[9px] font-bold px-2 py-0.5 border uppercase tracking-[0.15em]';
+            if (table.is_full) return `${base} bg-brand-crimson text-white border-brand-crimson`;
+            if (table.occupancy_percentage >= 80) return `${base} bg-brand-magenta/10 text-brand-magenta border-brand-magenta/20`;
+            return `${base} bg-brand-pink/20 text-brand-crimson border-brand-crimson/20`;
+        };
+        const getProgressBarClass = (table) => {
+            if (table.is_full) return 'bg-brand-dark';
+            if (table.occupancy_percentage >= 80) return 'bg-brand-crimson';
+            return 'bg-brand-pink';
+        };
+        const getAvatarColor = (name) => {
+            const colors = [
+                'bg-brand-crimson text-white',
+                'bg-brand-dark text-white',
+                'bg-brand-pink text-brand-dark',
+                'bg-brand-magenta text-white',
+                'bg-brand-beige text-brand-dark'
+            ];
+            return colors[name.length % colors.length];
+        };
+        const getTableAssignments = (tableId) => assignments.value.filter(a => a.table_id === tableId);
+        const resetData = async () => {
+            if (confirm('¿Resetear todos los datos de este casamiento?')) {
+                try {
+                    // Supabase cascade delete handles referenced stuff if configured, 
+                    // but manual delete is safer.
+                    // Deleting tables cascades to assignments.
+                    // Deleting guests cascades to assignments.
+
+                    // Let's delete all tables and guests for this project.
+                    await supabase.from('tables').delete().eq('project_id', currentProjectId.value);
+                    await supabase.from('guests').delete().eq('project_id', currentProjectId.value);
+
+                    tables.value = [];
+                    guests.value = [];
+                    assignments.value = [];
+                    showToast('Datos reseteados');
+                } catch (e) { console.error(e); }
+            }
+        };
+
+        const getGuestPortalLink = () => {
+            const url = new URL('index2.html', window.location.href);
+            url.searchParams.set('project', currentProjectId.value);
+            return url.toString();
+        };
+
+        const copyLink = () => {
+            navigator.clipboard.writeText(getGuestPortalLink());
+            showToast('Link copiado al portapapeles!');
+        };
 
 
 
 
-                return {
-                    currentProject, currentProjectId,
-                    currentView,
-                    tables, guests, assignments, tablesWithStats, filteredAssignableItems, assignableItems, guestsWithAssignments,
-                    totalCapacity, totalGuestsInvited, assignedGuestsCount, notRespondedCount, confirmedGuestsCount, declinedGuestsCount,
-                    searchQuery, filter, showTableModal, editingTable, tableForm,
-                    showGuestModal, editingGuest, guestForm, toast,
-                    tableModalTitle, guestModalTitle,
-                    openTableModal, editTable, saveTable, deleteTable, closeModal,
-                    openGuestModal, editGuest, saveGuest, deleteGuest, closeGuestModal,
-                    addSubGuest, removeSubGuest,
-                    getIndividualConfirmedCount,
-                    assignGuest, handleFileUpload, handleExport, resetData,
-                    syncMainGuestDietary,
-                    getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials,
-                    getStatusBadgeClass, getProgressBarClass, getAvatarColor,
-                    backToDashboard, formatDate,
-                    getGuestPortalLink, copyLink
-                };
+        return {
+            currentProject, currentProjectId,
+            currentView,
+            tables, guests, assignments, tablesWithStats, filteredAssignableItems, assignableItems, guestsWithAssignments,
+            totalCapacity, totalGuestsInvited, assignedGuestsCount, notRespondedCount, confirmedGuestsCount, declinedGuestsCount,
+            searchQuery, filter, showTableModal, editingTable, tableForm,
+            showGuestModal, editingGuest, guestForm, toast,
+            tableModalTitle, guestModalTitle,
+            openTableModal, editTable, saveTable, deleteTable, closeModal,
+            openGuestModal, editGuest, saveGuest, deleteGuest, closeGuestModal,
+            addSubGuest, removeSubGuest,
+            getIndividualConfirmedCount,
+            assignGuest, handleFileUpload, handleExport, resetData,
+            syncMainGuestDietary,
+            getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials,
+            getStatusBadgeClass, getProgressBarClass, getAvatarColor,
+            backToDashboard, formatDate,
+            getGuestPortalLink, copyLink
+        };
             }
         }).mount('#app');
     </script>
