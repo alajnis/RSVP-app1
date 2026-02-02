@@ -546,7 +546,7 @@
 
             <div
                 class="p-4 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 flex justify-between items-center">
-                <span>Total Guests: {{ totalGuests }}</span>
+                <span>Total Guests: {{ totalGuestsInvited }}</span>
                 <span>Excel Format: Col A = Apellido, Col B = Nombre, Col C = Cantidad, Col D = Email, Col E = Tel, Col
                     F = Dieta</span>
             </div>
@@ -1610,9 +1610,9 @@
                 return {
                     currentProject, currentProjectId,
                     currentView,
-                    tables, guests, assignments, tablesWithStats, filteredAssignableItems, assignableItems, guestsWithAssignments,
+                    tables, guests, assignments, tablesWithStats, filteredAssignableItems, assignableItems, guestsWithAssignments, filteredGuestList,
                     totalCapacity, totalGuestsInvited, assignedGuestsCount, notRespondedCount, confirmedGuestsCount, declinedGuestsCount,
-                    searchQuery, filter, showTableModal, editingTable, tableForm,
+                    searchQuery, filter, guestFilter, showTableModal, editingTable, tableForm,
                     showGuestModal, editingGuest, guestForm, toast,
                     tableModalTitle, guestModalTitle,
                     openTableModal, editTable, saveTable, deleteTable, closeModal,
