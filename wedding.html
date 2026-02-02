@@ -355,6 +355,20 @@
                     <p class="text-xs font-bold text-brand-dark/40 uppercase tracking-widest mt-1">Agrega, edita o
                         importa tu lista de invitados.</p>
                 </div>
+
+                <!-- Guest Filters -->
+                <div class="flex gap-3 bg-brand-beige/30 p-1 rounded-lg">
+                    <button @click="guestFilter = 'all'"
+                        :class="guestFilter === 'all' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
+                        class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all">Todos</button>
+                    <button @click="guestFilter = 'confirmed'"
+                        :class="guestFilter === 'confirmed' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
+                        class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all">Confirmados</button>
+                    <button @click="guestFilter = 'pending'"
+                        :class="guestFilter === 'pending' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
+                        class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all">Pendientes</button>
+                </div>
+
                 <div class="flex flex-wrap gap-3">
                     <!-- Excel Export -->
                     <button @click="handleExport"
@@ -408,7 +422,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-brand-pink/30">
-                        <tr v-for="guest in guestsWithAssignments" :key="guest.id"
+                        <tr v-for="guest in filteredGuestList" :key="guest.id"
                             class="hover:bg-slate-50 transition-colors">
                             <td class="px-6 py-4">
                                 <div class="font-bold text-brand-dark">{{ guest.lastName }}, {{ guest.firstName }}</div>
@@ -817,6 +831,7 @@
                 // UI State
                 const searchQuery = ref('');
                 const filter = ref('all');
+                const guestFilter = ref('all'); // Filter for Guest List View
                 const showTableModal = ref(false);
                 const editingTable = ref(null);
                 const tableForm = reactive({ name: '', capacity: 8 });
@@ -959,6 +974,26 @@
                             (i.firstName || '').toLowerCase().includes(q) ||
                             (i.lastName || '').toLowerCase().includes(q)
                         );
+                    }
+                    return result;
+                });
+
+                const filteredGuestList = computed(() => {
+                    let result = guestsWithAssignments.value;
+                    if (guestFilter.value === 'confirmed') {
+                        result = result.filter(g => {
+                            if (g.sub_guests && g.sub_guests.length > 0) {
+                                return g.sub_guests.some(sg => sg.status === 'Confirmed');
+                            }
+                            return g.rsvp_status === 'Confirmed';
+                        });
+                    } else if (guestFilter.value === 'pending') {
+                        result = result.filter(g => {
+                            if (g.sub_guests && g.sub_guests.length > 0) {
+                                return g.sub_guests.some(sg => sg.status === 'Pending' || !sg.status); // Include empty status as pending
+                            }
+                            return g.rsvp_status === 'Pending' || !g.rsvp_status;
+                        });
                     }
                     return result;
                 });
