@@ -851,7 +851,6 @@
                 const searchQuery = ref('');
                 const filter = ref('all');
                 const guestFilter = ref('all'); // Filter for Guest List View
-                const filter = ref('all');
                 const showTableModal = ref(false);
                 const showFloorPlanModal = ref(false);
                 const editingTable = ref(null);
@@ -1622,7 +1621,6 @@
 
                 const copyLink = () => {
                     navigator.clipboard.writeText(getGuestPortalLink());
-                    showToast('Link copiado al portapapeles!');
                     showToast('Link copiado al portapapeles!');
                 };
 
