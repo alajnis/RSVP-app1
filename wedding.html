@@ -179,6 +179,24 @@
                 <div class="flex justify-between items-center mb-10">
                     <h2 class="text-2xl font-serif font-bold text-brand-dark">Distribución de Mesas</h2>
                     <div class="flex gap-4">
+                        <!-- Floor Plan Buttons -->
+                        <div class="flex gap-2 mr-4">
+                            <input type="file" ref="floorPlanInput" @change="handleFloorPlanUpload" accept="image/*"
+                                class="hidden">
+
+                            <button v-if="currentProject && currentProject.floorPlanUrl"
+                                @click="showFloorPlanModal = true"
+                                class="bg-white border border-brand-pink hover:border-brand-crimson text-brand-dark px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                                <i class="ph-bold ph-eye"></i> Ver Plano
+                            </button>
+
+                            <button @click="$refs.floorPlanInput.click()"
+                                class="bg-white border border-brand-pink hover:border-brand-crimson text-brand-dark px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                                <i class="ph-bold ph-upload-simple"></i> {{ currentProject &&
+                                currentProject.floorPlanUrl ? 'Cambiar Plano' : 'Adjuntar Plano' }}
+                            </button>
+                        </div>
+
                         <button @click="openTableModal()"
                             class="bg-brand-crimson hover:bg-brand-dark text-white px-10 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all shadow-lg">
                             Nueva Mesa
@@ -798,7 +816,8 @@
                         weddingDate: proj.wedding_date,
                         brideName: proj.bride_name,
                         groomName: proj.groom_name,
-                        eventsConfig: proj.events_config // FIX: Map this field!
+                        eventsConfig: proj.events_config,
+                        floorPlanUrl: proj.floor_plan_url // Load URL
                     };
                     currentProjectId.value = projectId;
 
@@ -832,7 +851,9 @@
                 const searchQuery = ref('');
                 const filter = ref('all');
                 const guestFilter = ref('all'); // Filter for Guest List View
+                const filter = ref('all');
                 const showTableModal = ref(false);
+                const showFloorPlanModal = ref(false);
                 const editingTable = ref(null);
                 const tableForm = reactive({ name: '', capacity: 8 });
 
@@ -1602,6 +1623,62 @@
                 const copyLink = () => {
                     navigator.clipboard.writeText(getGuestPortalLink());
                     showToast('Link copiado al portapapeles!');
+                    showToast('Link copiado al portapapeles!');
+                };
+
+                const handleFloorPlanUpload = async (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    // Validar tipo
+                    if (!file.type.startsWith('image/')) {
+                        showToast('Solo se permiten imágenes', 'error');
+                        return;
+                    }
+
+                    try {
+                        showToast('Subiendo plano...', 'info');
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `${currentProjectId.value}-floorplan.${fileExt}`;
+                        const filePath = `${fileName}`; // Simple path in bucket
+
+                        // 1. Upload to Supabase Storage
+                        const { data, error: uploadError } = await supabase.storage
+                            .from('floor_plans')
+                            .upload(filePath, file, {
+                                upsert: true
+                            });
+
+                        if (uploadError) throw uploadError;
+
+                        // 2. Get Public URL
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('floor_plans')
+                            .getPublicUrl(filePath);
+
+                        // 3. Update Project
+                        // Force cache busting manually if needed, but unique name or timestamp is better. 
+                        // Since we upsert with same name, browser handles caching unless we add param.
+                        const finalUrl = `${publicUrl}?t=${Date.now()}`;
+
+                        const { error: dbError } = await supabase
+                            .from('projects')
+                            .update({ floor_plan_url: finalUrl })
+                            .eq('id', currentProjectId.value);
+
+                        if (dbError) throw dbError;
+
+                        // 4. Update Local State
+                        if (currentProject.value) {
+                            currentProject.value.floorPlanUrl = finalUrl;
+                        }
+
+                        showToast('Plano actualizado exitosamente');
+
+                    } catch (e) {
+                        console.error(e);
+                        showToast('Error al subir plano: ' + e.message, 'error');
+                    }
                 };
 
 
@@ -1612,14 +1689,14 @@
                     currentView,
                     tables, guests, assignments, tablesWithStats, filteredAssignableItems, assignableItems, guestsWithAssignments, filteredGuestList,
                     totalCapacity, totalGuestsInvited, assignedGuestsCount, notRespondedCount, confirmedGuestsCount, declinedGuestsCount,
-                    searchQuery, filter, guestFilter, showTableModal, editingTable, tableForm,
+                    searchQuery, filter, guestFilter, showTableModal, editingTable, tableForm, showFloorPlanModal,
                     showGuestModal, editingGuest, guestForm, toast,
                     tableModalTitle, guestModalTitle,
                     openTableModal, editTable, saveTable, deleteTable, closeModal,
                     openGuestModal, editGuest, saveGuest, deleteGuest, closeGuestModal,
                     addSubGuest, removeSubGuest,
                     getIndividualConfirmedCount,
-                    assignGuest, handleFileUpload, handleExport, resetData,
+                    assignGuest, handleFileUpload, handleExport, resetData, handleFloorPlanUpload,
                     syncMainGuestDietary,
                     getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials,
                     getStatusBadgeClass, getProgressBarClass, getAvatarColor,
