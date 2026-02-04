@@ -177,6 +177,13 @@
             <div v-for="project in filteredProjects" :key="project.id"
                 class="bg-white border border-brand-pink shadow-sm hover:shadow-2xl transition-all group relative flex flex-col h-full">
 
+                <!-- Warning Badge for Old Weddings -->
+                <div v-if="isWeddingExpired(project.weddingDate)"
+                    class="absolute -top-3 -right-3 z-10 bg-amber-500 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-2 animate-pulse">
+                    <i class="ph-fill ph-warning text-sm"></i>
+                    <span class="text-[9px] font-bold uppercase tracking-widest">Evento Pasado</span>
+                </div>
+
                 <!-- Decorative Header -->
                 <div class="h-4 w-full bg-brand-crimson shrink-0"></div>
 
@@ -847,6 +854,12 @@
                     return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
                 };
 
+                const isWeddingExpired = (dateString) => {
+                    const days = getDaysUntil(dateString);
+                    return days < -7; // More than 7 days past the wedding date
+                };
+
+
                 const getCountdownText = (project) => {
                     const days = getDaysUntil(project.weddingDate);
                     if (days < 0) return 'Evento finalizado';
@@ -1003,6 +1016,7 @@
                     openProject,
                     getDaysUntil,
                     formatDate,
+                    isWeddingExpired,
                     getCountdownText,
                     getCountdownClass,
                     handleExportAll,
