@@ -465,6 +465,11 @@
                                                   }">
                                                 {{ sg.ageCategory }}
                                             </span>
+                                            
+                                            <span v-if="sg.dietary && sg.dietary !== 'None'"
+                                                class="px-1.5 py-0.5 rounded-full text-[7px] font-bold border ml-1 bg-orange-100 text-orange-700 border-orange-200">
+                                                <i class="ph-bold ph-warning-circle"></i> {{ sg.dietary }}
+                                            </span>
                                         </div>
 
                                         <!-- Multi-Event Badges -->
@@ -517,10 +522,12 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <span v-if="guest.dietary && guest.dietary !== 'None'"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">
-                                    <i class="ph-bold ph-warning-circle"></i> {{ guest.dietary }}
-                                </span>
+                                <div v-if="getGuestDietaries(guest).length > 0" class="flex flex-col gap-1">
+                                    <span v-for="diet in getGuestDietaries(guest)" :key="diet"
+                                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-bold w-fit">
+                                        <i class="ph-bold ph-warning-circle"></i> {{ diet }}
+                                    </span>
+                                </div>
                                 <span v-else class="text-slate-400 text-sm">-</span>
                             </td>
                             <td class="px-6 py-4">
@@ -1186,6 +1193,7 @@
                             phone: guestForm.phone,
                             guests_confirmed: guestForm.guests_confirmed,
                             rsvp_status: guestForm.rsvp_status,
+                            dietary: guestForm.dietary,
                             sub_guests: guestForm.sub_guests, // JSONB
                             project_id: currentProjectId.value
                         };
@@ -1615,6 +1623,17 @@
                     }
                     return getFullName(g);
                 };
+
+                const getGuestDietaries = (guest) => {
+                    const diets = new Set();
+                    if (guest.dietary && guest.dietary !== 'None') diets.add(guest.dietary);
+                    if (guest.sub_guests && guest.sub_guests.length > 0) {
+                        guest.sub_guests.forEach(sg => {
+                            if (sg.dietary && sg.dietary !== 'None') diets.add(sg.dietary);
+                        });
+                    }
+                    return Array.from(diets);
+                };
                 const showToast = (msg, type = 'success') => { toast.message = msg; toast.type = type; toast.show = true; setTimeout(() => toast.show = false, 3000); };
                 const getStatusBadgeClass = (table) => {
                     const base = 'text-[9px] font-bold px-2 py-0.5 border uppercase tracking-[0.15em]';
@@ -1741,7 +1760,7 @@
                     getIndividualConfirmedCount,
                     assignGuest, handleFileUpload, handleExport, resetData, handleFloorPlanUpload,
                     syncMainGuestDietary,
-                    getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials, getAssignmentName,
+                    getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials, getAssignmentName, getGuestDietaries,
                     getStatusBadgeClass, getProgressBarClass, getAvatarColor,
                     backToDashboard, formatDate,
                     getGuestPortalLink, copyLink
