@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Execute SQL Migration - Multi Event</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SUPABASE LOCAL (Vendorized) -->
+    <script src="vendor/supabase.js"></script>
+    <script src="supabase-client.js"></script>
+</head>
+
+<body class="bg-gray-100 p-8">
+    <div class="max-w-2xl mx-auto bg-white p-6 rounded shadow">
+        <h1 class="text-2xl font-bold mb-4">Ejecutar Migración Multi-Evento</h1>
+
+        <div id="status" class="mb-4 text-gray-700">Listo para migrar...</div>
+
+        <button onclick="runMigration()" class="bg-blue-600 text-white px-4 py-2 rounded">
+            Ejecutar SQL
+        </button>
+
+        <pre id="output" class="mt-4 bg-gray-900 text-green-400 p-4 rounded overflow-auto h-64 text-sm"></pre>
+    </div>
+
+    <script>
+        async function runMigration() {
+            const output = document.getElementById('output');
+            const status = document.getElementById('status');
+
+            output.textContent = 'Iniciando migración...\n';
+
+            try {
+                // 1. Agregar events_config a projects
+                output.textContent += '1. Agregando events_config a projects...\n';
+                const { error: err1 } = await window.supabaseClient.rpc('exec_sql', {
+                    sql_query: "ALTER TABLE projects ADD COLUMN IF NOT EXISTS events_config JSONB DEFAULT '{}'::jsonb;"
+                });
+
+                if (err1) {
+                    // Fallback si RPC no existe o falla, intentar query directa es dificil sin RPC administrativa.
+                    // Asumimos que el usuario creó la funcion exec_sql previamente.
+                    output.textContent += `Error paso 1: ${err1.message}\n`;
+                } else {
+                    output.textContent += '✅ Paso 1 OK\n';
+                }
+
+                // 2. Agregar rsvp_answers a guests
+                output.textContent += '2. Agregando rsvp_answers a guests...\n';
+                const { error: err2 } = await window.supabaseClient.rpc('exec_sql', {
+                    sql_query: "ALTER TABLE guests ADD COLUMN IF NOT EXISTS rsvp_answers JSONB DEFAULT '{}'::jsonb;"
+                });
+
+                if (err2) {
+                    output.textContent += `Error paso 2: ${err2.message}\n`;
+                } else {
+                    output.textContent += '✅ Paso 2 OK\n';
+                }
+
+                status.textContent = 'Proceso finalizado.';
+
+            } catch (e) {
+                output.textContent += `EXCEPTION: ${e.message}\n`;
+            }
+        }
+    </script>
+</body>
+
+</html>

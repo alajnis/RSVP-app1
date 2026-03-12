@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejecutar SQL - Fix RLS</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+
+        button {
+            background: #C42745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+
+        button:hover {
+            background: #a01f38;
+        }
+
+        #output {
+            background: #000;
+            padding: 20px;
+            border: 1px solid #00ff00;
+            min-height: 200px;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+
+        .success {
+            color: #00ff00;
+        }
+
+        .error {
+            color: #ff0000;
+        }
+
+        .warning {
+            color: #ffaa00;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔧 Ejecutar SQL - Fix RLS Policies</h1>
+    <p>Este script arreglará los permisos de la base de datos para asignaciones de mesas.</p>
+
+    <button onclick="executeSQL()">▶️ EJECUTAR FIX RLS</button>
+    <button onclick="clearOutput()">🗑️ Limpiar</button>
+
+    <div id="output">Esperando ejecución...</div>
+
+    <script>
+        async function executeSQL() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<span class="warning">⏳ Ejecutando SQL...</span>\n\n';
+
+            try {
+                if (!window.supabase) {
+                    throw new Error('Supabase client no disponible');
+                }
+
+                const queries = [
+                    // Drop existing policies
+                    `DROP POLICY IF EXISTS "assignments_select_policy" ON assignments`,
+                    `DROP POLICY IF EXISTS "assignments_insert_policy" ON assignments`,
+                    `DROP POLICY IF EXISTS "assignments_update_policy" ON assignments`,
+                    `DROP POLICY IF EXISTS "assignments_delete_policy" ON assignments`,
+
+                    // Create permissive policy
+                    `CREATE POLICY "assignments_allow_all" ON assignments FOR ALL USING (true) WITH CHECK (true)`,
+
+                    // Enable RLS
+                    `ALTER TABLE assignments ENABLE ROW LEVEL SECURITY`
+                ];
+
+                let successCount = 0;
+                let errors = [];
+
+                for (let i = 0; i < queries.length; i++) {
+                    const query = queries[i];
+                    output.innerHTML += `\n[${i + 1}/${queries.length}] Ejecutando: ${query.substring(0, 50)}...\n`;
+
+                    try {
+                        // Execute via RPC or direct query
+                        const { data, error } = await window.supabase.rpc('exec_sql', {
+                            sql: query
+                        });
+
+                        if (error) {
+                            // Try alternative method
+                            const response = await fetch(`${window.supabase.supabaseUrl}/rest/v1/rpc/exec_sql`, {
+                                method: 'POST',
+                                headers: {
+                                    'apikey': window.supabase.supabaseKey,
+                                    'Content-Type': 'application/json',
+                                    'Prefer': 'return=representation'
+                                },
+                                body: JSON.stringify({ sql: query })
+                            });
+
+                            if (!response.ok) {
+                                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                            }
+                        }
+
+                        output.innerHTML += `<span class="success">✅ OK</span>\n`;
+                        successCount++;
+                    } catch (e) {
+                        output.innerHTML += `<span class="error">❌ Error: ${e.message}</span>\n`;
+                        errors.push({ query, error: e.message });
+                    }
+                }
+
+                output.innerHTML += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                if (errors.length === 0) {
+                    output.innerHTML += `<span class="success">✅ ¡ÉXITO! Todas las queries ejecutadas (${successCount}/${queries.length})</span>\n`;
+                    output.innerHTML += `\n<span class="success">🎉 Las asignaciones a mesas ahora deberían funcionar.</span>`;
+                } else {
+                    output.innerHTML += `<span class="warning">⚠️ Completado con errores: ${errors.length}/${queries.length}</span>\n\n`;
+                    output.innerHTML += `<span class="error">ERRORES:</span>\n`;
+                    errors.forEach(e => {
+                        output.innerHTML += `- ${e.query.substring(0, 50)}...\n  ${e.error}\n`;
+                    });
+                    output.innerHTML += `\n<span class="warning">💡 Si hay errores, necesitas ejecutar el SQL desde Supabase Studio.</span>`;
+                }
+
+            } catch (e) {
+                output.innerHTML += `\n<span class="error">❌ ERROR FATAL: ${e.message}</span>\n`;
+                output.innerHTML += `\n<span class="warning">💡 No se puede ejecutar SQL desde JavaScript.</span>`;
+                output.innerHTML += `\n<span class="warning">Necesitas acceder a Supabase Studio o ejecutar SQL directamente.</span>`;
+
+                // Show SQL for manual execution
+                output.innerHTML += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                output.innerHTML += `<span class="success">📋 Copia este SQL y ejecútalo manualmente:</span>\n\n`;
+                output.innerHTML += `DROP POLICY IF EXISTS "assignments_select_policy" ON assignments;\n`;
+                output.innerHTML += `DROP POLICY IF EXISTS "assignments_insert_policy" ON assignments;\n`;
+                output.innerHTML += `DROP POLICY IF EXISTS "assignments_update_policy" ON assignments;\n`;
+                output.innerHTML += `DROP POLICY IF EXISTS "assignments_delete_policy" ON assignments;\n\n`;
+                output.innerHTML += `CREATE POLICY "assignments_allow_all" ON assignments\n`;
+                output.innerHTML += `    FOR ALL USING (true) WITH CHECK (true);\n\n`;
+                output.innerHTML += `ALTER TABLE assignments ENABLE ROW LEVEL SECURITY;\n`;
+            }
+        }
+
+        function clearOutput() {
+            document.getElementById('output').innerHTML = 'Esperando ejecución...';
+        }
+    </script>
+</body>
+
+</html>

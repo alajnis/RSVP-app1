@@ -267,8 +267,8 @@
                                 <template v-for="(assignment, i) in getTableAssignments(table.id).slice(0, 5)"
                                     :key="assignment.id">
                                     <div class="inline-block h-6 w-6 ring-2 ring-white bg-brand-pink flex items-center justify-center text-[8px] font-bold text-brand-dark"
-                                        :title="getFullName(getGuestById(assignment.guest_id))">
-                                        {{ getGuestInitials(assignment.guest_id) }}
+                                        :title="getAssignmentName(assignment)">
+                                        {{ getGuestInitials(assignment.guest_id, assignment.sub_guest_idx) }}
                                     </div>
                                 </template>
                                 <div v-if="getTableAssignments(table.id).length > 5"
@@ -1586,12 +1586,34 @@
                     if (!f && !l) return item.name || ''; // Fallback legacy
                     return `${l}${l && f ? ', ' : ''}${f}`.trim();
                 };
-                const getGuestInitials = (id) => {
+                const getGuestInitials = (id, subGuestIdx) => {
                     const g = getGuestById(id);
                     if (!g) return '?';
+                    // If subGuestIdx is provided and sub_guests exist, use the specific sub_guest's name
+                    if (subGuestIdx !== null && subGuestIdx !== undefined && g.sub_guests && g.sub_guests[subGuestIdx]) {
+                        const sg = g.sub_guests[subGuestIdx];
+                        // Support both camelCase and snake_case from JSONB
+                        const sgFirst = sg.firstName || sg.first_name || '';
+                        const sgLast = sg.lastName || sg.last_name || g.lastName || '';
+                        const f = sgFirst.charAt(0);
+                        const l = sgLast.charAt(0);
+                        return (f + l).toUpperCase() || '?';
+                    }
                     const f = (g.firstName || '').charAt(0);
                     const l = (g.lastName || '').charAt(0);
                     return (f + l).toUpperCase() || (g.name ? g.name.charAt(0).toUpperCase() : '?');
+                };
+                const getAssignmentName = (assignment) => {
+                    const g = getGuestById(assignment.guest_id);
+                    if (!g) return '';
+                    if (assignment.sub_guest_idx !== null && assignment.sub_guest_idx !== undefined && g.sub_guests && g.sub_guests[assignment.sub_guest_idx]) {
+                        const sg = g.sub_guests[assignment.sub_guest_idx];
+                        // Support both camelCase and snake_case from JSONB
+                        const sgFirst = sg.firstName || sg.first_name || '';
+                        const sgLast = sg.lastName || sg.last_name || g.lastName || '';
+                        return getFullName({ firstName: sgFirst, lastName: sgLast });
+                    }
+                    return getFullName(g);
                 };
                 const showToast = (msg, type = 'success') => { toast.message = msg; toast.type = type; toast.show = true; setTimeout(() => toast.show = false, 3000); };
                 const getStatusBadgeClass = (table) => {
@@ -1719,7 +1741,7 @@
                     getIndividualConfirmedCount,
                     assignGuest, handleFileUpload, handleExport, resetData, handleFloorPlanUpload,
                     syncMainGuestDietary,
-                    getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials,
+                    getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials, getAssignmentName,
                     getStatusBadgeClass, getProgressBarClass, getAvatarColor,
                     backToDashboard, formatDate,
                     getGuestPortalLink, copyLink
