@@ -1487,66 +1487,84 @@
 
                             // Detect Column Indexes dynamically based on headers
                             const headers = jsonData[0] || [];
-                            const findIdx = (str) => headers.findIndex(h => h && String(h).toLowerCase().includes(str));
+                            const findIdx = (str) => headers.findIndex(h => h && String(h).toLowerCase().includes(str.toLowerCase()));
 
-                            // Default indexes
-                            let idxLast = 0, idxFirst = 1, idxCount = 2, idxEmail = 3, idxPhone = 4, idxDiet = 5;
-                            // Try to find age column (can be 6, or 8 if export format)
+                            // Dynamic indexes for new format
+                            let idxInvLast = findIdx('invitación (apellido)');
+                            if (idxInvLast === -1) idxInvLast = 0;
+
+                            let idxInvFirst = findIdx('invitación (nombre)');
+                            if (idxInvFirst === -1) idxInvFirst = 1;
+
+                            let idxIntLast = findIdx('integrante (apellido)');
+                            if (idxIntLast === -1) idxIntLast = 2;
+
+                            let idxIntFirst = findIdx('integrante (nombre)');
+                            if (idxIntFirst === -1) idxIntFirst = 3;
+
+                            let idxEmail = findIdx('email');
+                            let idxPhone = findIdx('teléfono') !== -1 ? findIdx('teléfono') : findIdx('telefono');
+                            let idxDiet = findIdx('dieta');
                             let idxAge = findIdx('edad');
-                            if (idxAge === -1) idxAge = headers.length > 7 ? 8 : 6; // Fallback to 8 if wide (export), else 6
 
-                            // Optional: Detect other columns if headers exist
-                            if (findIdx('apellido') > -1) idxLast = findIdx('apellido');
-                            if (findIdx('nombre') > -1) idxFirst = findIdx('nombre');
-
-                            const guestsToInsert = [];
+                            const groupedGuests = {};
 
                             for (let i = 1; i < jsonData.length; i++) {
                                 const row = jsonData[i];
                                 if (!row || row.length < 2) continue;
 
-                                // Row format based on indexes
-                                const lName = (row[idxLast] || '').toString().trim();
-                                const fName = (row[idxFirst] || '').toString().trim();
-                                const count = parseInt(row[idxCount]) || 1;
-                                const email = (row[idxEmail] || '').toString().trim();
-                                const phone = (row[idxPhone] || '').toString().trim();
-                                const dietVal = (row[idxDiet] || '').toString().trim();
-                                // Clean up diet value (ignore header-like values if mistaken)
+                                // Extract primary guest
+                                const pLast = (row[idxInvLast] || '').toString().trim();
+                                const pFirst = (row[idxInvFirst] || '').toString().trim();
+                                
+                                if (!pLast && !pFirst) continue;
+
+                                // Grouping key (case insensitive)
+                                const groupKey = `${pLast.toLowerCase()}_${pFirst.toLowerCase()}`;
+
+                                // Initialize primary guest group if not exists
+                                if (!groupedGuests[groupKey]) {
+                                    groupedGuests[groupKey] = {
+                                        project_id: currentProjectId.value,
+                                        first_name: pFirst, // Use the original case for the first encountered
+                                        last_name: pLast,
+                                        guests_confirmed: 0, // will be calculated by sub_guests array length
+                                        email: (idxEmail !== -1 && row[idxEmail]) ? row[idxEmail].toString().trim() : null,
+                                        phone: (idxPhone !== -1 && row[idxPhone]) ? row[idxPhone].toString().trim() : null,
+                                        rsvp_status: 'Pending',
+                                        sub_guests: []
+                                    };
+                                }
+
+                                // Extract sub guest
+                                const sLast = (row[idxIntLast] || '').toString().trim();
+                                const sFirst = (row[idxIntFirst] || '').toString().trim();
+                                
+                                // Clean up diet value
+                                const dietVal = (idxDiet !== -1 && row[idxDiet]) ? row[idxDiet].toString().trim() : '';
                                 const dietary = ['Vegano', 'Vegetariano', 'Celiaco', 'Kosher', 'None'].some(d => dietVal.includes(d)) ? dietVal : 'None';
 
                                 // Age validation
-                                let ageCat = (row[idxAge] || '').toString().trim();
+                                let ageCat = (idxAge !== -1 && row[idxAge]) ? row[idxAge].toString().trim() : '';
                                 const validAges = ['Adulto', 'Teen', 'Niño', 'Bebé'];
-                                // Case insensitive match attempt
                                 const matchAge = validAges.find(a => a.toLowerCase() === ageCat.toLowerCase());
-                                ageCat = matchAge || '';
+                                ageCat = matchAge || 'Adulto'; // default Adulto
 
-                                if (!lName && !fName) continue;
-
-                                const subGuests = [];
-                                // Create sub_guests based on count
-                                for (let j = 0; j < count; j++) {
-                                    subGuests.push({
-                                        firstName: j === 0 ? fName : '',
-                                        lastName: j === 0 ? lName : '',
-                                        status: 'Pending',
-                                        dietary: j === 0 ? (dietary || 'None') : 'None',
-                                        ageCategory: ageCat
-                                    });
-                                }
-
-                                guestsToInsert.push({
-                                    project_id: currentProjectId.value,
-                                    first_name: fName,
-                                    last_name: lName,
-                                    guests_confirmed: count,
-                                    email: email || null,
-                                    phone: phone || null,
-                                    rsvp_status: 'Pending',
-                                    sub_guests: subGuests
+                                // Push sub guest
+                                groupedGuests[groupKey].sub_guests.push({
+                                    firstName: sFirst,
+                                    lastName: sLast,
+                                    status: 'Pending',
+                                    dietary: dietary,
+                                    ageCategory: ageCat
                                 });
-                            } // End of for loop
+                            }
+
+                            // Convert grouped object back to array
+                            const guestsToInsert = Object.values(groupedGuests).map(g => {
+                                g.guests_confirmed = g.sub_guests.length;
+                                return g;
+                            });
 
                             if (guestsToInsert.length > 0) {
                                 // FIX: Bulk insert en Supabase (sin especificar id, Supabase lo genera)
