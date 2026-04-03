@@ -414,6 +414,14 @@
                 </div>
             </div>
 
+            <!-- Guest Search -->
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-100">
+                <div class="relative w-full max-w-md">
+                    <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" v-model="guestSearchQuery" placeholder="Buscar invitado o integrante..."
+                        class="w-full pl-12 pr-4 py-2 bg-white border border-brand-pink focus:border-brand-crimson outline-none transition-all placeholder:text-[10px] placeholder:uppercase placeholder:tracking-widest text-sm">
+                </div>
+            </div>
             <!-- Guest Admin Table -->
             <div class="flex-1 overflow-auto">
                 <table class="w-full text-left border-collapse">
@@ -465,10 +473,6 @@
                                                   }">
                                                 {{ sg.ageCategory }}
                                             </span>
-                                            
-                                            <span v-if="sg.dietary && sg.dietary !== 'None'"
-                                                class="px-1.5 py-0.5 rounded-full text-[7px] font-bold border ml-1 bg-orange-100 text-orange-700 border-orange-200">
-                                                <i class="ph-bold ph-warning-circle"></i> {{ sg.dietary }}
                                             </span>
                                         </div>
 
@@ -514,11 +518,11 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-sm text-slate-600">
-                                <div v-if="guest.email" class="flex items-center gap-2 mb-1"><i
+                                <div v-if="guest.email && guest.email !== '-'" class="flex items-center gap-2 mb-1"><i
                                         class="ph-bold ph-envelope-simple text-slate-400"></i> {{ guest.email }}</div>
-                                <div v-if="guest.phone" class="flex items-center gap-2"><i
+                                <div v-if="guest.phone && guest.phone !== '-'" class="flex items-center gap-2"><i
                                         class="ph-bold ph-phone text-slate-400"></i> {{ guest.phone }}</div>
-                                <div v-if="!guest.email && !guest.phone" class="text-slate-400 italic">No contact info
+                                <div v-if="(!guest.email || guest.email === '-') && (!guest.phone || guest.phone === '-')" class="text-slate-400 italic">No contact info
                                 </div>
                             </td>
                             <td class="px-6 py-4">
@@ -572,8 +576,6 @@
             <div
                 class="p-4 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 flex justify-between items-center">
                 <span>Total Guests: {{ totalGuestsInvited }}</span>
-                <span>Excel Format: Col A = Apellido, Col B = Nombre, Col C = Cantidad, Col D = Email, Col E = Tel, Col
-                    F = Dieta</span>
             </div>
         </div>
 
@@ -879,6 +881,7 @@
 
                 // UI State
                 const searchQuery = ref('');
+                const guestSearchQuery = ref('');
                 const filter = ref('all');
                 const guestFilter = ref('all'); // Filter for Guest List View
                 const showTableModal = ref(false);
@@ -1045,6 +1048,20 @@
                             return g.rsvp_status === 'Pending' || !g.rsvp_status;
                         });
                     }
+
+                    if (guestSearchQuery.value) {
+                        const q = guestSearchQuery.value.toLowerCase();
+                        result = result.filter(g => {
+                            const nameMatch = ((g.firstName || '') + ' ' + (g.lastName || '')).toLowerCase().includes(q) ||
+                                              ((g.lastName || '') + ' ' + (g.firstName || '')).toLowerCase().includes(q);
+                            const subMatch = (g.sub_guests || []).some(sg => 
+                                ((sg.firstName || '') + ' ' + (sg.lastName || '')).toLowerCase().includes(q) ||
+                                ((sg.lastName || '') + ' ' + (sg.firstName || '')).toLowerCase().includes(q)
+                            );
+                            return nameMatch || subMatch;
+                        });
+                    }
+
                     return result;
                 });
 
@@ -1769,7 +1786,7 @@
                     currentView,
                     tables, guests, assignments, tablesWithStats, filteredAssignableItems, assignableItems, guestsWithAssignments, filteredGuestList,
                     totalCapacity, totalGuestsInvited, assignedGuestsCount, notRespondedCount, confirmedGuestsCount, declinedGuestsCount,
-                    searchQuery, filter, guestFilter, showTableModal, editingTable, tableForm, showFloorPlanModal,
+                    searchQuery, guestSearchQuery, filter, guestFilter, showTableModal, editingTable, tableForm, showFloorPlanModal,
                     showGuestModal, editingGuest, guestForm, toast,
                     tableModalTitle, guestModalTitle,
                     openTableModal, editTable, saveTable, deleteTable, closeModal,
