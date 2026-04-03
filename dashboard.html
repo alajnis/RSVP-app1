@@ -924,18 +924,60 @@
                                 return table ? table.name : 'Sin asignar';
                             };
 
-                            const sheetData = (guests || []).map(g => {
-                                const assignment = (assignments || []).find(a => a.rsvp_id === g.id);
-                                return {
-                                    'Apellido': g.last_name || g.name || '-',
-                                    'Nombre': g.first_name || '-',
-                                    'RSVP': g.rsvp_status === 'Confirmed' ? 'Confirmado' : (g.rsvp_status === 'Declined' ? 'Declinado' : 'Pendiente'),
-                                    'Cantidad': g.guests_confirmed || 0,
-                                    'Email': g.email || '',
-                                    'Teléfono': g.phone || '',
-                                    'Restricciones': g.dietary || 'Ninguna',
-                                    'Mesa': assignment ? getTableName(assignment.table_id) : 'Sin asignar'
-                                };
+                            const sheetData = [];
+                            const eventsConfig = project.events_config || {};
+                            const isMulti = eventsConfig && eventsConfig.multi_event;
+                            
+                            const getAnswersObj = (answersState) => {
+                                if (!isMulti || !eventsConfig.events) return {};
+                                const obj = {};
+                                eventsConfig.events.forEach(evt => {
+                                    const status = (answersState && answersState[evt.id]) ? answersState[evt.id].toUpperCase() : 'PENDIENTE';
+                                    obj[`Evento: ${evt.label}`] = status === 'CONFIRMED' ? 'CONFIRMADO' : (status === 'DECLINED' ? 'NO ASISTIRÁ' : 'PENDIENTE');
+                                });
+                                return obj;
+                            };
+
+                            (guests || []).forEach(g => {
+                                const mainAssignment = (assignments || []).find(a => a.guest_id === g.id && (a.sub_guest_idx === null || a.sub_guest_idx === undefined));
+                                const tableName = mainAssignment ? getTableName(mainAssignment.table_id) : 'Sin asignar';
+
+                                if (g.sub_guests && g.sub_guests.length > 0) {
+                                    g.sub_guests.forEach((sg, idx) => {
+                                        const subAssignment = (assignments || []).find(a => a.guest_id === g.id && a.sub_guest_idx === idx);
+                                        const subTableName = subAssignment ? getTableName(subAssignment.table_id) : tableName;
+                                        const rsvpStatus = sg.status === 'Confirmed' ? 'CONFIRMADO' : (sg.status === 'Declined' ? 'NO ASISTIRÁ' : 'PENDIENTE');
+
+                                        const baseRow = {
+                                            'Invitación (Apellido)': g.last_name || '',
+                                            'Invitación (Nombre)': g.first_name || '',
+                                            'Integrante (Apellido)': sg.lastName || '(Vacio)',
+                                            'Integrante (Nombre)': sg.firstName || (idx === 0 ? g.first_name : `Acompañante ${idx}`),
+                                            'Asistencia General': rsvpStatus,
+                                            'Dieta': sg.dietary || 'Normal',
+                                            'Edad': sg.ageCategory || 'Adulto',
+                                            'Mesa': subTableName,
+                                            'Email Contácto': g.email || '-',
+                                            'Teléfono Contácto': g.phone || '-'
+                                        };
+                                        sheetData.push({ ...baseRow, ...getAnswersObj(sg.rsvp_answers) });
+                                    });
+                                } else {
+                                    const rsvpStatus = g.rsvp_status === 'Confirmed' ? 'CONFIRMADO' : (g.rsvp_status === 'Declined' ? 'CANCELADO' : 'PENDIENTE');
+                                    const baseRow = {
+                                        'Invitación (Apellido)': g.last_name || g.name || '-',
+                                        'Invitación (Nombre)': g.first_name || '-',
+                                        'Integrante (Apellido)': g.last_name || '-',
+                                        'Integrante (Nombre)': g.first_name || '-',
+                                        'Asistencia General': rsvpStatus,
+                                        'Dieta': g.dietary || 'Normal',
+                                        'Edad': 'Adulto',
+                                        'Mesa': tableName,
+                                        'Email Contácto': g.email || '-',
+                                        'Teléfono Contácto': g.phone || '-'
+                                    };
+                                    sheetData.push({ ...baseRow, ...getAnswersObj(g.rsvp_answers) });
+                                }
                             });
 
                             if (sheetData.length > 0) {
