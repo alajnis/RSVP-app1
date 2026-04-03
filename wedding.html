@@ -473,7 +473,6 @@
                                                   }">
                                                 {{ sg.ageCategory }}
                                             </span>
-                                            </span>
                                         </div>
 
                                         <!-- Multi-Event Badges -->
@@ -1520,7 +1519,7 @@
                             if (idxIntFirst === -1) idxIntFirst = 3;
 
                             let idxEmail = findIdx('email');
-                            let idxPhone = findIdx('teléfono') !== -1 ? findIdx('teléfono') : findIdx('telefono');
+                            let idxPhone = findIdx('teléfono') !== -1 ? findIdx('teléfono') : (findIdx('telefono') !== -1 ? findIdx('telefono') : findIdx('tel'));
                             let idxDiet = findIdx('dieta');
                             let idxAge = findIdx('edad');
 
@@ -1564,7 +1563,7 @@
                                 // Age validation
                                 let ageCat = (idxAge !== -1 && row[idxAge]) ? row[idxAge].toString().trim() : '';
                                 const validAges = ['Adulto', 'Teen', 'Niño', 'Bebé'];
-                                const matchAge = validAges.find(a => a.toLowerCase() === ageCat.toLowerCase());
+                                const matchAge = validAges.find(a => ageCat.toLowerCase().includes(a.toLowerCase()));
                                 ageCat = matchAge || 'Adulto'; // default Adulto
 
                                 // Push sub guest
