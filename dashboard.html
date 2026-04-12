@@ -526,6 +526,12 @@
                         return;
                     }
                     session.value = JSON.parse(sessionData);
+
+                    if (session.value && session.value.role === 'couple') {
+                        window.location.href = `wedding.html?project=${session.value.projectId}`;
+                        return;
+                    }
+
                     loadProjects();
                 });
 

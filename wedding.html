@@ -91,8 +91,8 @@
         <header class="mb-10 border-b border-brand-pink/30 pb-8 shrink-0">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-baseline gap-6 py-4">
                 <div class="flex items-center gap-6">
-                    <button @click="backToDashboard"
-                        class="w-12 h-12 flex items-center justify-center border border-brand-pink text-brand-dark hover:bg-brand-crimson hover:text-white transition-all">
+                    <button v-if="!isCouple" @click="backToDashboard"
+                        class="w-12 h-12 mb-auto md:mb-0 flex items-center justify-center border border-brand-pink text-brand-dark hover:bg-brand-crimson hover:text-white transition-all shrink-0">
                         <i class="ph ph-arrow-left text-xl"></i>
                     </button>
                     <div>
@@ -103,10 +103,15 @@
                     </div>
                 </div>
 
-                <!-- Guest link display -->
+                <!-- Guest link display & Logout -->
                 <div class="flex flex-col items-end gap-2 w-full md:w-auto">
-                    <span class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest">Link para
-                        Invitados</span>
+                    <div class="flex w-full justify-between items-center mb-1">
+                        <span class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest">Link para
+                            Invitados</span>
+                        <button v-if="isCouple" @click="logout" class="text-brand-dark border-b-2 border-brand-crimson px-2 py-0.5 font-semibold uppercase tracking-widest text-[10px] hover:text-brand-crimson transition-all">
+                            Cerrar Sesión
+                        </button>
+                    </div>
                     <div class="flex flex-col sm:flex-row gap-2 w-full max-w-md">
                         <input type="text" :value="getGuestPortalLink()" readonly
                             class="flex-1 bg-white border border-brand-pink px-4 py-3 text-sm font-mono text-brand-dark truncate outline-none shadow-inner">
@@ -815,6 +820,7 @@
                 // PROJECT CONTEXT
                 const currentProjectId = ref(null);
                 const currentProject = ref(null);
+                const isCouple = ref(false);
 
                 // DATA STORES
                 const tables = ref([]);
@@ -824,7 +830,35 @@
 
                 // Get project ID from URL
                 const urlParams = new URLSearchParams(window.location.search);
-                const projectId = urlParams.get('project');
+                let projectId = urlParams.get('project');
+
+                if (!projectId) {
+                    try {
+                        const sessionData = localStorage.getItem('rsvp_session');
+                        if (sessionData) {
+                            const sessionInfo = JSON.parse(sessionData);
+                            if (sessionInfo && sessionInfo.role === 'couple') {
+                                isCouple.value = true;
+                                if (sessionInfo.projectId) {
+                                    projectId = sessionInfo.projectId;
+                                    // Repair the URL visually
+                                    window.history.replaceState(null, '', `wedding.html?project=${projectId}`);
+                                }
+                            }
+                        }
+                    } catch(e) {}
+                } else {
+                    // Try parsing session just for the isCouple flag
+                    try {
+                        const sessionData = localStorage.getItem('rsvp_session');
+                        if (sessionData) {
+                            const sessionInfo = JSON.parse(sessionData);
+                            if (sessionInfo && sessionInfo.role === 'couple') {
+                                isCouple.value = true;
+                            }
+                        }
+                    } catch(e) {}
+                }
 
                 if (!projectId) {
                     window.location.href = 'dashboard.html';
@@ -1614,6 +1648,11 @@
                     window.location.href = 'dashboard.html';
                 };
 
+                const logout = () => {
+                    localStorage.removeItem('rsvp_session');
+                    window.location.href = 'login.html';
+                };
+
                 const formatDate = (dateString) => {
                     const date = new Date(dateString);
                     return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -1796,8 +1835,8 @@
                     syncMainGuestDietary,
                     getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials, getAssignmentName, getGuestDietaries,
                     getStatusBadgeClass, getProgressBarClass, getAvatarColor,
-                    backToDashboard, formatDate,
-                    getGuestPortalLink, copyLink
+                    backToDashboard, logout, formatDate,
+                    getGuestPortalLink, copyLink, isCouple
                 };
             }
         }).mount('#app');
