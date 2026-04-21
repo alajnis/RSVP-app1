@@ -372,7 +372,10 @@
                                         <div>
                                             <div class="font-bold text-brand-dark text-sm">{{ item.lastName }}, {{
                                                 item.firstName }}</div>
-                                            <div class="flex items-center gap-2 mt-1">
+                                            <div v-if="item.mainGuestName" class="text-[9px] text-slate-400 font-bold italic mt-0.5 tracking-wider">
+                                                Grupo: {{ item.mainGuestName }}
+                                            </div>
+                                            <div class="flex items-center gap-2 mt-2">
                                                 <span v-if="item.assignment"
                                                     class="text-[10px] text-brand-crimson font-bold bg-brand-pink/50 px-2 py-0.5 border border-brand-crimson/20 tracking-widest">ASIGNADO</span>
                                                 <span v-else
@@ -1063,7 +1066,8 @@
                                     status: sg.status,
                                     dietary: sg.dietary,
                                     assignment: assignment,
-                                    mainGuestId: g.id
+                                    mainGuestId: g.id,
+                                    mainGuestName: `${g.firstName || ''} ${g.lastName || ''}`.trim()
                                 });
                             });
                         } else {
@@ -1079,7 +1083,8 @@
                                 status: g.rsvp_status,
                                 dietary: g.dietary,
                                 assignment: assignment,
-                                mainGuestId: g.id
+                                mainGuestId: g.id,
+                                mainGuestName: `${g.firstName || ''} ${g.lastName || ''}`.trim()
                             });
                         }
                     });
