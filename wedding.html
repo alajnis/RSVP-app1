@@ -1606,35 +1606,34 @@
                             let idxAge = findIdx('edad');
 
                             const groupedGuests = {};
+                            
+                            // Track previous row values to allow "fill-down" if users leave columns empty
+                            let lastSeenInvLast = '';
+                            let lastSeenInvFirst = '';
 
                             for (let i = 1; i < jsonData.length; i++) {
                                 const row = jsonData[i];
-                                if (!row || row.length < 2) continue;
+                                if (!row || row.length === 0) continue;
 
                                 // Extract primary guest
-                                const pLast = (row[idxInvLast] || '').toString().trim();
-                                const pFirst = (row[idxInvFirst] || '').toString().trim();
+                                let pLast = (row[idxInvLast] || '').toString().trim();
+                                let pFirst = (row[idxInvFirst] || '').toString().trim();
+                                
+                                // Ojo: Si la fila no repite invitado principal, hereda el anterior
+                                if (!pLast && !pFirst) {
+                                    pLast = lastSeenInvLast;
+                                    pFirst = lastSeenInvFirst;
+                                } else {
+                                    lastSeenInvLast = pLast;
+                                    lastSeenInvFirst = pFirst;
+                                }
                                 
                                 if (!pLast && !pFirst) continue;
 
                                 // Grouping key (case insensitive)
                                 const groupKey = `${pLast.toLowerCase()}_${pFirst.toLowerCase()}`;
 
-                                // Initialize primary guest group if not exists
-                                if (!groupedGuests[groupKey]) {
-                                    groupedGuests[groupKey] = {
-                                        project_id: currentProjectId.value,
-                                        first_name: pFirst, // Use the original case for the first encountered
-                                        last_name: pLast,
-                                        guests_confirmed: 0, // will be calculated by sub_guests array length
-                                        email: (idxEmail !== -1 && row[idxEmail]) ? row[idxEmail].toString().trim() : null,
-                                        phone: (idxPhone !== -1 && row[idxPhone]) ? row[idxPhone].toString().trim() : null,
-                                        rsvp_status: 'Pending',
-                                        sub_guests: []
-                                    };
-                                }
-
-                                // Extract sub guest
+                                // Extract sub guest details
                                 const sLast = (row[idxIntLast] || '').toString().trim();
                                 const sFirst = (row[idxIntFirst] || '').toString().trim();
                                 
@@ -1648,14 +1647,71 @@
                                 const matchAge = validAges.find(a => ageCat.toLowerCase().includes(a.toLowerCase()));
                                 ageCat = matchAge || 'Adulto'; // default Adulto
 
-                                // Push sub guest
-                                groupedGuests[groupKey].sub_guests.push({
-                                    firstName: sFirst,
-                                    lastName: sLast,
-                                    status: 'Pending',
-                                    dietary: dietary,
-                                    ageCategory: ageCat
-                                });
+                                // Initialize primary guest group if not exists
+                                if (!groupedGuests[groupKey]) {
+                                    groupedGuests[groupKey] = {
+                                        project_id: currentProjectId.value,
+                                        first_name: pFirst, // Use the original case for the first encountered
+                                        last_name: pLast,
+                                        guests_confirmed: 0, // will be calculated by sub_guests array length
+                                        email: (idxEmail !== -1 && row[idxEmail]) ? row[idxEmail].toString().trim() : null,
+                                        phone: (idxPhone !== -1 && row[idxPhone]) ? row[idxPhone].toString().trim() : null,
+                                        rsvp_status: 'Pending',
+                                        sub_guests: []
+                                    };
+                                    
+                                    // AUTOMATICALLY insert the main guest into the list to avoid missing them in the RVSP/Seating
+                                    const isSubGuestTheSame = (sLast.toLowerCase() === pLast.toLowerCase() && sFirst.toLowerCase() === pFirst.toLowerCase());
+                                    
+                                    if (isSubGuestTheSame) {
+                                        // The row explicitly defines the main guest as the sub-guest, use this row's diet/age.
+                                        groupedGuests[groupKey].sub_guests.push({
+                                            firstName: sFirst || pFirst,
+                                            lastName: sLast || pLast,
+                                            status: 'Pending',
+                                            dietary: dietary,
+                                            ageCategory: ageCat
+                                        });
+                                    } else {
+                                        // The row defines someone ELSE. We must add the main guest FIRST (using default diet/age).
+                                        groupedGuests[groupKey].sub_guests.push({
+                                            firstName: pFirst,
+                                            lastName: pLast,
+                                            status: 'Pending',
+                                            dietary: 'None',
+                                            ageCategory: 'Adulto'
+                                        });
+                                        
+                                        // Then we add the sub-guest that was actually on this row (if they have a name)
+                                        if (sLast || sFirst) {
+                                            groupedGuests[groupKey].sub_guests.push({
+                                                firstName: sFirst,
+                                                lastName: sLast,
+                                                status: 'Pending',
+                                                dietary: dietary,
+                                                ageCategory: ageCat
+                                            });
+                                        }
+                                    }
+                                } else {
+                                    // Group already exists. Add the sub guest, avoiding duplicating the main guest.
+                                    const isSubGuestTheSame = (sLast.toLowerCase() === pLast.toLowerCase() && sFirst.toLowerCase() === pFirst.toLowerCase());
+                                    const alreadyHasMainGuest = groupedGuests[groupKey].sub_guests.some(
+                                        sg => sg.firstName.toLowerCase() === pFirst.toLowerCase() && sg.lastName.toLowerCase() === pLast.toLowerCase()
+                                    );
+                                    
+                                    if (!(isSubGuestTheSame && alreadyHasMainGuest)) {
+                                        if (sLast || sFirst) {
+                                            groupedGuests[groupKey].sub_guests.push({
+                                                firstName: sFirst,
+                                                lastName: sLast,
+                                                status: 'Pending',
+                                                dietary: dietary,
+                                                ageCategory: ageCat
+                                            });
+                                        }
+                                    }
+                                }
                             }
 
                             // Convert grouped object back to array
