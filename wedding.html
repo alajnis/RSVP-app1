@@ -1652,14 +1652,20 @@
                             if (idxInvFirst === -1) idxInvFirst = 1;
 
                             let idxIntLast = findIdx('integrante (apellido)');
+                            if (idxIntLast === -1) idxIntLast = findIdx('acompañante (apellido)');
+                            if (idxIntLast === -1) idxIntLast = findIdx('acompa');
                             if (idxIntLast === -1) idxIntLast = 2;
 
                             let idxIntFirst = findIdx('integrante (nombre)');
+                            if (idxIntFirst === -1) idxIntFirst = findIdx('acompañante (nombre)');
                             if (idxIntFirst === -1) idxIntFirst = 3;
 
                             let idxEmail = findIdx('email');
-                            let idxPhone = findIdx('teléfono') !== -1 ? findIdx('teléfono') : (findIdx('telefono') !== -1 ? findIdx('telefono') : findIdx('tel'));
+                            let idxPhone = findIdx('tel') !== -1 ? findIdx('tel') : -1;
+                            // Detect diet column: accepts 'dieta', 'menú', 'menu', 'restriccion', 'alimentaria'
                             let idxDiet = findIdx('dieta');
+                            if (idxDiet === -1) idxDiet = findIdx('men');
+                            if (idxDiet === -1) idxDiet = findIdx('restricci');
                             let idxAge = findIdx('edad');
 
                             const groupedGuests = {};
@@ -1713,7 +1719,9 @@
                                 
                                 // Clean up diet value
                                 const dietVal = (idxDiet !== -1 && row[idxDiet]) ? row[idxDiet].toString().trim() : '';
-                                const dietary = ['Vegano', 'Vegetariano', 'Celiaco', 'Kosher', 'None'].some(d => dietVal.includes(d)) ? dietVal : 'None';
+                                // Accepted values: includes 'Otro' now
+                                const knownDiets = ['Vegano', 'Vegetariano', 'Celiaco', 'Kosher', 'Otro', 'None', 'Sin Restricci'];
+                                const dietary = knownDiets.some(d => dietVal.toLowerCase().includes(d.toLowerCase())) && !dietVal.toLowerCase().includes('sin') ? dietVal : 'None';
 
                                 // Age validation
                                 let ageCat = (idxAge !== -1 && row[idxAge]) ? row[idxAge].toString().trim() : '';
