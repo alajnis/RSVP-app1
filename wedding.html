@@ -1744,18 +1744,19 @@
                                     
                                     // AUTOMATICALLY insert the main guest into the list to avoid missing them in the RVSP/Seating
                                     const isSubGuestTheSame = (sLast.toLowerCase() === pLast.toLowerCase() && sFirst.toLowerCase() === pFirst.toLowerCase());
+                                    const hasNoCompanion = !sLast && !sFirst; // Row has no companion data at all
                                     
-                                    if (isSubGuestTheSame) {
-                                        // The row explicitly defines the main guest as the sub-guest, use this row's diet/age.
+                                    if (isSubGuestTheSame || hasNoCompanion) {
+                                        // The row is about the primary guest themselves — use this row's diet/age.
                                         groupedGuests[groupKey].sub_guests.push({
-                                            firstName: sFirst || pFirst,
-                                            lastName: sLast || pLast,
+                                            firstName: pFirst,
+                                            lastName: pLast,
                                             status: 'Pending',
                                             dietary: dietary,
                                             ageCategory: ageCat
                                         });
                                     } else {
-                                        // The row defines someone ELSE. We must add the main guest FIRST (using default diet/age).
+                                        // The row defines a companion. Add the main guest FIRST (default diet/age).
                                         groupedGuests[groupKey].sub_guests.push({
                                             firstName: pFirst,
                                             lastName: pLast,
@@ -1764,7 +1765,7 @@
                                             ageCategory: 'Adulto'
                                         });
                                         
-                                        // Then we add the sub-guest that was actually on this row (if they have a name)
+                                        // Then add the companion from this row (if they have a name)
                                         if (sLast || sFirst) {
                                             groupedGuests[groupKey].sub_guests.push({
                                                 firstName: sFirst,
