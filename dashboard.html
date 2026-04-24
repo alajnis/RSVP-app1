@@ -847,7 +847,9 @@
 
                 // METHODS - Date Utils
                 const getDaysUntil = (dateString) => {
-                    const wedding = new Date(dateString);
+                    if (!dateString) return 0;
+                    const [y, m, d] = dateString.split('-').map(Number);
+                    const wedding = new Date(y, m - 1, d);
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     wedding.setHours(0, 0, 0, 0);
@@ -856,7 +858,10 @@
                 };
 
                 const formatDate = (dateString) => {
-                    const date = new Date(dateString);
+                    if (!dateString) return '';
+                    // Parse as local date to avoid UTC-offset off-by-one day bug
+                    const [y, m, d] = dateString.split('-').map(Number);
+                    const date = new Date(y, m - 1, d);
                     return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
                 };
 

@@ -641,7 +641,8 @@
 
                 const formatDate = (dateString) => {
                     if (!dateString) return '';
-                    const date = new Date(dateString);
+                    const [y, m, d] = dateString.split('-').map(Number);
+                    const date = new Date(y, m - 1, d);
                     return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
                 };
 
