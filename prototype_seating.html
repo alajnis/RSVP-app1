@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP Seating - Prototipo Drag & Drop Exacto</title>
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 (CDN) -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Phosphor Icons (CDN) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        serif: ['"Bodoni Moda"', 'serif'],
+                        script: ['"Pinyon Script"', 'cursive']
+                    },
+                    colors: {
+                        brand: {
+                            crimson: '#C42745',
+                            beige: '#F4ECE8',
+                            pink: '#F6D8D9',
+                            magenta: '#F61D57',
+                            dark: '#1A1A1A',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Work Sans', sans-serif; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Clases específicas para Drag & Drop */
+        .draggable-guest {
+            cursor: grab;
+        }
+        .draggable-guest:active {
+            cursor: grabbing;
+        }
+        .is-dragging {
+            opacity: 0.4;
+            transform: scale(0.98);
+        }
+        .drop-target-active {
+            border-color: #C42745 !important;
+            background-color: rgba(196, 39, 69, 0.05) !important;
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+
+<body class="bg-brand-beige min-h-screen text-brand-dark font-sans flex flex-col">
+
+    <div id="app" class="p-4 md:p-6 max-w-[1600px] mx-auto flex flex-col flex-1 w-full relative">
+
+        <!-- MANTENEMOS EL HEADER EXACTAMENTE IGUAL -->
+        <header class="mb-10 border-b border-brand-pink/30 pb-8 shrink-0">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-baseline gap-6 py-4">
+                <div class="flex items-center gap-6">
+                    <button class="w-12 h-12 mb-auto md:mb-0 flex items-center justify-center border border-brand-pink text-brand-dark hover:bg-brand-crimson hover:text-white transition-all shrink-0">
+                        <i class="ph ph-arrow-left text-xl"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-4xl font-serif font-bold text-brand-dark tracking-tight">Cande & Marcos (Prototipo D&D)</h2>
+                        <p class="font-script text-2xl text-brand-crimson">20 Diciembre 2026</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Tabs -->
+            <div class="flex justify-between items-center bg-brand-beige p-1 border border-brand-pink mt-4 shadow-inner">
+                <div class="flex w-full md:w-auto gap-1">
+                    <button class="md:w-56 py-4 font-bold uppercase tracking-[0.2em] text-[10px] bg-brand-crimson text-white shadow-xl">
+                        Plan de Mesas
+                    </button>
+                    <button class="md:w-56 py-4 font-bold uppercase tracking-[0.2em] text-[10px] text-brand-dark/50 hover:text-brand-dark px-4">
+                        Lista de Invitados
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- VIEW 1: SEATING PLAN (ESTRUCTURA ORIGINAL) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 flex-1 min-h-[600px]">
+
+            <!-- LEFT COLUMN: TABLES -->
+            <div class="lg:col-span-8 pr-2 flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-serif font-bold text-brand-dark">Distribución de Mesas</h2>
+                    <button class="bg-brand-crimson hover:bg-brand-dark text-white px-10 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all shadow-lg">
+                        Nueva Mesa
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    
+                    <!-- RENDERIZAMOS LAS MESAS -->
+                    <div v-for="table in tables" :key="table.id"
+                         @dragover.prevent="onDragOverTable($event, table)"
+                         @dragleave="onDragLeaveTable(table)"
+                         @drop="onDropTable($event, table)"
+                         class="bg-white rounded-2xl border transition-all p-5 group relative overflow-hidden flex flex-col min-h-[160px]"
+                         :class="table.isDragOver ? 'drop-target-active shadow-xl' : 'border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60'">
+                        
+                        <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-brand-pink/40 to-brand-beige rounded-bl-full -mr-8 -mt-8 opacity-40 transition-opacity group-hover:opacity-70">
+                        </div>
+
+                        <div class="relative z-10 flex flex-col h-full">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="font-bold text-lg text-brand-dark tracking-tight">{{ table.name }}</h3>
+                                    <div class="flex gap-2 mt-2">
+                                        <span class="text-[10px] px-2 py-0.5 rounded font-bold tracking-widest border uppercase"
+                                              :class="table.guests.length >= table.capacity ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-slate-50 text-slate-500 border-slate-200'">
+                                            {{ table.guests.length }} / {{ table.capacity }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="w-full bg-brand-pink/30 h-2 mb-4 overflow-hidden">
+                                <div class="h-full transition-all duration-500 ease-out bg-brand-crimson"
+                                     :style="{ width: Math.min((table.guests.length / table.capacity) * 100, 100) + '%' }">
+                                </div>
+                            </div>
+
+                            <!-- Assigned Guests Avatar Stack & Remove Option -->
+                            <!-- Expandimos la caja de avatares para mostrar nombres si hay gente asignada -->
+                            <div v-if="table.guests.length > 0" class="flex flex-col gap-2 mt-auto">
+                                <p class="text-[9px] uppercase font-bold text-slate-400">Invitados Asignados:</p>
+                                <div v-for="g in table.guests" :key="g.id" class="flex items-center justify-between bg-brand-beige/20 p-2 rounded border border-brand-pink/30">
+                                    <div class="flex items-center gap-2">
+                                        <div class="h-6 w-6 ring-2 ring-white bg-brand-pink flex items-center justify-center text-[10px] font-bold text-brand-dark rounded-full">
+                                            {{ g.firstName.charAt(0) }}{{ g.lastName.charAt(0) }}
+                                        </div>
+                                        <span class="text-xs font-bold text-brand-dark">{{ g.firstName }} {{ g.lastName }}</span>
+                                    </div>
+                                    <button @click="removeFromTable(g, table)" class="text-slate-300 hover:text-brand-crimson transition-colors px-1" title="Quitar de la mesa">
+                                        <i class="ph-bold ph-x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div v-else class="text-center mt-auto text-xs text-brand-dark/40 italic py-2">
+                                Arrastrar invitados aquí
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: ASSIGNMENT DASHBOARD -->
+            <div class="lg:col-span-4 h-full min-h-[600px] flex flex-col">
+                <div class="bg-white border border-brand-pink shadow-sm flex flex-col h-full overflow-hidden">
+                    
+                    <!-- Header -->
+                    <div class="p-8 border-b border-brand-pink/30 bg-brand-beige/30">
+                        <h2 class="text-2xl font-serif font-bold text-brand-dark mb-6">Asignación Rápida</h2>
+
+                        <!-- Droppable zone to catch guests being unassigned -->
+                        <div class="bg-white/50 border border-brand-pink rounded p-3 text-center mb-6 border-dashed"
+                             @dragover.prevent="onDragOverPending"
+                             @drop="onDropPending"
+                             :class="isDraggingOverPending ? 'bg-brand-pink/20 border-brand-crimson' : ''">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-brand-dark/50" v-if="!isDraggingOverPending">
+                                Arrastrá acá para desasignar
+                            </span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-brand-crimson" v-else>
+                                Soltá para devolver a la lista
+                            </span>
+                        </div>
+
+                        <div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                            <button @click="filter = 'all'" :class="filter === 'all' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'" class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Todos</button>
+                            <button @click="filter = 'pending'" :class="filter === 'pending' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'" class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Pendientes</button>
+                        </div>
+                    </div>
+
+                    <!-- Guest List (Original Design as Draggable Cards) -->
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-brand-beige/20 relative">
+                        
+                        <div v-for="item in filteredGuests" :key="item.id"
+                             draggable="true"
+                             @dragstart="onDragStart($event, item)"
+                             @dragend="onDragEnd"
+                             class="draggable-guest bg-white p-4 border shadow-sm transition-all group relative border-brand-pink hover:border-brand-crimson flex flex-col gap-2">
+                             
+                            <!-- Agarre Visual -->
+                            <div class="absolute top-1/2 -left-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-brand-crimson">
+                                <i class="ph-bold ph-dots-six-vertical text-xl"></i>
+                            </div>
+
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center gap-4 pl-3">
+                                    <div class="w-10 h-10 flex items-center justify-center font-bold text-xs bg-slate-100 text-slate-700 rounded-full">
+                                        {{ item.firstName.charAt(0) }}{{ item.lastName.charAt(0) }}
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-brand-dark text-sm">{{ item.lastName }}, {{ item.firstName }}</div>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span v-if="item.tableId" class="text-[10px] text-brand-crimson font-bold bg-brand-pink/50 px-2 py-0.5 border border-brand-crimson/20 tracking-widest">ASIGNADO: {{ getTableName(item.tableId) }}</span>
+                                            <span v-else class="text-[10px] text-brand-magenta font-bold bg-brand-magenta/5 px-2 py-0.5 border border-brand-magenta/20 tracking-widest">PENDIENTE</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown Fallback -->
+                            <select :value="item.tableId || ''"
+                                @change="assignGuestFallback(item, $event.target.value)"
+                                class="w-full text-xs font-bold uppercase tracking-widest py-3 px-4 border cursor-pointer transition-all appearance-none mt-2"
+                                :class="item.tableId ? 'bg-brand-crimson text-white border-brand-crimson' : 'bg-white border-brand-pink text-brand-dark hover:border-brand-crimson placeholder:text-brand-dark/30'">
+                                <option value="">Asignar Mesa...</option>
+                                <template v-for="table in tables" :key="table.id">
+                                    <option :value="table.id"
+                                        :disabled="table.guests.length >= table.capacity && table.id !== item.tableId"
+                                        class="bg-white text-brand-dark">
+                                        {{ table.name }} ({{ table.guests.length }}/{{ table.capacity }}) {{
+                                        table.guests.length >= table.capacity ? '- LLENA' : '' }}
+                                    </option>
+                                </template>
+                            </select>
+                        </div>
+
+                        <!-- Empty state si no hay invitados en la lista filtrada -->
+                        <div v-if="filteredGuests.length === 0" class="text-center p-6 text-brand-dark/40 text-xs uppercase font-bold tracking-widest">
+                            No hay invitados para mostrar
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Feedback Toast -->
+        <div v-if="toast.show" class="fixed bottom-10 right-10 px-8 py-4 bg-brand-dark text-white shadow-2xl flex items-center gap-4 text-xs font-bold uppercase tracking-widest z-50 border border-brand-pink border-brand-crimson animate-fade-in shadow-brand-crimson/20">
+            <i class="ph-fill ph-check-circle text-lg"></i>
+            {{ toast.message }}
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, reactive } = Vue;
+
+        createApp({
+            setup() {
+                // Estado Simulado
+                const allGuests = ref([
+                    { id: 'g1', firstName: 'Alejandro', lastName: 'Lajnis', tableId: null },
+                    { id: 'g2', firstName: 'Micaela', lastName: 'Perez', tableId: null },
+                    { id: 'g3', firstName: 'Juan', lastName: 'Gomez', tableId: null },
+                    { id: 'g4', firstName: 'Sofia', lastName: 'Alvarez', tableId: null },
+                    { id: 'g5', firstName: 'Martin', lastName: 'Lopez', tableId: null },
+                    { id: 'g6', firstName: 'Carolina', lastName: 'Rodriguez', tableId: null },
+                ]);
+
+                const tables = ref([
+                    { id: 't1', name: 'Mesa 1 (Principal)', capacity: 10, guests: [], isDragOver: false },
+                    { id: 't2', name: 'Mesa 2', capacity: 8, guests: [], isDragOver: false },
+                    { id: 't3', name: 'Mesa 3', capacity: 8, guests: [], isDragOver: false },
+                ]);
+
+                const filter = ref('pending');
+                const isDraggingOverPending = ref(false);
+                const toast = reactive({ show: false, message: '' });
+
+                let draggedItem = null;
+                let fromTableId = null;
+
+                // Propiedades Computadas
+                const filteredGuests = computed(() => {
+                    if (filter.value === 'pending') {
+                        return allGuests.value.filter(g => !g.tableId);
+                    }
+                    return allGuests.value; // 'all'
+                });
+
+                // Métodos utilitarios
+                const getTableName = (tId) => {
+                    const t = tables.value.find(x => x.id === tId);
+                    return t ? t.name : '';
+                };
+
+                const showToast = (msg) => {
+                    toast.message = msg;
+                    toast.show = true;
+                    setTimeout(() => { toast.show = false; }, 3000);
+                };
+
+                // ---- Lógica Drag & Drop ----
+
+                const onDragStart = (event, guest) => {
+                    draggedItem = guest;
+                    fromTableId = guest.tableId; // Puede ser null si viene de la lista
+                    
+                    event.dataTransfer.effectAllowed = 'move';
+                    setTimeout(() => event.target.classList.add('is-dragging'), 0);
+                };
+
+                const onDragEnd = (event) => {
+                    event.target.classList.remove('is-dragging');
+                    tables.value.forEach(t => t.isDragOver = false);
+                    isDraggingOverPending.value = false;
+                    draggedItem = null;
+                    fromTableId = null;
+                };
+
+                // Drop en Mesa
+                const onDragOverTable = (event, table) => {
+                    if (table.guests.length < table.capacity) {
+                        table.isDragOver = true;
+                    }
+                };
+
+                const onDragLeaveTable = (table) => {
+                    table.isDragOver = false;
+                };
+
+                const onDropTable = (event, table) => {
+                    table.isDragOver = false;
+                    if (!draggedItem) return;
+
+                    // Si la mesa está llena no dejamos soltar
+                    if (table.guests.length >= table.capacity) {
+                        showToast('Error: La mesa está llena');
+                        return;
+                    }
+                    
+                    // Si ya estaba en esta mesa, ignorar
+                    if (table.id === fromTableId) return;
+
+                    // Si el invitado venía de OTRA mesa, removerlo de la anterior
+                    if (fromTableId) {
+                        const oldTable = tables.value.find(t => t.id === fromTableId);
+                        if (oldTable) {
+                            oldTable.guests = oldTable.guests.filter(g => g.id !== draggedItem.id);
+                        }
+                    }
+
+                    // Asignar localmente al array de allGuests
+                    const guestObj = allGuests.value.find(g => g.id === draggedItem.id);
+                    if (guestObj) {
+                        guestObj.tableId = table.id;
+                        table.guests.push(guestObj);
+                        showToast(`Asignado a ${table.name}`);
+                    }
+                };
+
+                // Drop para desasignar
+                const onDragOverPending = (event) => {
+                    // Solo activar la zona de drop si viene desde una mesa
+                    if (fromTableId) {
+                        isDraggingOverPending.value = true;
+                    }
+                };
+
+                const onDropPending = (event) => {
+                    isDraggingOverPending.value = false;
+                    if (!draggedItem || !fromTableId) return;
+
+                    // Remover de la mesa de origen
+                    const oldTable = tables.value.find(t => t.id === fromTableId);
+                    if (oldTable) {
+                        oldTable.guests = oldTable.guests.filter(g => g.id !== draggedItem.id);
+                    }
+
+                    // Mutar invitado
+                    const guestObj = allGuests.value.find(g => g.id === draggedItem.id);
+                    if (guestObj) {
+                        guestObj.tableId = null;
+                        showToast('Invitado devuelto a la lista');
+                    }
+                };
+
+                // Botón manual para sacar de la mesa
+                const removeFromTable = (guest, table) => {
+                    table.guests = table.guests.filter(g => g.id !== guest.id);
+                    const guestObj = allGuests.value.find(g => g.id === guest.id);
+                    if (guestObj) {
+                        guestObj.tableId = null;
+                        showToast('Invitado desasignado');
+                    }
+                };
+
+                // Asignación por Selector (Fallback / Alternativa)
+                const assignGuestFallback = (guestItem, newTableId) => {
+                    // Remover de mesa vieja si tenía
+                    if (guestItem.tableId) {
+                        const oldTable = tables.value.find(t => t.id === guestItem.tableId);
+                        if (oldTable) {
+                            oldTable.guests = oldTable.guests.filter(g => g.id !== guestItem.id);
+                        }
+                    }
+
+                    const guestObj = allGuests.value.find(g => g.id === guestItem.id);
+                    if (!guestObj) return;
+
+                    if (!newTableId) {
+                        // Lo devolvió a Pendiente
+                        guestObj.tableId = null;
+                        showToast('Invitado devuelto a Pendiente');
+                        return;
+                    }
+
+                    // Agregar a la tabla nueva
+                    const newTable = tables.value.find(t => t.id === newTableId);
+                    if (newTable) {
+                        if (newTable.guests.length >= newTable.capacity) {
+                            showToast('La mesa ya está llena');
+                            return; // Error
+                        }
+                        guestObj.tableId = newTable.id;
+                        newTable.guests.push(guestObj);
+                        showToast(`Asignado a ${newTable.name}`);
+                    }
+                };
+
+                return {
+                    allGuests,
+                    tables,
+                    filter,
+                    filteredGuests,
+                    isDraggingOverPending,
+                    toast,
+                    getTableName,
+                    onDragStart,
+                    onDragEnd,
+                    onDragOverTable,
+                    onDragLeaveTable,
+                    onDropTable,
+                    onDragOverPending,
+                    onDropPending,
+                    removeFromTable,
+                    assignGuestFallback
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

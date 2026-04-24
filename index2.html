@@ -221,8 +221,13 @@
                                         <option value="Vegano">Vegano</option>
                                         <option value="Vegetariano">Vegetariano</option>
                                         <option value="Kosher">Kosher</option>
-                                        <option value="Otro">Otro (especificar luego)</option>
+                                        <option value="Otro">Otro (especificar)</option>
                                     </select>
+                                    <input v-if="sg.dietary === 'Otro'" 
+                                           type="text" 
+                                           v-model="sg.dietary_detail" 
+                                           placeholder="Especifique su restricción..."
+                                           class="w-full mt-2 bg-white border border-brand-pink/50 px-4 py-3 text-sm outline-none focus:border-brand-crimson transition-all">
                                 </div>
 
                                 <!-- Age Category (Only if Confirmed) -->
@@ -500,6 +505,7 @@
                             lastName: g.lastName,
                             status: g.rsvp_status || 'Pending', // Inherit status if available
                             dietary: g.dietary || 'None',
+                            dietary_detail: g.dietary_detail || '',
                             rsvp_answers: g.rsvp_answers || {} // Load existing answers if any
                         }];
 
@@ -512,6 +518,7 @@
                                 lastName: '',
                                 status: 'Pending',
                                 dietary: 'None',
+                                dietary_detail: '',
                                 rsvp_answers: {}
                             });
                         }

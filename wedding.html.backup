@@ -60,24 +60,6 @@
             font-family: 'Work Sans', sans-serif;
         }
 
-        /* Clases específicas para Drag & Drop */
-        .draggable-guest {
-            cursor: grab;
-        }
-        .draggable-guest:active {
-            cursor: grabbing;
-        }
-        .is-dragging {
-            opacity: 0.4;
-            transform: scale(0.98);
-        }
-        .drop-target-active {
-            border-color: #C42745 !important;
-            background-color: rgba(196, 39, 69, 0.05) !important;
-            transform: scale(1.02);
-            box-shadow: 0 10px 25px -5px rgba(196, 39, 69, 0.1), 0 8px 10px -6px rgba(196, 39, 69, 0.1) !important;
-        }
-
         .slide-enter-active,
         .slide-leave-active {
             transition: all 0.3s ease;
@@ -250,11 +232,7 @@
 
                 <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                     <div v-for="table in tablesWithStats" :key="table.id"
-                         @dragover.prevent="onDragOverTable($event, table)"
-                         @dragleave="onDragLeaveTable(table)"
-                         @drop="onDropTable($event, table)"
-                         class="bg-white rounded-2xl border transition-all p-5 group relative overflow-hidden"
-                         :class="table.isDragOver ? 'drop-target-active shadow-xl' : 'border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60'">
+                        class="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 transition-all p-5 group relative overflow-hidden">
                         <div
                             class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-brand-pink/40 to-brand-beige rounded-bl-full -mr-8 -mt-8 opacity-40 transition-opacity group-hover:opacity-70">
                         </div>
@@ -315,19 +293,6 @@
                     <div class="p-8 border-b border-brand-pink/30 bg-brand-beige/30">
                         <h2 class="text-2xl font-serif font-bold text-brand-dark mb-6">Asignación</h2>
 
-                        <!-- Droppable zone to catch guests being unassigned -->
-                        <div class="bg-white/50 border border-brand-pink rounded p-3 text-center mb-6 border-dashed transition-all"
-                             @dragover.prevent="onDragOverPending"
-                             @drop="onDropPending"
-                             :class="isDraggingOverPending ? 'bg-brand-pink/20 border-brand-crimson scale-[1.02]' : ''">
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-brand-dark/50" v-if="!isDraggingOverPending">
-                                Arrastrá acá para desasignar
-                            </span>
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-brand-crimson" v-else>
-                                Soltá para devolver a la lista
-                            </span>
-                        </div>
-
                         <div class="relative mb-6">
                             <i
                                 class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -349,21 +314,13 @@
                     </div>
 
                     <!-- Guest List -->
-                    <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-brand-beige/20 relative">
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-brand-beige/20">
                         <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-brand-beige/20">
                             <div v-for="item in filteredAssignableItems" :key="item.id"
-                                draggable="true"
-                                @dragstart="onDragStart($event, item)"
-                                @dragend="onDragEnd"
-                                class="draggable-guest bg-white p-4 border shadow-sm transition-all group relative border-brand-pink hover:border-brand-crimson mb-4 flex flex-col">
-
-                                <!-- Agarre Visual -->
-                                <div class="absolute top-1/2 -left-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-brand-crimson">
-                                    <i class="ph-bold ph-dots-six-vertical text-xl"></i>
-                                </div>
+                                class="bg-white p-4 border border-brand-pink shadow-sm hover:border-brand-crimson transition-all group">
 
                                 <div class="flex justify-between items-start mb-4">
-                                    <div class="flex items-center gap-4 pl-3">
+                                    <div class="flex items-center gap-4">
                                         <div class="w-10 h-10 flex items-center justify-center font-bold text-xs"
                                             :class="getAvatarColor(item.lastName || '')">
                                             {{ (item.firstName || '?').charAt(0) }}{{ (item.lastName || '?').charAt(0)
@@ -372,10 +329,7 @@
                                         <div>
                                             <div class="font-bold text-brand-dark text-sm">{{ item.lastName }}, {{
                                                 item.firstName }}</div>
-                                            <div v-if="item.mainGuestName" class="text-[9px] text-slate-400 font-bold italic mt-0.5 tracking-wider">
-                                                Grupo: {{ item.mainGuestName }}
-                                            </div>
-                                            <div class="flex items-center gap-2 mt-2">
+                                            <div class="flex items-center gap-2 mt-1">
                                                 <span v-if="item.assignment"
                                                     class="text-[10px] text-brand-crimson font-bold bg-brand-pink/50 px-2 py-0.5 border border-brand-crimson/20 tracking-widest">ASIGNADO</span>
                                                 <span v-else
@@ -473,15 +427,6 @@
                         class="w-full pl-12 pr-4 py-2 bg-white border border-brand-pink focus:border-brand-crimson outline-none transition-all placeholder:text-[10px] placeholder:uppercase placeholder:tracking-widest text-sm">
                 </div>
             </div>
-
-            <!-- Legend & Duplicate Warning note -->
-            <div v-if="duplicateNames.size > 0" class="px-6 py-2 bg-yellow-50 border-b border-yellow-100 flex items-center gap-2">
-                <i class="ph-fill ph-warning text-yellow-500 text-sm flex-shrink-0"></i>
-                <p class="text-[9px] text-yellow-700 font-bold uppercase tracking-widest">
-                    Se detectaron <span class="text-yellow-800">{{ duplicateNames.size }}</span> nombre(s) duplicado(s) en la lista. Revisalos antes de continuar.
-                </p>
-            </div>
-
             <!-- Guest Admin Table -->
             <div class="flex-1 overflow-auto">
                 <table class="w-full text-left border-collapse">
@@ -511,12 +456,7 @@
                         <tr v-for="guest in filteredGuestList" :key="guest.id"
                             class="hover:bg-slate-50 transition-colors">
                             <td class="px-6 py-4">
-                                <div class="font-bold text-brand-dark flex items-center gap-2">
-                                    {{ guest.lastName }}, {{ guest.firstName }}
-                                    <i v-if="duplicateNames.has(getFullName(guest).toLowerCase().trim())" 
-                                       class="ph-fill ph-warning text-yellow-500" 
-                                       title="Este nombre está duplicado en la lista"></i>
-                                </div>
+                                <div class="font-bold text-brand-dark">{{ guest.lastName }}, {{ guest.firstName }}</div>
                                 <!-- Show sub-guest names if they exist -->
                                 <div v-if="guest.sub_guests && guest.sub_guests.length > 0" class="mt-1 space-y-1">
                                     <div v-for="sg in guest.sub_guests" :key="sg.id" class="flex flex-col gap-0.5"
@@ -528,9 +468,6 @@
                                             <i class="ph-fill"
                                                 :class="sg.status === 'Confirmed' ? 'ph-check-circle' : (sg.status === 'Declined' ? 'ph-x-circle' : 'ph-circle')"></i>
                                             {{ getFullName(sg) || '(Sin nombre)' }}
-                                            <i v-if="duplicateNames.has(getFullName(sg).toLowerCase().trim())" 
-                                               class="ph-fill ph-warning text-yellow-500" 
-                                               title="Este nombre está duplicado en la lista"></i>
 
                                             <span v-if="sg.ageCategory && sg.ageCategory !== 'Adulto'"
                                                 class="px-1.5 py-0.5 rounded-full text-[7px] font-bold border ml-1"
@@ -544,9 +481,9 @@
                                         </div>
 
                                         <!-- Multi-Event Badges -->
-                                        <div v-if="currentProject && currentProject.events_config && currentProject.events_config.multi_event && sg.rsvp_answers"
+                                        <div v-if="project && project.events_config && project.events_config.multi_event && sg.rsvp_answers"
                                             class="flex flex-wrap gap-1 ml-4">
-                                            <span v-for="evt in currentProject.events_config.events" :key="evt.id"
+                                            <span v-for="evt in project.events_config.events" :key="evt.id"
                                                 class="text-[8px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1"
                                                 :class="sg.rsvp_answers[evt.id] === 'confirmed' ? 'bg-green-50 text-green-700 border-green-200' : (sg.rsvp_answers[evt.id] === 'declined' ? 'bg-red-50 text-red-700 border-red-200 opacity-50' : 'bg-slate-50 text-slate-400 border-slate-200')">
                                                 <i class="ph-bold"
@@ -562,7 +499,7 @@
                                     <div v-if="guest.rsvp_status" class="flex flex-col gap-1">
 
                                         <!-- Status Global Legacy -->
-                                        <span v-if="!currentProject.events_config?.multi_event"
+                                        <span v-if="!project.events_config?.multi_event"
                                             class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border inline-flex items-center gap-1 w-fit"
                                             :class="guest.rsvp_status === 'Confirmed' ? 'text-green-600 bg-green-50 border-green-100' : 'text-red-600 bg-red-50 border-red-100'">
                                             <i class="ph-bold"
@@ -571,9 +508,9 @@
                                         </span>
 
                                         <!-- Multi-Event Badges (Main Guest) -->
-                                        <div v-if="currentProject.events_config?.multi_event && guest.rsvp_answers"
+                                        <div v-if="project.events_config?.multi_event && guest.rsvp_answers"
                                             class="flex flex-wrap gap-1">
-                                            <span v-for="evt in currentProject.events_config.events" :key="evt.id"
+                                            <span v-for="evt in project.events_config.events" :key="evt.id"
                                                 class="text-[8px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1"
                                                 :class="guest.rsvp_answers[evt.id] === 'confirmed' ? 'bg-green-50 text-green-700 border-green-200' : (guest.rsvp_answers[evt.id] === 'declined' ? 'bg-red-50 text-red-700 border-red-200 opacity-50' : 'bg-slate-50 text-slate-400 border-slate-200')">
                                                 <i class="ph-bold"
@@ -718,15 +655,14 @@
             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm"
             @click.self="closeGuestModal">
             <div
-                class="bg-white rounded-none border border-brand-pink shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col transform transition-all animate-fade-in">
+                class="bg-white rounded-none border border-brand-pink shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-fade-in">
                 <div class="px-6 py-5 border-b border-brand-pink flex justify-between items-center bg-brand-beige">
                     <h3 class="font-serif text-xl text-brand-dark tracking-wide">{{ guestModalTitle }}</h3>
                     <button @click="closeGuestModal"
                         class="text-brand-dark/40 hover:text-brand-crimson transition-colors"><i
                             class="ph ph-x text-xl"></i></button>
                 </div>
-                <form @submit.prevent="saveGuest" class="flex flex-col flex-1 overflow-hidden">
-                    <div class="p-8 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
+                <form @submit.prevent="saveGuest" class="p-8 space-y-5">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label
@@ -770,11 +706,6 @@
                             <option value="Kosher">Kosher</option>
                             <option value="Otro">Otro</option>
                         </select>
-                        <input v-if="guestForm.dietary === 'Otro'" 
-                               type="text" 
-                               v-model="guestForm.dietary_detail" 
-                               placeholder="Especifique la restricción..."
-                               class="w-full mt-2 px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson outline-none transition-all bg-white font-sans text-sm">
                     </div>
                     <!-- GROUP MEMBERS (Sub-guests) -->
                     <div class="border-t border-brand-pink pt-6">
@@ -841,11 +772,6 @@
                                                 <option value="Kosher">Kosher</option>
                                                 <option value="Otro">Otro</option>
                                             </select>
-                                            <input v-if="sg.dietary === 'Otro'" 
-                                                   type="text" 
-                                                   v-model="sg.dietary_detail" 
-                                                   placeholder="Especifique..."
-                                                   class="w-full mt-2 px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
                                         </div>
                                         <div class="col-span-2">
                                             <label
@@ -864,8 +790,7 @@
                             </div>
                         </div>
                     </div>
-                    </div> <!-- end scrollable area -->
-                    <div class="px-8 py-4 border-t border-brand-pink flex gap-4 bg-white flex-shrink-0">
+                    <div class="pt-4 flex gap-4">
                         <button type="button" @click="closeGuestModal"
                             class="flex-1 py-4 bg-white border border-brand-pink text-brand-dark font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-beige transition-colors">Cancelar</button>
                         <button type="submit"
@@ -1006,7 +931,6 @@
                     email: '',
                     phone: '',
                     dietary: 'None',
-                    dietary_detail: '',
                     rsvp_status: 'Pending',
                     sub_guests: []
                 });
@@ -1096,8 +1020,7 @@
                                     status: sg.status,
                                     dietary: sg.dietary,
                                     assignment: assignment,
-                                    mainGuestId: g.id,
-                                    mainGuestName: `${g.firstName || ''} ${g.lastName || ''}`.trim()
+                                    mainGuestId: g.id
                                 });
                             });
                         } else {
@@ -1113,8 +1036,7 @@
                                 status: g.rsvp_status,
                                 dietary: g.dietary,
                                 assignment: assignment,
-                                mainGuestId: g.id,
-                                mainGuestName: `${g.firstName || ''} ${g.lastName || ''}`.trim()
+                                mainGuestId: g.id
                             });
                         }
                     });
@@ -1174,29 +1096,6 @@
                     }
 
                     return result;
-                });
-
-                const duplicateNames = computed(() => {
-                    const allNames = [];
-                    guests.value.forEach(g => {
-                        const mainName = getFullName(g).toLowerCase().trim();
-                        if (mainName) allNames.push(mainName);
-                        if (g.sub_guests && g.sub_guests.length > 0) {
-                            g.sub_guests.forEach(sg => {
-                                const subName = getFullName(sg).toLowerCase().trim();
-                                // Avoid double-counting the main guest if they are also the first sub_guest
-                                if (subName && subName !== mainName) allNames.push(subName);
-                            });
-                        }
-                    });
-
-                    const duplicates = new Set();
-                    const seen = new Set();
-                    allNames.forEach(name => {
-                        if (seen.has(name)) duplicates.add(name);
-                        seen.add(name);
-                    });
-                    return duplicates;
                 });
 
                 const confirmedGuestsCount = computed(() => guests.value.reduce((acc, g) => {
@@ -1334,8 +1233,6 @@
                     if (guestForm.sub_guests.length > 0) {
                         guestForm.sub_guests[0].firstName = guestForm.firstName;
                         guestForm.sub_guests[0].lastName = guestForm.lastName;
-                        guestForm.sub_guests[0].dietary = guestForm.dietary;
-                        guestForm.sub_guests[0].dietary_detail = guestForm.dietary_detail;
                     }
 
                     try {
@@ -1390,7 +1287,6 @@
                         email: guest.email || '',
                         phone: guest.phone || '',
                         dietary: guest.dietary || 'None',
-                        dietary_detail: guest.sub_guests && guest.sub_guests.length > 0 ? (guest.sub_guests[0].dietary_detail || '') : '',
                         rsvp_status: guest.rsvp_status || 'Pending',
                         sub_guests: (function () {
                             let sg = [];
@@ -1405,14 +1301,13 @@
                                     }
                                     // Ensure ageCategory exists
                                     if (!item.ageCategory) item.ageCategory = '';
-                                    if (!item.dietary_detail) item.dietary_detail = '';
                                 });
                             } else {
-                                sg = [{ firstName: fName, lastName: lName, status: guest.rsvp_status || 'Pending', dietary: guest.dietary || 'None', dietary_detail: guest.dietary_detail || '', ageCategory: 'Adulto' }];
+                                sg = [{ firstName: fName, lastName: lName, status: guest.rsvp_status || 'Pending', dietary: guest.dietary || 'None', ageCategory: 'Adulto' }];
                             }
 
                             while (sg.length < (guest.guests_confirmed || 1)) {
-                                sg.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', dietary_detail: '', ageCategory: '' });
+                                sg.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '' });
                             }
                             return sg;
                         })()
@@ -1663,63 +1558,19 @@
                             let idxAge = findIdx('edad');
 
                             const groupedGuests = {};
-                            
-                            // Track previous row values to allow "fill-down" if users leave columns empty
-                            let lastSeenInvLast = '';
-                            let lastSeenInvFirst = '';
 
                             for (let i = 1; i < jsonData.length; i++) {
                                 const row = jsonData[i];
-                                if (!row || row.length === 0) continue;
+                                if (!row || row.length < 2) continue;
 
                                 // Extract primary guest
-                                let rawPLast = (row[idxInvLast] || '').toString().trim();
-                                let rawPFirst = (row[idxInvFirst] || '').toString().trim();
-
-                                // Extract sub guest details
-                                let sLast = (row[idxIntLast] || '').toString().trim();
-                                let sFirst = (row[idxIntFirst] || '').toString().trim();
-                                
-                                let pLast = rawPLast;
-                                let pFirst = rawPFirst;
-
-                                // Ojo: Si la fila no tiene Apellido Principal, pero tiene Nombre Principal, 
-                                // y las columnas de acompañantes están vacías, asumimos que pusieron al 
-                                // acompañante en la columna de Nombre Principal (caso común en Excels mal llenados)
-                                if (!rawPLast && rawPFirst && !sLast && !sFirst && lastSeenInvLast) {
-                                    pLast = lastSeenInvLast;
-                                    pFirst = lastSeenInvFirst;
-                                    sFirst = rawPFirst; // El "Nombre Principal" es en realidad el Acompañante
-                                    // NO actualizamos currentGroupKey porque es acompañante de la fila anterior
-                                }
-                                // Si ambos están vacíos, hereda el anterior
-                                else if (!rawPLast && !rawPFirst) {
-                                    pLast = lastSeenInvLast;
-                                    pFirst = lastSeenInvFirst;
-                                    // NO actualizamos currentGroupKey porque pertenece a la fila anterior
-                                } else {
-                                    // Actualiza los últimos vistos (solo si es una nueva invitación)
-                                    lastSeenInvLast = pLast;
-                                    lastSeenInvFirst = pFirst;
-                                    // Generamos una key ÚNICA garantizando que dos "Lavigne Mauricio" separados no se pisen
-                                    currentGroupKey = `${pLast.toLowerCase()}_${pFirst.toLowerCase()}_${i}`; 
-                                }
+                                const pLast = (row[idxInvLast] || '').toString().trim();
+                                const pFirst = (row[idxInvFirst] || '').toString().trim();
                                 
                                 if (!pLast && !pFirst) continue;
 
-                                // Grouping key (case insensitive and unique per block)
-                                const groupKey = currentGroupKey || `${pLast.toLowerCase()}_${pFirst.toLowerCase()}`;
-
-                                
-                                // Clean up diet value
-                                const dietVal = (idxDiet !== -1 && row[idxDiet]) ? row[idxDiet].toString().trim() : '';
-                                const dietary = ['Vegano', 'Vegetariano', 'Celiaco', 'Kosher', 'None'].some(d => dietVal.includes(d)) ? dietVal : 'None';
-
-                                // Age validation
-                                let ageCat = (idxAge !== -1 && row[idxAge]) ? row[idxAge].toString().trim() : '';
-                                const validAges = ['Adulto', 'Teen', 'Niño', 'Bebé'];
-                                const matchAge = validAges.find(a => ageCat.toLowerCase().includes(a.toLowerCase()));
-                                ageCat = matchAge || 'Adulto'; // default Adulto
+                                // Grouping key (case insensitive)
+                                const groupKey = `${pLast.toLowerCase()}_${pFirst.toLowerCase()}`;
 
                                 // Initialize primary guest group if not exists
                                 if (!groupedGuests[groupKey]) {
@@ -1733,59 +1584,30 @@
                                         rsvp_status: 'Pending',
                                         sub_guests: []
                                     };
-                                    
-                                    // AUTOMATICALLY insert the main guest into the list to avoid missing them in the RVSP/Seating
-                                    const isSubGuestTheSame = (sLast.toLowerCase() === pLast.toLowerCase() && sFirst.toLowerCase() === pFirst.toLowerCase());
-                                    
-                                    if (isSubGuestTheSame) {
-                                        // The row explicitly defines the main guest as the sub-guest, use this row's diet/age.
-                                        groupedGuests[groupKey].sub_guests.push({
-                                            firstName: sFirst || pFirst,
-                                            lastName: sLast || pLast,
-                                            status: 'Pending',
-                                            dietary: dietary,
-                                            ageCategory: ageCat
-                                        });
-                                    } else {
-                                        // The row defines someone ELSE. We must add the main guest FIRST (using default diet/age).
-                                        groupedGuests[groupKey].sub_guests.push({
-                                            firstName: pFirst,
-                                            lastName: pLast,
-                                            status: 'Pending',
-                                            dietary: 'None',
-                                            ageCategory: 'Adulto'
-                                        });
-                                        
-                                        // Then we add the sub-guest that was actually on this row (if they have a name)
-                                        if (sLast || sFirst) {
-                                            groupedGuests[groupKey].sub_guests.push({
-                                                firstName: sFirst,
-                                                lastName: sLast,
-                                                status: 'Pending',
-                                                dietary: dietary,
-                                                ageCategory: ageCat
-                                            });
-                                        }
-                                    }
-                                } else {
-                                    // Group already exists. Add the sub guest, avoiding duplicating the main guest.
-                                    const isSubGuestTheSame = (sLast.toLowerCase() === pLast.toLowerCase() && sFirst.toLowerCase() === pFirst.toLowerCase());
-                                    const alreadyHasMainGuest = groupedGuests[groupKey].sub_guests.some(
-                                        sg => sg.firstName.toLowerCase() === pFirst.toLowerCase() && sg.lastName.toLowerCase() === pLast.toLowerCase()
-                                    );
-                                    
-                                    if (!(isSubGuestTheSame && alreadyHasMainGuest)) {
-                                        if (sLast || sFirst) {
-                                            groupedGuests[groupKey].sub_guests.push({
-                                                firstName: sFirst,
-                                                lastName: sLast,
-                                                status: 'Pending',
-                                                dietary: dietary,
-                                                ageCategory: ageCat
-                                            });
-                                        }
-                                    }
                                 }
+
+                                // Extract sub guest
+                                const sLast = (row[idxIntLast] || '').toString().trim();
+                                const sFirst = (row[idxIntFirst] || '').toString().trim();
+                                
+                                // Clean up diet value
+                                const dietVal = (idxDiet !== -1 && row[idxDiet]) ? row[idxDiet].toString().trim() : '';
+                                const dietary = ['Vegano', 'Vegetariano', 'Celiaco', 'Kosher', 'None'].some(d => dietVal.includes(d)) ? dietVal : 'None';
+
+                                // Age validation
+                                let ageCat = (idxAge !== -1 && row[idxAge]) ? row[idxAge].toString().trim() : '';
+                                const validAges = ['Adulto', 'Teen', 'Niño', 'Bebé'];
+                                const matchAge = validAges.find(a => ageCat.toLowerCase().includes(a.toLowerCase()));
+                                ageCat = matchAge || 'Adulto'; // default Adulto
+
+                                // Push sub guest
+                                groupedGuests[groupKey].sub_guests.push({
+                                    firstName: sFirst,
+                                    lastName: sLast,
+                                    status: 'Pending',
+                                    dietary: dietary,
+                                    ageCategory: ageCat
+                                });
                             }
 
                             // Convert grouped object back to array
@@ -1877,14 +1699,10 @@
 
                 const getGuestDietaries = (guest) => {
                     const diets = new Set();
-                    const formatDiet = (d, detail) => d === 'Otro' ? (detail ? `Otro: ${detail}` : 'Otro') : d;
-                    
-                    if (guest.dietary && guest.dietary !== 'None') {
-                        diets.add(formatDiet(guest.dietary, guest.sub_guests?.[0]?.dietary_detail));
-                    }
+                    if (guest.dietary && guest.dietary !== 'None') diets.add(guest.dietary);
                     if (guest.sub_guests && guest.sub_guests.length > 0) {
                         guest.sub_guests.forEach(sg => {
-                            if (sg.dietary && sg.dietary !== 'None') diets.add(formatDiet(sg.dietary, sg.dietary_detail));
+                            if (sg.dietary && sg.dietary !== 'None') diets.add(sg.dietary);
                         });
                     }
                     return Array.from(diets);
@@ -1999,70 +1817,11 @@
                 };
 
 
-                // ---- DRAG AND DROP LÓGICA ----
-                let draggedItem = null;
-                const isDraggingOverPending = ref(false);
-
-                const onDragStart = (event, guest) => {
-                    draggedItem = guest;
-                    event.dataTransfer.effectAllowed = 'move';
-                    setTimeout(() => { if (event.target) event.target.classList.add('is-dragging'); }, 0);
-                };
-
-                const onDragEnd = (event) => {
-                    if (event.target) event.target.classList.remove('is-dragging');
-                    tables.value.forEach(t => t.isDragOver = false);
-                    isDraggingOverPending.value = false;
-                    draggedItem = null;
-                };
-
-                const onDragOverTable = (event, table) => {
-                    const capacity = table.capacity || 0;
-                    const assigned = assignments.value.filter(a => a.table_id === table.id).length;
-                    if (assigned < capacity) {
-                        table.isDragOver = true;
-                    }
-                };
-
-                const onDragLeaveTable = (table) => {
-                    table.isDragOver = false;
-                };
-
-                const onDropTable = (event, table) => {
-                    table.isDragOver = false;
-                    if (!draggedItem) return;
-
-                    const capacity = table.capacity || 0;
-                    const assigned = assignments.value.filter(a => a.table_id === table.id).length;
-
-                    if (assigned >= capacity) {
-                        showToast('La mesa ya está llena', 'error');
-                        return;
-                    }
-                    
-                    // Reutilizar lógica robusta existente
-                    assignGuest(draggedItem.guestId, draggedItem.subGuestIdx, table.id);
-                };
-
-                const onDragOverPending = (event) => {
-                    // Validar que el ítem tenga mesa asignada
-                    if (draggedItem && draggedItem.assignment) {
-                        isDraggingOverPending.value = true;
-                    }
-                };
-
-                const onDropPending = (event) => {
-                    isDraggingOverPending.value = false;
-                    if (!draggedItem || !draggedItem.assignment) return;
-
-                    assignGuest(draggedItem.guestId, draggedItem.subGuestIdx, '');
-                };
 
 
                 return {
                     currentProject, currentProjectId,
                     currentView,
-                    duplicateNames,
                     tables, guests, assignments, tablesWithStats, filteredAssignableItems, assignableItems, guestsWithAssignments, filteredGuestList,
                     totalCapacity, totalGuestsInvited, assignedGuestsCount, notRespondedCount, confirmedGuestsCount, declinedGuestsCount,
                     searchQuery, guestSearchQuery, filter, guestFilter, showTableModal, editingTable, tableForm, showFloorPlanModal,
@@ -2077,9 +1836,7 @@
                     getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials, getAssignmentName, getGuestDietaries,
                     getStatusBadgeClass, getProgressBarClass, getAvatarColor,
                     backToDashboard, logout, formatDate,
-                    getGuestPortalLink, copyLink, isCouple,
-                    onDragStart, onDragEnd, onDragOverTable, onDragLeaveTable, 
-                    onDropTable, onDragOverPending, onDropPending, isDraggingOverPending
+                    getGuestPortalLink, copyLink, isCouple
                 };
             }
         }).mount('#app');
