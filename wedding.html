@@ -455,6 +455,12 @@
                         </button>
                     </div>
 
+                    <!-- Eliminar Todos -->
+                    <button v-if="!isCouple" @click="deleteAllGuests()"
+                        class="bg-red-600 hover:bg-red-800 text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg flex items-center gap-2">
+                        <i class="ph-bold ph-trash"></i> Eliminar Lista Completa
+                    </button>
+
                     <!-- Add Manually -->
                     <button @click="openGuestModal()"
                         class="bg-brand-crimson hover:bg-brand-dark text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg flex items-center gap-2">
@@ -1437,7 +1443,26 @@
                 };
                 const closeGuestModal = () => { showGuestModal.value = false; };
 
-                // METHODS - Assignments
+                const deleteAllGuests = async () => {
+                    if (guests.value.length === 0) {
+                        showToast('No hay invitados para eliminar', 'error');
+                        return;
+                    }
+                    if (confirm('¿Estás seguro que querés eliminar LA LISTA COMPLETA de invitados? Esta acción no se puede deshacer.')) {
+                        try {
+                            const { error } = await supabase.from('guests').delete().eq('project_id', currentProjectId.value);
+                            if (error) throw error;
+
+                            guests.value = [];
+                            assignments.value = [];
+                            showToast('Lista de invitados eliminada completamente');
+                        } catch (e) {
+                            console.error(e);
+                            showToast('Error al eliminar la lista de invitados', 'error');
+                        }
+                    }
+                };
+
                 // METHODS - Assignments
                 // METHODS - Assignments
                 const assignGuest = async (guestId, subGuestIdx, tableId) => {
@@ -2080,7 +2105,7 @@
                     showGuestModal, editingGuest, guestForm, toast,
                     tableModalTitle, guestModalTitle,
                     openTableModal, editTable, saveTable, deleteTable, closeModal,
-                    openGuestModal, editGuest, saveGuest, deleteGuest, closeGuestModal,
+                    openGuestModal, editGuest, saveGuest, deleteGuest, deleteAllGuests, closeGuestModal,
                     addSubGuest, removeSubGuest,
                     getIndividualConfirmedCount,
                     assignGuest, handleFileUpload, handleExport, resetData, handleFloorPlanUpload,
