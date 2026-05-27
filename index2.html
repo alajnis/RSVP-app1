@@ -465,31 +465,44 @@
                                     const normLFirst = normL.split(/[\s,()]+/)[0] || normL;
                                     const normFFirst = normF.split(/[\s,()]+/)[0] || normF;
                                     
-                                    let distL = Math.min(levenshtein(normL, lastName), levenshtein(normLFirst, lastName));
-                                    let distF = Math.min(levenshtein(normF, firstName), levenshtein(normFFirst, firstName));
+                                    const rawDistL = levenshtein(normL, lastName);
+                                    const rawDistF = levenshtein(normF, firstName);
+
+                                    let distL = Math.min(rawDistL, levenshtein(normLFirst, lastName));
+                                    let distF = Math.min(rawDistF, levenshtein(normFFirst, firstName));
                                     
-                                    if (lastName.length >= 3 && (normL.includes(lastName) || lastName.includes(normL))) {
-                                        distL = Math.min(distL, 1);
+                                    // Prefix bonus (starts with) - very strong match for initials/partial typing
+                                    if (normLFirst.startsWith(lastName) || lastName.startsWith(normLFirst)) {
+                                        distL = Math.min(distL, 0.5);
+                                    } else if (normL.includes(lastName) || lastName.includes(normL)) {
+                                        distL = Math.min(distL, 1.5);
                                     }
-                                    if (firstName.length >= 3 && (normF.includes(firstName) || firstName.includes(normF))) {
-                                        distF = Math.min(distF, 1);
+                                    
+                                    if (normFFirst.startsWith(firstName) || firstName.startsWith(normFFirst)) {
+                                        distF = Math.min(distF, 0.5);
+                                    } else if (normF.includes(firstName) || firstName.includes(normF)) {
+                                        distF = Math.min(distF, 1.5);
                                     }
                                     
                                     return {
                                         guest: g,
                                         score: distL + distF,
-                                        distL,
-                                        distF
+                                        rawDist: rawDistL + rawDistF
                                     };
                                 });
 
-                                scoredGuests.sort((a, b) => a.score - b.score);
+                                // Sort primarily by score, secondarily by raw distance (tie-breaker)
+                                scoredGuests.sort((a, b) => {
+                                    if (a.score !== b.score) return a.score - b.score;
+                                    return a.rawDist - b.rawDist;
+                                });
+                                
                                 const bestMatch = scoredGuests[0];
 
                                 if (bestMatch && bestMatch.score <= 5) {
                                     const topScorers = scoredGuests.filter(g => g.score === bestMatch.score);
                                     
-                                    if (topScorers.length === 1 && bestMatch.score <= 1) {
+                                    if (topScorers.length === 1 && bestMatch.score <= 1.5) {
                                         // Excellent match, silently accept
                                         matchedGuest = bestMatch.guest;
                                     } else {
