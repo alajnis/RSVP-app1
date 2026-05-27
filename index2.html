@@ -456,20 +456,49 @@
                                 normalize(g.firstName) === firstName
                             );
 
-                            // If no exact match, try partial last name match
+                            // If no exact match, use advanced fuzzy matching
                             if (!matchedGuest) {
-                                const partialMatches = guests.value.filter(g =>
-                                    normalize(g.lastName).includes(lastName)
-                                );
+                                const scoredGuests = guests.value.map(g => {
+                                    const normL = normalize(g.lastName);
+                                    const normF = normalize(g.firstName);
+                                    
+                                    const normLFirst = normL.split(/[\s,()]+/)[0] || normL;
+                                    const normFFirst = normF.split(/[\s,()]+/)[0] || normF;
+                                    
+                                    let distL = Math.min(levenshtein(normL, lastName), levenshtein(normLFirst, lastName));
+                                    let distF = Math.min(levenshtein(normF, firstName), levenshtein(normFFirst, firstName));
+                                    
+                                    if (lastName.length >= 3 && (normL.includes(lastName) || lastName.includes(normL))) {
+                                        distL = Math.min(distL, 1);
+                                    }
+                                    if (firstName.length >= 3 && (normF.includes(firstName) || firstName.includes(normF))) {
+                                        distF = Math.min(distF, 1);
+                                    }
+                                    
+                                    return {
+                                        guest: g,
+                                        score: distL + distF,
+                                        distL,
+                                        distF
+                                    };
+                                });
 
-                                if (partialMatches.length === 1) {
-                                    matchedGuest = partialMatches[0];
-                                } else if (partialMatches.length > 1) {
-                                    // Multiple matches, show fuzzy modal for first one
-                                    fuzzyCandidate.value = partialMatches[0];
-                                    showFuzzyModal.value = true;
-                                    loading.value = false;
-                                    return;
+                                scoredGuests.sort((a, b) => a.score - b.score);
+                                const bestMatch = scoredGuests[0];
+
+                                if (bestMatch && bestMatch.score <= 5) {
+                                    const topScorers = scoredGuests.filter(g => g.score === bestMatch.score);
+                                    
+                                    if (topScorers.length === 1 && bestMatch.score <= 1) {
+                                        // Excellent match, silently accept
+                                        matchedGuest = bestMatch.guest;
+                                    } else {
+                                        // Good match but might have some typos or ambiguity, ask for confirmation
+                                        fuzzyCandidate.value = bestMatch.guest;
+                                        showFuzzyModal.value = true;
+                                        loading.value = false;
+                                        return;
+                                    }
                                 }
                             }
 
