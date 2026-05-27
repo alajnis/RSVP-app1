@@ -472,15 +472,16 @@
                                     let distF = Math.min(rawDistF, levenshtein(normFFirst, firstName));
                                     
                                     // Prefix bonus (starts with) - very strong match for initials/partial typing
-                                    if (normLFirst.startsWith(lastName) || lastName.startsWith(normLFirst)) {
+                                    // ONLY if what the user typed is a prefix of what is in the database.
+                                    if (normL.startsWith(lastName) || normLFirst.startsWith(lastName)) {
                                         distL = Math.min(distL, 0.5);
-                                    } else if (normL.includes(lastName) || lastName.includes(normL)) {
+                                    } else if (lastName.length >= 3 && normL.includes(lastName)) {
                                         distL = Math.min(distL, 1.5);
                                     }
                                     
-                                    if (normFFirst.startsWith(firstName) || firstName.startsWith(normFFirst)) {
+                                    if (normF.startsWith(firstName) || normFFirst.startsWith(firstName)) {
                                         distF = Math.min(distF, 0.5);
-                                    } else if (normF.includes(firstName) || firstName.includes(normF)) {
+                                    } else if (firstName.length >= 3 && normF.includes(firstName)) {
                                         distF = Math.min(distF, 1.5);
                                     }
                                     
