@@ -12,7 +12,7 @@
     <script src="supabase-client.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link
-        href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&family=Caveat:wght@400;600;700&display=swap"
         rel="stylesheet">
     <script>
         tailwind.config = {
@@ -74,6 +74,127 @@
         .animate-fade-in {
             animation: fadeIn 0.3s ease forwards;
         }
+
+        /* === MURAL STYLES === */
+        .mural-btn {
+            background: linear-gradient(135deg, #C42745 0%, #8B1A2F 100%);
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 16px 24px;
+            width: 100%;
+            margin-top: 24px;
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 20px rgba(196,39,69,0.35);
+            position: relative;
+            overflow: hidden;
+        }
+        .mural-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(196,39,69,0.45);
+        }
+        .mural-btn:active { transform: translateY(0); }
+        .mural-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+        }
+
+        .mural-form-card {
+            margin-top: 20px;
+            background: #1a1a2e;
+            border: 1px solid #C42745;
+            padding: 24px;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .mural-form-card h3 {
+            font-family: 'Caveat', cursive;
+            font-size: 22px;
+            color: #F6D8D9;
+            margin-bottom: 4px;
+        }
+
+        .mural-form-card textarea {
+            width: 100%;
+            background: #0d0d1a;
+            border: 1px solid #C42745;
+            color: #F4ECE8;
+            font-family: 'Caveat', cursive;
+            font-size: 18px;
+            padding: 14px;
+            resize: none;
+            outline: none;
+            line-height: 1.5;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .mural-form-card textarea::placeholder { color: rgba(244,236,232,0.3); }
+        .mural-form-card textarea:focus { border-color: #F6D8D9; }
+
+        .mural-form-card input[type='text'] {
+            width: 100%;
+            background: #0d0d1a;
+            border: 1px solid rgba(196,39,69,0.5);
+            color: #F4ECE8;
+            font-family: 'Work Sans', sans-serif;
+            font-size: 13px;
+            padding: 10px 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .mural-form-card input[type='text']:focus { border-color: #C42745; }
+
+        .char-counter {
+            text-align: right;
+            font-size: 11px;
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            margin-top: 4px;
+        }
+        .char-counter.warn { color: #F61D57; }
+        .char-counter.ok { color: rgba(244,236,232,0.45); }
+
+        .mural-send-btn {
+            background: #C42745;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 14px;
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            cursor: pointer;
+            margin-top: 14px;
+            transition: background 0.2s;
+        }
+        .mural-send-btn:hover { background: #1A1A1A; }
+        .mural-send-btn:disabled { background: #555; cursor: not-allowed; opacity: 0.7; }
+
+        .mural-success-badge {
+            margin-top: 20px;
+            padding: 16px;
+            background: linear-gradient(135deg, #0d0d1a, #1a1a2e);
+            border: 1px solid rgba(196,39,69,0.5);
+            text-align: center;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        @keyframes floatHeart {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .float-heart { animation: floatHeart 2s ease-in-out infinite; display: inline-block; }
     </style>
 </head>
 
@@ -226,8 +347,13 @@
                                     <input v-if="sg.dietary === 'Otro'" 
                                            type="text" 
                                            v-model="sg.dietary_detail" 
-                                           placeholder="Especifique su restricción..."
-                                           class="w-full mt-2 bg-white border border-brand-pink/50 px-4 py-3 text-sm outline-none focus:border-brand-crimson transition-all">
+                                           placeholder="* Obligatorio: especifique su restricción"
+                                           :class="[
+                                               'w-full mt-2 px-4 py-3 text-sm outline-none transition-all border',
+                                               sg.dietary_detail && sg.dietary_detail.trim()
+                                                   ? 'bg-white border-brand-pink/50 focus:border-brand-crimson'
+                                                   : 'bg-red-50 border-red-400 focus:border-red-600'
+                                           ]">
                                 </div>
 
                                 <!-- Age Category (Only if Confirmed) -->
@@ -260,14 +386,70 @@
                 </div>
 
                 <!-- STEP 3: SUCCESS -->
-                <div v-else-if="step === 3" key="step3" class="p-12 text-center">
+                <div v-else-if="step === 3" key="step3" class="p-8 text-center">
                     <div
-                        class="w-24 h-24 bg-rose-50 text-brand-crimson rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce border border-brand-pink/30">
+                        class="w-24 h-24 bg-rose-50 text-brand-crimson rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce border border-brand-pink/30">
                         <i class="ph ph-heart-straight text-4xl"></i>
                     </div>
-                    <h2 class="text-3xl font-serif font-bold text-brand-dark mb-4">¡Muchas Gracias!</h2>
-                    <p class="font-sans text-sm text-slate-400 tracking-widest uppercase">Tu confirmación ha sido
-                        guardada.</p>
+                    <h2 class="text-3xl font-serif font-bold text-brand-dark mb-3">¡Muchas Gracias!</h2>
+                    <p class="font-sans text-sm text-slate-400 tracking-widest uppercase mb-2">Tu confirmación ha sido guardada.</p>
+
+                    <!-- MURAL: Mensaje enviado con éxito -->
+                    <div v-if="muralSent" class="mural-success-badge">
+                        <div class="float-heart text-3xl mb-2">💌</div>
+                        <p style="font-family:'Caveat',cursive;font-size:20px;color:#F6D8D9;margin:0 0 4px 0;">¡Tu mensaje llegó!</p>
+                        <p style="font-family:'Work Sans',sans-serif;font-size:11px;color:rgba(244,236,232,0.5);letter-spacing:0.12em;text-transform:uppercase;">
+                            Los novios lo verán en su mural especial
+                        </p>
+                        <div style="margin-top:12px;padding:12px;background:rgba(196,39,69,0.12);border:1px dashed rgba(196,39,69,0.4);">
+                            <p style="font-family:'Caveat',cursive;font-size:17px;color:#F4ECE8;margin:0;line-height:1.4;">"{{ muralMessageText }}"</p>
+                            <p style="font-family:'Work Sans',sans-serif;font-size:10px;color:rgba(244,236,232,0.4);margin:6px 0 0;letter-spacing:0.08em;">— {{ muralSenderName }}</p>
+                        </div>
+                    </div>
+
+                    <!-- MURAL: Botón para dejar mensaje (si aún no envió) -->
+                    <div v-else>
+                        <button v-if="!showMuralForm" @click="showMuralForm = true" class="mural-btn">
+                            <span style="font-size:18px;margin-right:8px;">💌</span>
+                            Hacé click acá para dejarles un mensaje a los novios
+                        </button>
+
+                        <!-- MURAL: Formulario -->
+                        <div v-if="showMuralForm" class="mural-form-card">
+                            <h3>✍️ Dejales un mensaje a los novios</h3>
+                            <p style="font-family:'Work Sans',sans-serif;font-size:11px;color:rgba(244,236,232,0.5);letter-spacing:0.1em;text-transform:uppercase;margin:0 0 16px;">Aparecerá en su mural el día de la boda</p>
+
+                            <textarea
+                                v-model="muralMessageText"
+                                :maxlength="200"
+                                rows="4"
+                                placeholder="Escribí tu mensaje para los novios..."
+                            ></textarea>
+                            <div class="char-counter" :class="muralMessageText.length >= 180 ? 'warn' : 'ok'">
+                                {{ muralMessageText.length }} / 200
+                            </div>
+
+                            <div style="margin-top:12px;">
+                                <label style="display:block;font-family:'Work Sans',sans-serif;font-size:10px;font-weight:700;color:rgba(244,236,232,0.5);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">Tu firma</label>
+                                <input type="text" v-model="muralSenderName" :maxlength="80" placeholder="Tu nombre o grupo familiar..." />
+                            </div>
+
+                            <div v-if="muralError" style="margin-top:10px;padding:8px 12px;background:rgba(246,29,87,0.15);border:1px solid rgba(246,29,87,0.4);font-family:'Work Sans',sans-serif;font-size:11px;color:#F61D57;letter-spacing:0.08em;">
+                                {{ muralError }}
+                            </div>
+
+                            <button
+                                class="mural-send-btn"
+                                @click="sendMuralMessage"
+                                :disabled="muralSending || muralMessageText.trim().length === 0 || muralSenderName.trim().length === 0"
+                            >
+                                <span v-if="muralSending">Enviando...</span>
+                                <span v-else>💌 Enviar Mensaje</span>
+                            </button>
+
+                            <button @click="showMuralForm = false" style="background:transparent;border:none;color:rgba(244,236,232,0.35);font-family:'Work Sans',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;margin-top:10px;width:100%;">Cancelar</button>
+                        </div>
+                    </div>
                 </div>
             </transition>
 
@@ -294,7 +476,7 @@
     </div>
 
     <script>
-        const { createApp, ref, reactive, onMounted } = Vue;
+        const { createApp, ref, reactive, computed, onMounted } = Vue;
 
         createApp({
             setup() {
@@ -316,6 +498,14 @@
                 const lastNameSearch = ref('');
                 const searchResults = ref([]);
                 const selectedGuest = ref(null);
+
+                // === MURAL STATE ===
+                const showMuralForm = ref(false);
+                const muralMessageText = ref('');
+                const muralSenderName = ref('');
+                const muralSending = ref(false);
+                const muralSent = ref(false);
+                const muralError = ref('');
 
                 // Load Data
                 onMounted(async () => {
@@ -610,6 +800,23 @@
                         return;
                     }
 
+                    // Validación: si algún invitado confirmado eligió "Otro" en restricción, debe especificar cuál
+                    const missingDietary = guest.value.sub_guests.filter(sg =>
+                        sg.status !== 'Declined' &&
+                        sg.dietary === 'Otro' &&
+                        (!sg.dietary_detail || !sg.dietary_detail.trim())
+                    );
+                    if (missingDietary.length > 0) {
+                        const nombres = missingDietary.map(sg => sg.name || sg.first_name || 'Invitado').join(', ');
+                        error.value = `Por favor especificá la restricción alimentaria de: ${nombres}. El campo "Otro" es obligatorio.`;
+                        // Scroll suave al primer campo con error
+                        setTimeout(() => {
+                            const el = document.querySelector('.border-red-400');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 100);
+                        return;
+                    }
+
                     try {
                         loading.value = true;
 
@@ -672,13 +879,118 @@
 
                         if (updateError) throw updateError;
 
+                        // Check if guest already sent a mural message
+                        if (guest.value && guest.value.id) {
+                            const { data: existingMsg } = await supabase
+                                .from('mural_messages')
+                                .select('id, message, guest_name')
+                                .eq('guest_id', guest.value.id)
+                                .maybeSingle();
+                            if (existingMsg) {
+                                muralSent.value = true;
+                                muralMessageText.value = existingMsg.message;
+                                muralSenderName.value = existingMsg.guest_name;
+                            }
+                        }
+
                         step.value = 3; // Success step
                         loading.value = false;
+
+                        // Pre-fill mural sender name with confirmed attendees (only if no existing message)
+                        if (!muralSent.value && guest.value && guest.value.sub_guests) {
+                            const confirmedNames = guest.value.sub_guests
+                                .filter(sg => sg.status === 'Confirmed' || (sg.rsvp_answers && Object.values(sg.rsvp_answers).some(v => v === 'confirmed')))
+                                .map(sg => {
+                                    const fn = (sg.firstName || '').trim();
+                                    const ln = (sg.lastName || '').trim();
+                                    if (fn && ln) return `${fn} ${ln}`;
+                                    return fn || ln || '';
+                                })
+                                .filter(n => n.length > 0);
+
+                            // If nobody confirmed (all declined), use the main guest name
+                            if (confirmedNames.length === 0) {
+                                const mainSg = guest.value.sub_guests[0];
+                                if (mainSg) {
+                                    const fn = (mainSg.firstName || '').trim();
+                                    const ln = (mainSg.lastName || '').trim();
+                                    muralSenderName.value = fn && ln ? `${fn} ${ln}` : fn || ln || '';
+                                }
+                            } else if (confirmedNames.length === 1) {
+                                muralSenderName.value = confirmedNames[0];
+                            } else if (confirmedNames.length === 2) {
+                                muralSenderName.value = `${confirmedNames[0]} y ${confirmedNames[1]}`;
+                            } else {
+                                const last = confirmedNames.pop();
+                                muralSenderName.value = confirmedNames.join(', ') + ' y ' + last;
+                            }
+                        }
 
                     } catch (e) {
                         console.error('Error saving attendance:', e);
                         error.value = 'Error al guardar la confirmación. Por favor, inténtalo de nuevo.';
                         loading.value = false;
+                    }
+                };
+
+                // === SEND MURAL MESSAGE ===
+                const sendMuralMessage = async () => {
+                    muralError.value = '';
+                    const msg = muralMessageText.value.trim();
+                    const sender = muralSenderName.value.trim();
+
+                    if (!msg || msg.length === 0) {
+                        muralError.value = 'Por favor escribí un mensaje.';
+                        return;
+                    }
+                    if (msg.length > 200) {
+                        muralError.value = 'El mensaje no puede superar los 200 caracteres.';
+                        return;
+                    }
+                    if (!sender || sender.length === 0) {
+                        muralError.value = 'Por favor completá tu firma.';
+                        return;
+                    }
+                    if (!currentProject.value || !guest.value) {
+                        muralError.value = 'Error: no se encontró el proyecto. Recargá la página.';
+                        return;
+                    }
+
+                    // Safety: check existing message
+                    const { data: existing } = await supabase
+                        .from('mural_messages')
+                        .select('id')
+                        .eq('guest_id', guest.value.id)
+                        .maybeSingle();
+                    if (existing) {
+                        muralSent.value = true;
+                        showMuralForm.value = false;
+                        return;
+                    }
+
+                    muralSending.value = true;
+                    try {
+                        const payload = {
+                            id: crypto.randomUUID(),
+                            project_id: currentProject.value.id,
+                            guest_id: guest.value.id,
+                            guest_name: sender,
+                            message: msg
+                        };
+
+                        const { error: insertError } = await supabase
+                            .from('mural_messages')
+                            .insert(payload);
+
+                        if (insertError) throw insertError;
+
+                        muralSent.value = true;
+                        showMuralForm.value = false;
+                    } catch (e) {
+                        console.error('Error enviando mensaje del mural:', e);
+                        muralError.value = 'Error al enviar el mensaje. Por favor intentá de nuevo.';
+                    } finally {
+                        muralSending.value = false;
                     }
                 };
 
@@ -694,7 +1006,10 @@
                     findInvitation, confirmAttendance, currentProject, formatDate,
                     showFuzzyModal, fuzzyCandidate, acceptFuzzyMatch, rejectFuzzyMatch,
                     getFullName,
-                    loading, lastNameSearch, searchResults, selectedGuest
+                    loading, lastNameSearch, searchResults, selectedGuest,
+                    // Mural
+                    showMuralForm, muralMessageText, muralSenderName,
+                    muralSending, muralSent, muralError, sendMuralMessage
                 };
             }
         }).mount('#app');

@@ -16,8 +16,10 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <!-- SheetJS (CDN) for Excel Import -->
-    <!-- SheetJS (CDN) for Excel Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- html2canvas (CDN) for Mural image download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <!-- SUPABASE LOCAL (Vendorized) -->
     <script src="vendor/supabase.js"></script>
@@ -27,7 +29,7 @@
 
     <!-- Google Fonts -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Pinyon+Script&family=Permanent+Marker&family=Caveat:wght@400;600;700&display=swap"
         rel="stylesheet">
 
     <!-- Error Handler: Log to console only, NO alerts -->
@@ -98,6 +100,152 @@
         .fade-leave-to {
             opacity: 0;
         }
+
+        /* ===== MURAL STYLES ===== */
+        .mural-wall {
+            background: #0d0d1e;
+            background-image:
+                radial-gradient(ellipse at 20% 80%, rgba(100,0,30,0.18) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 10%, rgba(0,30,80,0.2) 0%, transparent 50%),
+                repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.02) 40px),
+                repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.01) 40px);
+            min-height: 600px;
+            padding: 48px 32px 64px;
+            position: relative;
+            overflow: visible;
+        }
+        .mural-wall::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 50%, rgba(196,39,69,0.06) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .mural-title {
+            font-family: 'Permanent Marker', cursive;
+            text-align: center;
+            line-height: 1.2;
+            position: relative;
+            z-index: 20;         /* por encima de la grilla (z-index:10) */
+            margin-bottom: 48px;
+            user-select: none;
+            pointer-events: none; /* no bloquea clicks en los post-its */
+        }
+        .mural-title-names {
+            font-size: clamp(42px, 7vw, 90px);
+            color: #ffffff;
+            text-shadow: 
+                0 0 10px rgba(255, 107, 157, 0.8),
+                0 0 20px rgba(255, 107, 157, 0.5),
+                0 0 30px rgba(255, 234, 0, 0.4),
+                4px 4px 0px rgba(0, 0, 0, 0.9);
+            letter-spacing: 0.05em;
+            display: block;
+        }
+        .mural-title-date {
+            font-family: 'Caveat', cursive;
+            font-size: clamp(16px, 2.5vw, 26px);
+            color: rgba(255,255,255,0.55);
+            display: block;
+            margin-top: 12px;
+            letter-spacing: 0.15em;
+        }
+
+        .mural-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            justify-content: center;
+            align-items: flex-start;   /* cada post-it toma solo su alto natural */
+            position: relative;
+            z-index: 10;
+        }
+
+        .mural-postit {
+            width: 220px;
+            height: auto;
+            min-height: 0;
+            padding: 22px 18px 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 8px;
+            box-shadow: 3px 4px 18px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.25);
+            position: relative;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .mural-postit:hover {
+            transform: scale(1.05) translateY(-4px) !important;
+            box-shadow: 6px 10px 30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.3);
+            z-index: 100;
+        }
+        .mural-postit::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: rgba(0,0,0,0.15);
+        }
+        .mural-postit-pin {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid rgba(0,0,0,0.3);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+        .mural-postit-message {
+            font-family: 'Caveat', cursive;
+            font-size: 17px;
+            line-height: 1.45;
+            color: rgba(0,0,0,0.82);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-line;
+            /* SIN flex:1 — el mensaje ocupa solo lo que necesita */
+        }
+        .mural-postit-sig {
+            font-family: 'Caveat', cursive;
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(0,0,0,0.55);
+            text-align: right;
+            margin-top: 4px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            padding-top: 5px;
+        }
+
+        .mural-empty {
+            text-align: center;
+            padding: 80px 32px;
+            position: relative;
+            z-index: 10;
+        }
+        .mural-empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            filter: grayscale(0.3);
+            display: block;
+        }
+        .mural-empty-title {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 28px;
+            color: rgba(255,255,255,0.35);
+            margin-bottom: 8px;
+        }
+        .mural-empty-sub {
+            font-family: 'Work Sans', sans-serif;
+            font-size: 12px;
+            color: rgba(255,255,255,0.2);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 
@@ -146,14 +294,19 @@
                 class="flex flex-col md:flex-row justify-between items-center bg-brand-beige p-1 border border-brand-pink mt-4 shadow-inner">
                 <div class="flex w-full md:w-auto gap-1">
                     <button @click="currentView = 'seating'"
-                        class="flex-1 md:w-56 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
+                        class="flex-1 md:w-44 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
                         :class="currentView === 'seating' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4 border-r border-brand-pink/30'">
                         Plan de Mesas
                     </button>
                     <button @click="currentView = 'guests'"
-                        class="flex-1 md:w-56 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
-                        :class="currentView === 'guests' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4'">
+                        class="flex-1 md:w-44 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
+                        :class="currentView === 'guests' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4 border-r border-brand-pink/30'">
                         Lista de Invitados
+                    </button>
+                    <button @click="currentView = 'mural'"
+                        class="flex-1 md:w-44 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
+                        :class="currentView === 'mural' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4'">
+                        Mural
                     </button>
                 </div>
                 <div class="flex gap-4 p-2 items-center">
@@ -171,7 +324,7 @@
                 <p class="text-3xl font-serif font-bold text-brand-dark">{{ totalCapacity }}</p>
             </div>
             <div class="bg-white border-b-4 border-brand-pink p-6 shadow-sm">
-                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Asignados</p>
+                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Asignados a Mesa</p>
                 <div class="flex items-baseline gap-2">
                     <p class="text-3xl font-serif font-bold text-brand-dark">{{ assignedGuestsCount }}</p>
                     <p class="text-xs text-brand-dark/40 font-bold">/ {{ totalGuestsInvited }}</p>
@@ -341,10 +494,10 @@
                                 class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Todos</button>
                             <button @click="filter = 'pending'"
                                 :class="filter === 'pending' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
-                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Pendientes</button>
+                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Sin Mesa</button>
                             <button @click="filter = 'assigned'"
                                 :class="filter === 'assigned' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
-                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Asignados</button>
+                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Con Mesa</button>
                         </div>
                     </div>
 
@@ -377,9 +530,15 @@
                                             </div>
                                             <div class="flex items-center gap-2 mt-2">
                                                 <span v-if="item.assignment"
-                                                    class="text-[10px] text-brand-crimson font-bold bg-brand-pink/50 px-2 py-0.5 border border-brand-crimson/20 tracking-widest">ASIGNADO</span>
+                                                    class="text-[10px] text-brand-crimson font-bold bg-brand-pink/50 px-2 py-0.5 border border-brand-crimson/20 tracking-widest">CON MESA</span>
                                                 <span v-else
-                                                    class="text-[10px] text-brand-magenta font-bold bg-brand-magenta/5 px-2 py-0.5 border border-brand-magenta/20 tracking-widest">PENDIENTE</span>
+                                                    class="text-[10px] text-brand-magenta font-bold bg-brand-magenta/5 px-2 py-0.5 border border-brand-magenta/20 tracking-widest">SIN MESA</span>
+                                                
+                                                <span v-if="item.assignment && item.status === 'Declined'"
+                                                    class="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 flex items-center gap-1 animate-pulse"
+                                                    title="Asignado a mesa pero rechazó la invitación">
+                                                    <i class="ph-fill ph-warning"></i> RECHAZÓ RSVP
+                                                </span>
 
                                                 <span v-if="item.status === 'Confirmed'"
                                                     class="text-[10px] font-bold text-green-600 flex items-center gap-1"><i
@@ -426,16 +585,19 @@
                 </div>
 
                 <!-- Guest Filters -->
-                <div class="flex gap-3 bg-brand-beige/30 p-1 rounded-lg">
+                <div class="flex gap-1 bg-brand-beige/30 p-1 rounded-lg flex-nowrap">
                     <button @click="guestFilter = 'all'"
                         :class="guestFilter === 'all' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
-                        class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all">Todos</button>
+                        class="px-2 py-1.5 text-[9px] font-bold uppercase tracking-tight transition-all whitespace-nowrap">Todos</button>
                     <button @click="guestFilter = 'confirmed'"
                         :class="guestFilter === 'confirmed' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
-                        class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all">Confirmados</button>
+                        class="px-2 py-1.5 text-[9px] font-bold uppercase tracking-tight transition-all whitespace-nowrap">Confirmados</button>
                     <button @click="guestFilter = 'pending'"
                         :class="guestFilter === 'pending' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
-                        class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all">Pendientes</button>
+                        class="px-2 py-1.5 text-[9px] font-bold uppercase tracking-tight transition-all whitespace-nowrap">Pendientes</button>
+                    <button @click="guestFilter = 'declined'"
+                        :class="guestFilter === 'declined' ? 'text-red-600 border-b-2 border-red-500' : 'text-brand-dark/40'"
+                        class="px-2 py-1.5 text-[9px] font-bold uppercase tracking-tight transition-all whitespace-nowrap">Rechazaron</button>
                 </div>
 
                 <div class="flex flex-wrap gap-3">
@@ -525,8 +687,8 @@
                                 </div>
                                 <!-- Show sub-guest names if they exist -->
                                 <div v-if="guest.sub_guests && guest.sub_guests.length > 0" class="mt-1 space-y-1">
-                                    <div v-for="sg in guest.sub_guests" :key="sg.id" class="flex flex-col gap-0.5"
-                                        :class="sg.status === 'Declined' ? 'opacity-50' : ''">
+                                    <div v-for="(sg, idx) in guest.sub_guests" :key="sg.id" class="flex flex-col gap-0.5"
+                                         :class="sg.status === 'Declined' ? 'opacity-50' : ''">
 
                                         <!-- Nombre y Status Global -->
                                         <div class="text-[9px] uppercase tracking-wider flex items-center gap-1.5"
@@ -537,6 +699,12 @@
                                             <i v-if="duplicateNames.has(getFullName(sg).toLowerCase().trim())" 
                                                class="ph-fill ph-warning text-yellow-500" 
                                                title="Este nombre está duplicado en la lista"></i>
+
+                                            <span v-if="sg.status === 'Declined' && isSubGuestAssigned(guest, idx)"
+                                                class="text-[7px] font-bold text-red-600 bg-red-50 border border-red-200 px-1 py-0.5 ml-2 rounded tracking-wider flex items-center gap-0.5 inline-flex"
+                                                title="Asignado a mesa pero rechazó la invitación">
+                                                <i class="ph-fill ph-warning"></i> RECHAZÓ MESA
+                                            </span>
 
                                             <span v-if="sg.ageCategory && sg.ageCategory !== 'Adulto'"
                                                 class="px-1.5 py-0.5 rounded-full text-[7px] font-bold border ml-1"
@@ -615,13 +783,19 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-sm font-sans">
-                                <span v-if="guest.assignment"
-                                    class="bg-brand-crimson/5 text-brand-crimson px-2 py-1 rounded-sm font-bold text-[10px] uppercase tracking-wider border border-brand-crimson/10">
-                                    MESA: {{ getTableName(guest.assignment.table_id) }}
-                                </span>
+                                <div v-if="getGroupTablesText(guest)" class="flex flex-col gap-1 items-start">
+                                    <span class="bg-brand-crimson/5 text-brand-crimson px-2 py-1 rounded-sm font-bold text-[10px] uppercase tracking-wider border border-brand-crimson/10">
+                                        MESA: {{ getGroupTablesText(guest) }}
+                                    </span>
+                                    <span v-if="groupHasDeclinedAssignment(guest)"
+                                        class="bg-red-50 text-red-600 px-2 py-0.5 rounded-sm font-bold text-[9px] uppercase tracking-wider border border-red-200 flex items-center gap-1 animate-pulse"
+                                        title="Asignado a mesa pero rechazó la invitación">
+                                        <i class="ph-bold ph-warning"></i> RECHAZÓ RSVP
+                                    </span>
+                                </div>
                                 <span v-else
                                     class="bg-brand-beige text-brand-dark px-2 py-1 rounded-sm font-bold text-[10px] uppercase tracking-wider border border-brand-pink">
-                                    PENDIENTE
+                                    SIN MESA
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-right space-x-2">
@@ -652,6 +826,62 @@
             </div>
         </div>
 
+
+        <!-- VIEW 3: MURAL -->
+        <div v-if="currentView === 'mural'"
+            class="flex-1 flex flex-col min-h-0 animate-fade-in">
+
+            <!-- Mural Header Toolbar -->
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-serif font-bold text-brand-dark">Mural de Mensajes</h2>
+                    <p class="text-xs font-bold text-brand-dark/40 uppercase tracking-widest mt-1">
+                        {{ muralMessages.length }} mensaje{{ muralMessages.length !== 1 ? 's' : '' }} de los invitados
+                    </p>
+                </div>
+                <button @click="downloadMural"
+                    class="bg-brand-dark hover:bg-brand-crimson text-white px-8 py-4 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg flex items-center gap-2">
+                    <i class="ph-bold ph-download-simple text-lg"></i> Descargar Mural
+                </button>
+            </div>
+
+            <!-- The Wall -->
+            <div ref="muralRef" class="mural-wall flex flex-col items-center">
+                <!-- Title -->
+                <div class="mural-title">
+                    <span class="mural-title-names">{{ currentProject?.coupleName || (currentProject?.brideName + ' & ' + currentProject?.groomName) }}</span>
+                    <span class="mural-title-date">{{ formatDate(currentProject?.weddingDate) }}</span>
+                </div>
+
+                <!-- Empty State -->
+                <div v-if="muralMessages.length === 0" class="mural-empty">
+                    <span class="mural-empty-icon">💌</span>
+                    <div class="mural-empty-title">Todavía no hay mensajes</div>
+                    <div class="mural-empty-sub">Los invitados podrán dejar su mensaje luego de confirmar asistencia</div>
+                </div>
+
+                <!-- Post-its Grid -->
+                <div v-else class="mural-grid" style="max-width:1200px;">
+                    <div v-for="(msg, idx) in muralMessages" :key="msg.id"
+                        class="mural-postit"
+                        :style="getPostitStyle(idx, msg)">
+                        <!-- Pin -->
+                        <div class="mural-postit-pin" :style="{ background: getPinColor(idx) }"></div>
+                        <!-- Delete button -->
+                        <button @click="deleteMuralMessage(msg.id)"
+                            data-html2canvas-ignore
+                            class="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-black/20 hover:bg-red-500/80 text-white/60 hover:text-white transition-all z-20 text-xs"
+                            title="Eliminar mensaje">
+                            <i class="ph-bold ph-x"></i>
+                        </button>
+                        <!-- Message -->
+                        <div class="mural-postit-message">{{ msg.message }}</div>
+                        <!-- Signature -->
+                        <div class="mural-postit-sig">— {{ msg.guest_name }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- MODAL: TABLE FORM -->
         <div v-if="showTableModal"
@@ -908,6 +1138,8 @@
                 const guests = ref([]);
                 const assignments = ref([]);
                 const currentView = ref('seating');
+                const muralMessages = ref([]);
+                const muralRef = ref(null);
 
                 // Get project ID from URL
                 const urlParams = new URLSearchParams(window.location.search);
@@ -989,6 +1221,10 @@
                     // 4. Assignments
                     const { data: asgs } = await supabase.from('assignments').select('*').eq('project_id', projectId);
                     assignments.value = asgs || [];
+
+                    // 5. Mural Messages
+                    const { data: murals } = await supabase.from('mural_messages').select('*').eq('project_id', projectId).order('created_at', { ascending: true });
+                    muralMessages.value = murals || [];
                 };
 
                 loadData();
@@ -1163,6 +1399,13 @@
                                 return g.sub_guests.some(sg => sg.status === 'Pending' || !sg.status); // Include empty status as pending
                             }
                             return g.rsvp_status === 'Pending' || !g.rsvp_status;
+                        });
+                    } else if (guestFilter.value === 'declined') {
+                        result = result.filter(g => {
+                            if (g.sub_guests && g.sub_guests.length > 0) {
+                                return g.sub_guests.some(sg => sg.status === 'Declined');
+                            }
+                            return g.rsvp_status === 'Declined';
                         });
                     }
 
@@ -1576,7 +1819,7 @@
                             };
 
                             const mainAssignment = assignments.value.find(a => a.guest_id === g.id && (a.sub_guest_idx === null || a.sub_guest_idx === undefined));
-                            const tableName = mainAssignment ? getTableName(mainAssignment.table_id) : 'Sin asignar';
+                            const tableName = mainAssignment ? getTableName(mainAssignment.table_id) : 'Sin Mesa';
 
                             if (g.sub_guests && g.sub_guests.length > 0) {
                                 g.sub_guests.forEach((sg, idx) => {
@@ -1594,7 +1837,7 @@
                                         'Asistencia General': rsvpStatus,
                                         'Dieta': sg.dietary || 'Normal',
                                         'Edad': sg.ageCategory || 'Adulto',
-                                        'Mesa': subTableName,
+                                        'Mesa': (subTableName !== 'Sin Mesa' && rsvpStatus === 'NO ASISTIRÁ') ? `${subTableName} (RECHAZÓ RSVP ⚠️)` : subTableName,
                                         'Email Contácto': g.email || '-',
                                         'Teléfono Contácto': g.phone || '-'
                                     };
@@ -1612,7 +1855,7 @@
                                     'Asistencia General': rsvpStatus,
                                     'Dieta': g.dietary || 'Normal',
                                     'Edad': 'Adulto',
-                                    'Mesa': tableName,
+                                    'Mesa': (tableName !== 'Sin Mesa' && rsvpStatus === 'CANCELADO') ? `${tableName} (RECHAZÓ RSVP ⚠️)` : tableName,
                                     'Email Contácto': g.email || '-',
                                     'Teléfono Contácto': g.phone || '-'
                                 };
@@ -1873,6 +2116,40 @@
                 };
 
                 const getTableName = (id) => tables.value.find(t => t.id === id)?.name || 'Unknown';
+                const isSubGuestAssigned = (guest, idx) => {
+                    const mainAssignment = assignments.value.find(a => a.guest_id === guest.id && (a.sub_guest_idx === null || a.sub_guest_idx === undefined));
+                    const subAssignment = assignments.value.find(a => a.guest_id === guest.id && a.sub_guest_idx === idx);
+                    return !!subAssignment || !!mainAssignment;
+                };
+                const groupHasDeclinedAssignment = (guest) => {
+                    const mainAssignment = assignments.value.find(a => a.guest_id === guest.id && (a.sub_guest_idx === null || a.sub_guest_idx === undefined));
+                    if (mainAssignment && guest.rsvp_status === 'Declined') return true;
+                    if (guest.sub_guests && guest.sub_guests.length > 0) {
+                        return guest.sub_guests.some((sg, idx) => {
+                            const subAssignment = assignments.value.find(a => a.guest_id === guest.id && a.sub_guest_idx === idx);
+                            const isAssigned = !!subAssignment || !!mainAssignment;
+                            return isAssigned && sg.status === 'Declined';
+                        });
+                    }
+                    return false;
+                };
+                const getGroupTablesText = (guest) => {
+                    const tablesList = [];
+                    const mainAssignment = assignments.value.find(a => a.guest_id === guest.id && (a.sub_guest_idx === null || a.sub_guest_idx === undefined));
+                    if (mainAssignment) {
+                        tablesList.push(getTableName(mainAssignment.table_id));
+                    }
+                    if (guest.sub_guests && guest.sub_guests.length > 0) {
+                        guest.sub_guests.forEach((_, idx) => {
+                            const subAssignment = assignments.value.find(a => a.guest_id === guest.id && a.sub_guest_idx === idx);
+                            if (subAssignment) {
+                                const name = getTableName(subAssignment.table_id);
+                                if (!tablesList.includes(name)) tablesList.push(name);
+                            }
+                        });
+                    }
+                    return tablesList.length > 0 ? tablesList.join(', ') : '';
+                };
                 const getGuestById = (id) => guests.value.find(g => g.id === id);
                 const getFullName = (item) => {
                     if (!item) return '';
@@ -2094,6 +2371,61 @@
                     assignGuest(draggedItem.guestId, draggedItem.subGuestIdx, '');
                 };
 
+                // ===== MURAL FUNCTIONS =====
+                const postitColors = [
+                    '#FFF3CD', '#FFD6D6', '#D6F5E3', '#D6E8F5',
+                    '#F5E6D6', '#E8D6F5', '#F5F5D6', '#D6F5F0',
+                    '#FFE0B2', '#F8BBD0', '#C8E6C9', '#BBDEFB'
+                ];
+                const pinColors = [
+                    '#C42745', '#F61D57', '#FF6B35', '#FFC107',
+                    '#4CAF50', '#2196F3', '#9C27B0', '#FF9800'
+                ];
+
+                const getPostitStyle = (idx, msg) => {
+                    const color = postitColors[idx % postitColors.length];
+                    const rot = (-3 + (idx * 37) % 7).toFixed(1);
+                    const offsetY = (idx % 3 === 0 ? 4 : idx % 3 === 1 ? -4 : 0);
+                    return {
+                        background: color,
+                        transform: `rotate(${rot}deg) translateY(${offsetY}px)`
+                    };
+                };
+
+                const getPinColor = (idx) => {
+                    return pinColors[idx % pinColors.length];
+                };
+
+                const deleteMuralMessage = async (id) => {
+                    if (!confirm('¿Eliminar este mensaje del mural?')) return;
+                    const { error } = await supabase.from('mural_messages').delete().eq('id', id);
+                    if (error) {
+                        showToast('Error al eliminar mensaje', 'error');
+                        return;
+                    }
+                    muralMessages.value = muralMessages.value.filter(m => m.id !== id);
+                    showToast('Mensaje eliminado', 'success');
+                };
+
+                const downloadMural = async () => {
+                    if (!muralRef.value) return;
+                    try {
+                        const canvas = await html2canvas(muralRef.value, {
+                            backgroundColor: '#0d0d1e',
+                            scale: 2,
+                            useCORS: true,
+                            logging: false
+                        });
+                        const link = document.createElement('a');
+                        link.download = `mural-${(currentProject.value?.coupleName || 'boda').replace(/\s+/g, '_').toLowerCase()}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        showToast('Mural descargado como imagen', 'success');
+                    } catch (e) {
+                        console.error('Error descargando mural:', e);
+                        showToast('Error al descargar el mural', 'error');
+                    }
+                };
 
                 return {
                     currentProject, currentProjectId,
@@ -2111,11 +2443,16 @@
                     assignGuest, handleFileUpload, handleExport, resetData, handleFloorPlanUpload,
                     syncMainGuestDietary,
                     getTableAssignments, getTableName, getGuestById, getFullName, getGuestInitials, getAssignmentName, getGuestDietaries,
+                    isSubGuestAssigned, groupHasDeclinedAssignment, getGroupTablesText,
                     getStatusBadgeClass, getProgressBarClass, getAvatarColor,
                     backToDashboard, logout, formatDate,
                     getGuestPortalLink, copyLink, isCouple,
                     onDragStart, onDragEnd, onDragOverTable, onDragLeaveTable, 
-                    onDropTable, onDragOverPending, onDropPending, isDraggingOverPending
+                    onDropTable, onDragOverPending, onDropPending, isDraggingOverPending,
+                    // Mural
+                    muralMessages, muralRef,
+                    getPostitStyle, getPinColor,
+                    deleteMuralMessage, downloadMural
                 };
             }
         }).mount('#app');

@@ -932,7 +932,7 @@
 
                             const getTableName = (tableId) => {
                                 const table = (tables || []).find(t => t.id === tableId);
-                                return table ? table.name : 'Sin asignar';
+                                return table ? table.name : 'Sin Mesa';
                             };
 
                             const sheetData = [];
@@ -951,7 +951,7 @@
 
                             (guests || []).forEach(g => {
                                 const mainAssignment = (assignments || []).find(a => a.guest_id === g.id && (a.sub_guest_idx === null || a.sub_guest_idx === undefined));
-                                const tableName = mainAssignment ? getTableName(mainAssignment.table_id) : 'Sin asignar';
+                                const tableName = mainAssignment ? getTableName(mainAssignment.table_id) : 'Sin Mesa';
 
                                 if (g.sub_guests && g.sub_guests.length > 0) {
                                     g.sub_guests.forEach((sg, idx) => {
@@ -967,7 +967,7 @@
                                             'Asistencia General': rsvpStatus,
                                             'Dieta': sg.dietary || 'Normal',
                                             'Edad': sg.ageCategory || 'Adulto',
-                                            'Mesa': subTableName,
+                                            'Mesa': (subTableName !== 'Sin Mesa' && rsvpStatus === 'NO ASISTIRÁ') ? `${subTableName} (RECHAZÓ RSVP ⚠️)` : subTableName,
                                             'Email Contácto': g.email || '-',
                                             'Teléfono Contácto': g.phone || '-'
                                         };
@@ -983,7 +983,7 @@
                                         'Asistencia General': rsvpStatus,
                                         'Dieta': g.dietary || 'Normal',
                                         'Edad': 'Adulto',
-                                        'Mesa': tableName,
+                                        'Mesa': (tableName !== 'Sin Mesa' && rsvpStatus === 'CANCELADO') ? `${tableName} (RECHAZÓ RSVP ⚠️)` : tableName,
                                         'Email Contácto': g.email || '-',
                                         'Teléfono Contácto': g.phone || '-'
                                     };

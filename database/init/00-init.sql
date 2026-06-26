@@ -100,18 +100,32 @@ create table if not exists login_logs (
   timestamp timestamptz default now()
 );
 
+-- TABLA MURAL (mensajes de invitados para los novios)
+create table if not exists mural_messages (
+  id            text primary key default gen_random_uuid()::text,
+  project_id    text references projects(id) on delete cascade,
+  guest_id      text,
+  guest_name    text not null,
+  message       varchar(200) not null,
+  created_at    timestamptz default now()
+);
+
+create index if not exists idx_mural_project_id on mural_messages(project_id);
+
 -- POLÍTICAS DE SEGURIDAD (RLS)
 alter table projects enable row level security;
 alter table tables enable row level security;
 alter table guests enable row level security;
 alter table assignments enable row level security;
 alter table login_logs enable row level security;
+alter table mural_messages enable row level security;
 
 create policy "Enable all access for anon" on projects for all using (true) with check (true);
 create policy "Enable all access for anon" on tables for all using (true) with check (true);
 create policy "Enable all access for anon" on guests for all using (true) with check (true);
 create policy "Enable all access for anon" on assignments for all using (true) with check (true);
 create policy "Enable all access for anon" on login_logs for all using (true) with check (true);
+create policy "Enable all access for anon" on mural_messages for all using (true) with check (true);
 
 -- Permisos para roles (Crucial)
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
