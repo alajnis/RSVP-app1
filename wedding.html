@@ -1971,6 +1971,14 @@
                                     pLast = lastSeenInvLast;
                                     pFirst = lastSeenInvFirst;
                                     // NO actualizamos currentGroupKey porque pertenece a la fila anterior
+                                }
+                                // Si el nombre del invitado principal coincide exactamente con el anterior (lo repitieron en la siguiente fila)
+                                else if (lastSeenInvLast && lastSeenInvFirst && 
+                                         rawPLast.toLowerCase() === lastSeenInvLast.toLowerCase() && 
+                                         rawPFirst.toLowerCase() === lastSeenInvFirst.toLowerCase()) {
+                                    pLast = lastSeenInvLast;
+                                    pFirst = lastSeenInvFirst;
+                                    // NO actualizamos currentGroupKey porque continúa siendo la misma invitación de la fila anterior
                                 } else {
                                     // Actualiza los últimos vistos (solo si es una nueva invitación)
                                     lastSeenInvLast = pLast;
