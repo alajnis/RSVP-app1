@@ -1835,7 +1835,9 @@
                                         'Integrante (Apellido)': sg.lastName || '(Vacio)',
                                         'Integrante (Nombre)': sg.firstName || (idx === 0 ? g.firstName : `Acompañante ${idx}`),
                                         'Asistencia General': rsvpStatus,
-                                        'Dieta': sg.dietary || 'Normal',
+                                        'Dieta': (sg.dietary === 'Otro' && sg.dietary_detail && sg.dietary_detail.trim())
+                                            ? `Otro: ${sg.dietary_detail.trim()}`
+                                            : (sg.dietary || 'Normal'),
                                         'Edad': sg.ageCategory || 'Adulto',
                                         'Mesa': (subTableName !== 'Sin Mesa' && rsvpStatus === 'NO ASISTIRÁ') ? `${subTableName} (RECHAZÓ RSVP ⚠️)` : subTableName,
                                         'Email Contácto': g.email || '-',
@@ -1853,7 +1855,9 @@
                                     'Integrante (Apellido)': g.lastName || '-',
                                     'Integrante (Nombre)': g.firstName || '-',
                                     'Asistencia General': rsvpStatus,
-                                    'Dieta': g.dietary || 'Normal',
+                                    'Dieta': (g.dietary === 'Otro' && g.dietary_detail && g.dietary_detail.trim())
+                                        ? `Otro: ${g.dietary_detail.trim()}`
+                                        : (g.dietary || 'Normal'),
                                     'Edad': 'Adulto',
                                     'Mesa': (tableName !== 'Sin Mesa' && rsvpStatus === 'CANCELADO') ? `${tableName} (RECHAZÓ RSVP ⚠️)` : tableName,
                                     'Email Contácto': g.email || '-',
