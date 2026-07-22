@@ -585,6 +585,7 @@
                             weddingDate: p.wedding_date,
                             venue: p.venue,
                             eventsConfig: p.events_config, // NEW: Load multi-event config
+                            loginCode: p.login_code || null,
                             created_at: p.created_at,
                             updated_at: p.updated_at
                         }));
@@ -754,6 +755,43 @@
                             eventsConfig.events.push({ id: 'main', label: 'Boda', is_main: true });
                         }
 
+                        // GENERATE UNIQUE LOGIN CODE
+                        // For edits: keep the existing login_code (don't change it to avoid locking out couple)
+                        let loginCode = editingProject.value?.loginCode || null;
+
+                        if (!loginCode) {
+                            // New project: generate base code and ensure uniqueness
+                            const clean = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+                            const b = clean(projectForm.brideName);
+                            const g = clean(projectForm.groomName);
+                            const baseCode = `${b}y${g}`;
+
+                            // Fetch all existing login codes from DB to check collision
+                            const { data: existingProjects } = await window.supabaseClient
+                                .from('projects')
+                                .select('login_code');
+
+                            const existingCodes = new Set(
+                                (existingProjects || [])
+                                    .map(p => p.login_code)
+                                    .filter(Boolean)
+                            );
+
+                            // Also check reverse (groom+y+bride) to keep both variants unique
+                            const reverseCode = `${g}y${b}`;
+
+                            if (!existingCodes.has(baseCode) && !existingCodes.has(reverseCode)) {
+                                loginCode = baseCode;
+                            } else {
+                                // Find the next available suffix: anaycarlos1, anaycarlos2, ...
+                                let suffix = 1;
+                                while (existingCodes.has(`${baseCode}${suffix}`)) {
+                                    suffix++;
+                                }
+                                loginCode = `${baseCode}${suffix}`;
+                            }
+                        }
+
                         const projectData = {
                             id: editingProject.value?.id || crypto.randomUUID(),
                             couple_name: coupleName,
@@ -761,7 +799,8 @@
                             bride_name: projectForm.brideName,
                             groom_name: projectForm.groomName,
                             venue: projectForm.venue || '',
-                            events_config: eventsConfig
+                            events_config: eventsConfig,
+                            login_code: loginCode
                         };
 
                         const { error } = await window.supabaseClient
@@ -772,12 +811,16 @@
 
                         await loadProjects(); // Reload from Supabase
                         closeProjectModal();
-                        showToast(editingProject.value ? 'Casamiento actualizado' : 'Casamiento creado');
+                        const isNew = !editingProject.value;
+                        showToast(isNew
+                            ? `Casamiento creado. Clave de acceso: ${loginCode}`
+                            : 'Casamiento actualizado');
                     } catch (e) {
                         console.error('Error saving project:', e);
                         showToast('Error al guardar: ' + e.message, 'error');
                     }
                 };
+
 
                 const deleteProject = async (id) => {
                     if (!confirm('¿Eliminar este casamiento y todos sus datos?')) return;
