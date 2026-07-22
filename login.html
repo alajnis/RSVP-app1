@@ -102,8 +102,7 @@
                             brideName: p.bride_name,
                             groomName: p.groom_name,
                             coupleName: p.couple_name || `${p.bride_name} & ${p.groom_name}`,
-                            weddingDate: p.wedding_date,
-                            loginCode: p.login_code || null
+                            weddingDate: p.wedding_date
                         }));
 
                         console.log(`✅ ${projects.value.length} proyectos cargados`);
@@ -112,30 +111,19 @@
                     }
                 });
 
-                // Generar códigos de pareja
-                // Prioridad: usar login_code guardado en DB (si existe).
-                // Fallback dinámico para proyectos creados antes de esta feature.
+                // Generar códigos de pareja (formato consistente con portal RSVP)
                 const getProjectCodes = (project) => {
                     try {
                         if (!project.brideName || !project.groomName) return [];
                         const clean = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+
                         const b = clean(project.brideName);
                         const g = clean(project.groomName);
 
-                        if (project.loginCode) {
-                            // Tiene clave guardada en DB: aceptar también la variante inversa
-                            // (ej: si loginCode=anaycarlos, también aceptar carlosyana)
-                            const reverseCode = `${g}y${b}`;
-                            const codes = [project.loginCode];
-                            // Solo agregar inverso si es diferente al principal
-                            if (reverseCode !== project.loginCode) codes.push(reverseCode);
-                            return codes;
-                        }
-
-                        // Fallback: generar dinámicamente (proyectos viejos sin login_code en DB)
+                        // MISMO formato que portal RSVP (index2.html)
                         return [
-                            `${b}y${g}`,   // brendaylucas
-                            `${g}y${b}`    // lucasybrenda
+                            `${b}y${g}`,   // brendaylucas (CON "y")
+                            `${g}y${b}`    // lucasybrenda (CON "y")
                         ];
                     } catch (e) {
                         return [];
