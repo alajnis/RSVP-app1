@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Configurar Tabla Mural</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; line-height: 1.6; }
+        .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        button { background: #C42745; color: white; border: none; padding: 12px 24px; font-size: 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #a01f38; }
+        #status { margin-top: 20px; padding: 15px; border-radius: 4px; display: none; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🔧 Configuración Automática del Mural</h2>
+        <p>Este asistente creará la tabla <code>mural_messages</code> de forma segura utilizando la API de Supabase.</p>
+        <button id="btn" onclick="crearTabla()">Crear Tabla Mural</button>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        async function crearTabla() {
+            const btn = document.getElementById('btn');
+            const statusDiv = document.getElementById('status');
+            btn.disabled = true;
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'success';
+            statusDiv.innerHTML = '⌛ Conectando a Supabase...';
+
+            try {
+                // Verificamos si existe la tabla intentando insertar un registro de prueba vacío
+                // Como RLS está activo, si no existe dará un error de tabla no encontrada.
+                const { error: testError } = await window.supabase
+                    .from('mural_messages')
+                    .select('id')
+                    .limit(1);
+
+                if (testError && testError.code === 'PGRST116') {
+                    // El error de registro no encontrado es normal si la tabla existe pero está vacía
+                    statusDiv.className = 'success';
+                    statusDiv.innerHTML = '✅ La tabla <b>mural_messages</b> ya existe en producción. No es necesario crearla.';
+                    return;
+                }
+
+                // Si la tabla realmente no existe (Error 42P01 o similar), intentamos crearla.
+                // En Supabase, si no tenemos la función exec_sql creada, mostramos las instrucciones claras paso a paso.
+                const sql = `
+CREATE TABLE IF NOT EXISTS public.mural_messages (
+  id            text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  project_id    uuid REFERENCES public.projects(id) ON DELETE CASCADE,
+  guest_id      uuid REFERENCES public.guests(id) ON DELETE SET NULL,
+  guest_name    text NOT NULL,
+  message       varchar(200) NOT NULL,
+  created_at    timestamptz DEFAULT now()
+);
+ALTER TABLE public.mural_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable all access for anon" ON public.mural_messages FOR ALL USING (true) WITH CHECK (true);
+GRANT ALL ON public.mural_messages TO anon, authenticated, service_role;
+CREATE INDEX IF NOT EXISTS idx_mural_project_id ON public.mural_messages(project_id);
+`;
+
+                statusDiv.innerHTML = '⌛ Intentando inicializar la tabla de forma automática...';
+                
+                // Intentamos ejecutar por RPC por si estuviera disponible
+                const { error: rpcError } = await window.supabase.rpc('exec_sql', { sql });
+
+                if (!rpcError) {
+                    statusDiv.className = 'success';
+                    statusDiv.innerHTML = '🎉 ¡Éxito! La tabla <b>mural_messages</b> se ha creado automáticamente en producción.';
+                } else {
+                    // Si falla el RPC, como es normal por seguridad de producción, mostramos el SQL limpio para pegar en Supabase Studio
+                    statusDiv.className = 'error';
+                    statusDiv.innerHTML = `
+                        <h3>⚠️ Se requiere un paso sencillo en el panel de Supabase:</h3>
+                        <ol>
+                            <li>Ingresá a tu panel de Supabase Studio: <a href="https://studio.boutique-rsvp.com" target="_blank">studio.boutique-rsvp.com</a> (admin / Admin2026_Rsvp!).</li>
+                            <li>Andá a la izquierda a <b>SQL Editor</b> -> click en <b>New Query</b>.</li>
+                            <li>Pegá el siguiente bloque de código completo y dale al botón <b>Run</b>:</li>
+                        </ol>
+                        <pre style="background:#fff; padding:10px; border:1px solid #ccc; overflow-x:auto; text-align:left;">${sql}</pre>
+                    `;
+                }
+            } catch (err) {
+                statusDiv.className = 'error';
+                statusDiv.innerHTML = '❌ Error inesperado: ' + err.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
