@@ -268,15 +268,15 @@
             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/20 backdrop-blur-sm"
             @click.self="closeProjectModal">
             <div
-                class="bg-white shadow-2xl w-full max-w-lg overflow-hidden transform transition-all animate-fade-in border border-brand-pink">
+                class="bg-white shadow-2xl w-full max-w-lg overflow-hidden transform transition-all animate-fade-in border border-brand-pink flex flex-col max-h-[90vh]">
                 <div
-                    class="px-8 py-6 border-b border-brand-pink/30 flex justify-between items-center bg-brand-beige/50">
+                    class="px-8 py-6 border-b border-brand-pink/30 flex justify-between items-center bg-brand-beige/50 shrink-0">
                     <h3 class="font-serif font-bold text-2xl text-brand-dark">{{ modalTitle }}</h3>
                     <button @click="closeProjectModal"
                         class="text-brand-dark hover:text-brand-crimson transition-colors"><i
                             class="ph-bold ph-x text-xl"></i></button>
                 </div>
-                <form @submit.prevent="saveProject" class="p-8 space-y-6">
+                <form @submit.prevent="saveProject" class="p-8 space-y-6 overflow-y-auto flex-1">
                     <div class="grid grid-cols-2 gap-6">
                         <div>
                             <label
@@ -359,14 +359,14 @@
                         </div>
                     </div>
 
-                    <div class="pt-4 flex gap-4">
-                        <button type="button" @click="closeProjectModal"
-                            class="flex-1 py-4 border border-brand-pink text-brand-dark font-bold uppercase tracking-widest text-[10px] hover:bg-brand-beige transition-all">Cancelar</button>
-                        <button type="submit"
-                            class="flex-1 py-4 bg-brand-dark text-white font-bold uppercase tracking-widest text-[10px] hover:bg-brand-crimson transition-all shadow-xl">{{
-                            submitButtonText }}</button>
-                    </div>
                 </form>
+                <div class="px-8 py-4 border-t border-brand-pink/30 bg-white flex gap-4 shrink-0">
+                    <button type="button" @click="closeProjectModal"
+                        class="flex-1 py-4 border border-brand-pink text-brand-dark font-bold uppercase tracking-widest text-[10px] hover:bg-brand-beige transition-all">Cancelar</button>
+                    <button type="submit" @click="saveProject"
+                        class="flex-1 py-4 bg-brand-dark text-white font-bold uppercase tracking-widest text-[10px] hover:bg-brand-crimson transition-all shadow-xl">{{
+                        submitButtonText }}</button>
+                </div>
             </div>
         </div>
 
