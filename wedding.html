@@ -1101,6 +1101,14 @@
                                                 <option value="Bebé">Bebé (0-2)</option>
                                             </select>
                                         </div>
+                                        <div v-if="isMarcelloGonzaWedding" class="col-span-2">
+                                            <label
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Talle de Calzado</label>
+                                            <input type="text"
+                                                   v-model="sg.shoe_size"
+                                                   placeholder="Ej: 38, 42, 45.5"
+                                                   class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1291,6 +1299,20 @@
 
                 const tableModalTitle = computed(() => editingTable.value ? 'Editar Mesa' : 'Nueva Mesa');
                 const guestModalTitle = computed(() => editingGuest.value ? 'Editar Invitado' : 'Nuevo Invitado');
+
+                const isMarcelloGonzaWedding = computed(() => {
+                    if (!currentProject.value) return false;
+                    const couple = (currentProject.value.coupleName || '').toLowerCase();
+                    const date = currentProject.value.weddingDate;
+                    const venue = (currentProject.value.venue || '').toLowerCase();
+
+                    const hasCoupleNames = (couple.includes('marcella') || couple.includes('marcela')) &&
+                                          (couple.includes('gonza') || couple.includes('gonzalo'));
+                    const hasDate = date && date.includes('2027-03-27');
+                    const hasVenue = venue.includes('mendoza') && venue.includes('durigutti');
+
+                    return hasCoupleNames && hasDate && hasVenue;
+                });
 
                 const assignmentsByTable = computed(() => {
                     const map = {};
@@ -1552,7 +1574,7 @@
                         phone: '',
                         dietary: 'None',
                         rsvp_status: 'Pending',
-                        sub_guests: [{ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '' }]
+                        sub_guests: [{ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '', shoe_size: '' }]
                     });
                     showGuestModal.value = true;
                 };
@@ -1574,7 +1596,7 @@
                         showToast('Máximo 10 integrantes', 'error');
                         return;
                     }
-                    guestForm.sub_guests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '' });
+                    guestForm.sub_guests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '', shoe_size: '' });
                     guestForm.guests_confirmed = guestForm.sub_guests.length;
                 };
 
@@ -1662,13 +1684,14 @@
                                     // Ensure ageCategory exists
                                     if (!item.ageCategory) item.ageCategory = '';
                                     if (!item.dietary_detail) item.dietary_detail = '';
+                                    if (!item.shoe_size) item.shoe_size = '';
                                 });
                             } else {
-                                sg = [{ firstName: fName, lastName: lName, status: guest.rsvp_status || 'Pending', dietary: guest.dietary || 'None', dietary_detail: guest.dietary_detail || '', ageCategory: 'Adulto' }];
+                                sg = [{ firstName: fName, lastName: lName, status: guest.rsvp_status || 'Pending', dietary: guest.dietary || 'None', dietary_detail: guest.dietary_detail || '', ageCategory: 'Adulto', shoe_size: '' }];
                             }
 
                             while (sg.length < (guest.guests_confirmed || 1)) {
-                                sg.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', dietary_detail: '', ageCategory: '' });
+                                sg.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', dietary_detail: '', ageCategory: '', shoe_size: '' });
                             }
                             return sg;
                         })()
@@ -1850,6 +1873,10 @@
                                         'Email Contácto': g.email || '-',
                                         'Teléfono Contácto': g.phone || '-'
                                     };
+                                    // Add shoe size only for Marcella & Gonza wedding
+                                    if (isMarcelloGonzaWedding.value) {
+                                        baseRow['Talle de Calzado'] = sg.shoe_size || '-';
+                                    }
                                     // Merge dynamic event columns
                                     allIndividuals.push({ ...baseRow, ...getAnswersObj(sg.rsvp_answers) });
                                 });
@@ -1870,6 +1897,10 @@
                                     'Email Contácto': g.email || '-',
                                     'Teléfono Contácto': g.phone || '-'
                                 };
+                                // Add shoe size only for Marcella & Gonza wedding
+                                if (isMarcelloGonzaWedding.value) {
+                                    baseRow['Talle de Calzado'] = '-';
+                                }
                                 allIndividuals.push({ ...baseRow, ...getAnswersObj(g.rsvp_answers) });
                             }
                         });
