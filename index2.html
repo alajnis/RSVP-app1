@@ -835,6 +835,24 @@
                         return;
                     }
 
+                    // Validación: si es el casamiento de Marcella & Gonza, talle de calzado es obligatorio para confirmados
+                    if (isMarcelloGonzaWedding.value) {
+                        const missingShoeSize = guest.value.sub_guests.filter(sg =>
+                            sg.status !== 'Declined' &&
+                            (!sg.shoe_size || !sg.shoe_size.trim())
+                        );
+                        if (missingShoeSize.length > 0) {
+                            const nombres = missingShoeSize.map(sg => getFullName(sg) || 'Invitado').join(', ');
+                            error.value = `Por favor especificá el talle de calzado de: ${nombres}. Este campo es obligatorio.`;
+                            // Scroll suave al primer campo con error
+                            setTimeout(() => {
+                                const el = document.querySelector('input[placeholder*="Ej: 38"]');
+                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 100);
+                            return;
+                        }
+                    }
+
                     try {
                         loading.value = true;
 
