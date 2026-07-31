@@ -371,6 +371,16 @@
                                         <option value="Bebé">Bebé (0-2)</option>
                                     </select>
                                 </div>
+
+                                <!-- Shoe Size (Only for Marcella & Gonza wedding, if Confirmed) -->
+                                <div v-if="sg.status !== 'Declined' && isMarcelloGonzaWedding" class="mt-4">
+                                    <label
+                                        class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <i class="ph ph-shoe"></i> Talle de Calzado
+                                    </label>
+                                    <input type="text" v-model="sg.shoe_size" placeholder="Ej: 38, 42, 45.5"
+                                        class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -739,6 +749,7 @@
                             status: g.rsvp_status || 'Pending', // Inherit status if available
                             dietary: g.dietary || 'None',
                             dietary_detail: g.dietary_detail || '',
+                            shoe_size: '',
                             rsvp_answers: g.rsvp_answers || {} // Load existing answers if any
                         }];
 
@@ -752,6 +763,7 @@
                                 status: 'Pending',
                                 dietary: 'None',
                                 dietary_detail: '',
+                                shoe_size: '',
                                 rsvp_answers: {}
                             });
                         }
@@ -763,6 +775,7 @@
                                 sg.lastName = g.lastName;
                             }
                             if (!sg.rsvp_answers) sg.rsvp_answers = {};
+                            if (!sg.shoe_size) sg.shoe_size = '';
                             return sg;
                         });
                     }
@@ -778,6 +791,11 @@
                             });
                         });
                     }
+
+                    // Ensure all sub_guests have shoe_size field initialized
+                    g.sub_guests.forEach(sg => {
+                        if (!sg.shoe_size) sg.shoe_size = '';
+                    });
 
                     guest.value = g;
                     step.value = 2; // Proceed to confirmation step
@@ -1001,12 +1019,31 @@
                     return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
                 };
 
+                const isMarcelloGonzaWedding = computed(() => {
+                    if (!currentProject.value) return false;
+                    const couple = (currentProject.value.coupleName || '').toLowerCase();
+                    const date = currentProject.value.weddingDate;
+                    const brideName = (currentProject.value.brideName || '').toLowerCase();
+                    const groomName = (currentProject.value.groomName || '').toLowerCase();
+
+                    const hasCoupleNames = (couple.includes('marcella') || couple.includes('marcela')) &&
+                                          (couple.includes('gonza') || couple.includes('gonzalo')) ||
+                                          (brideName.includes('marcella') || brideName.includes('marcela')) &&
+                                          (groomName.includes('gonza') || groomName.includes('gonzalo')) ||
+                                          (groomName.includes('marcella') || groomName.includes('marcela')) &&
+                                          (brideName.includes('gonza') || brideName.includes('gonzalo'));
+                    const hasDate = date && date.includes('2027-03-27');
+
+                    return hasCoupleNames && hasDate;
+                });
+
                 return {
                     step, form, error, guest, guests,
                     findInvitation, confirmAttendance, currentProject, formatDate,
                     showFuzzyModal, fuzzyCandidate, acceptFuzzyMatch, rejectFuzzyMatch,
                     getFullName,
                     loading, lastNameSearch, searchResults, selectedGuest,
+                    isMarcelloGonzaWedding,
                     // Mural
                     showMuralForm, muralMessageText, muralSenderName,
                     muralSending, muralSent, muralError, sendMuralMessage
