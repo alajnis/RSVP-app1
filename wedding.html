@@ -1320,14 +1320,12 @@
                     if (!currentProject.value) return false;
                     const couple = (currentProject.value.coupleName || '').toLowerCase();
                     const date = currentProject.value.weddingDate;
-                    const venue = (currentProject.value.venue || '').toLowerCase();
 
                     const hasCoupleNames = (couple.includes('marcella') || couple.includes('marcela')) &&
                                           (couple.includes('gonza') || couple.includes('gonzalo'));
                     const hasDate = date && date.includes('2027-03-27');
-                    const hasVenue = venue.includes('mendoza') && venue.includes('durigutti');
 
-                    return hasCoupleNames && hasDate && hasVenue;
+                    return hasCoupleNames && hasDate;
                 });
 
                 const assignmentsByTable = computed(() => {
