@@ -1890,6 +1890,11 @@
                                     if (isMarcelloGonzaWedding.value) {
                                         baseRow['Talle de Calzado'] = sg.shoe_size || '-';
                                     }
+                                    // Add transfers column if transfers are enabled
+                                    if (eventsConfig && eventsConfig.has_transfers) {
+                                        const transferStatus = sg.needs_transfer === true ? 'SÍ' : (sg.needs_transfer === false ? 'NO' : 'SIN RESPUESTA');
+                                        baseRow['Necesita Traslado'] = transferStatus;
+                                    }
                                     // Merge dynamic event columns
                                     allIndividuals.push({ ...baseRow, ...getAnswersObj(sg.rsvp_answers) });
                                 });
@@ -1913,6 +1918,10 @@
                                 // Add shoe size only for Marcella & Gonza wedding
                                 if (isMarcelloGonzaWedding.value) {
                                     baseRow['Talle de Calzado'] = '-';
+                                }
+                                // Add transfers column if transfers are enabled
+                                if (eventsConfig && eventsConfig.has_transfers) {
+                                    baseRow['Necesita Traslado'] = 'SIN RESPUESTA';
                                 }
                                 allIndividuals.push({ ...baseRow, ...getAnswersObj(g.rsvp_answers) });
                             }
