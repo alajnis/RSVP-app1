@@ -203,18 +203,22 @@
     <div id="app" class="w-full max-w-lg relative">
 
         <!-- LANGUAGE SELECTOR - TOP RIGHT -->
-        <div class="absolute -top-16 right-0 flex gap-3 z-20">
+        <div class="absolute -top-16 right-0 flex gap-2 z-20">
             <button @click="currentLanguage = 'es'"
-                class="text-3xl transition-all hover:scale-110"
-                :class="currentLanguage === 'es' ? 'scale-125' : 'opacity-40'"
+                class="px-3 py-1 text-sm font-bold transition-all hover:scale-110 rounded border"
+                :class="currentLanguage === 'es'
+                    ? 'bg-brand-crimson text-white border-brand-crimson'
+                    : 'bg-white text-brand-dark border-slate-300 opacity-50'"
                 title="Español">
-                🇪🇸
+                ESP
             </button>
             <button @click="currentLanguage = 'en'"
-                class="text-3xl transition-all hover:scale-110"
-                :class="currentLanguage === 'en' ? 'scale-125' : 'opacity-40'"
+                class="px-3 py-1 text-sm font-bold transition-all hover:scale-110 rounded border"
+                :class="currentLanguage === 'en'
+                    ? 'bg-brand-crimson text-white border-brand-crimson'
+                    : 'bg-white text-brand-dark border-slate-300 opacity-50'"
                 title="English">
-                🇬🇧
+                ENG
             </button>
         </div>
 
