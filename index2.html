@@ -1251,9 +1251,12 @@
                         ? ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
                         : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
                     const monthName = months[m - 1];
-                    return currentLanguage.value === 'es'
-                        ? `${d} de ${monthName} de ${y}`
-                        : `${monthName} ${d}${['st', 'nd', 'rd'][((d % 100) - 20) % 30] || 'th'}, ${y}`;
+                    if (currentLanguage.value === 'es') {
+                        return `${d} de ${monthName} de ${y}`;
+                    } else {
+                        const suffix = (d % 10 === 1 && d !== 11) ? 'st' : (d % 10 === 2 && d !== 12) ? 'nd' : (d % 10 === 3 && d !== 13) ? 'rd' : 'th';
+                        return `${monthName} ${d}${suffix}, ${y}`;
+                    }
                 };
 
                 const isMarcelloGonzaWedding = computed(() => {
