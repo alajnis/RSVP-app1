@@ -360,6 +360,40 @@
                                 </button>
                             </div>
                         </div>
+
+                        <!-- TRANSFERS CONFIGURATION -->
+                        <div class="pt-4 border-t border-brand-pink/30">
+                            <div class="flex items-center justify-between mb-4">
+                                <label class="text-xs font-bold text-brand-dark uppercase tracking-widest">
+                                    <i class="ph-bold ph-car mr-1"></i> Traslados
+                                </label>
+                                <button type="button" @click="projectForm.hasTransfers = !projectForm.hasTransfers"
+                                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-crimson focus:ring-offset-2"
+                                    :class="projectForm.hasTransfers ? 'bg-brand-crimson' : 'bg-slate-200'">
+                                    <span class="sr-only">Habilitar traslados</span>
+                                    <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                                        :class="projectForm.hasTransfers ? 'translate-x-6' : 'translate-x-1'"></span>
+                                </button>
+                            </div>
+
+                            <div v-if="projectForm.hasTransfers"
+                                class="bg-brand-beige/20 p-4 rounded border border-brand-pink/30 space-y-3 animate-fade-in">
+                                <p class="text-[10px] text-slate-500 italic mb-3">¿Quién corre con los gastos de traslado?</p>
+
+                                <div class="space-y-2">
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="radio" v-model="projectForm.transfersPaidBy" value="couple"
+                                            class="w-4 h-4 cursor-pointer">
+                                        <span class="text-sm font-bold text-brand-dark">Los novios pagan los traslados</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="radio" v-model="projectForm.transfersPaidBy" value="guests"
+                                            class="w-4 h-4 cursor-pointer">
+                                        <span class="text-sm font-bold text-brand-dark">Los invitados pagan sus traslados</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="px-8 py-4 border-t border-brand-pink/30 bg-white flex gap-4 shrink-0">
@@ -509,7 +543,9 @@
                     brideName: '',
                     groomName: '',
                     weddingDate: '',
-                    venue: ''
+                    venue: '',
+                    hasTransfers: false,
+                    transfersPaidBy: 'couple'
                 });
                 const toast = reactive({ show: false, message: '', type: 'success' });
                 const session = ref(null);
@@ -713,6 +749,8 @@
                     // LOAD MULTI-EVENT CONFIG
                     const config = project.eventsConfig || {};
                     projectForm.isMultiEvent = !!config.multi_event;
+                    projectForm.hasTransfers = !!config.has_transfers;
+                    projectForm.transfersPaidBy = config.transfers_paid_by || 'couple';
 
                     if (config.events && config.events.length > 1) {
                         // Filter out main event (assumed always first or has is_main)
@@ -738,6 +776,8 @@
                         // BUILD EVENTS CONFIG
                         const eventsConfig = {
                             multi_event: projectForm.isMultiEvent,
+                            has_transfers: projectForm.hasTransfers,
+                            transfers_paid_by: projectForm.hasTransfers ? projectForm.transfersPaidBy : null,
                             events: []
                         };
 

@@ -381,6 +381,36 @@
                                     <input type="text" v-model="sg.shoe_size" placeholder="Ej: 38, 42, 45.5"
                                         class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
                                 </div>
+
+                                <!-- Transfers (Only if wedding has transfers and guest confirmed) -->
+                                <div v-if="sg.status !== 'Declined' && currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers" class="mt-4">
+                                    <label
+                                        class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <i class="ph ph-car"></i> ¿Necesitas Traslado?
+                                    </label>
+                                    <div class="space-y-2">
+                                        <label class="flex items-center gap-3 cursor-pointer">
+                                            <input type="radio" :value="true" v-model="sg.needs_transfer"
+                                                class="w-4 h-4 cursor-pointer">
+                                            <span class="text-sm font-bold text-brand-dark">Sí, necesito traslado</span>
+                                        </label>
+                                        <label class="flex items-center gap-3 cursor-pointer">
+                                            <input type="radio" :value="false" v-model="sg.needs_transfer"
+                                                class="w-4 h-4 cursor-pointer">
+                                            <span class="text-sm font-bold text-brand-dark">No, no necesito traslado</span>
+                                        </label>
+                                    </div>
+
+                                    <!-- Transfers Cost Message -->
+                                    <div v-if="sg.needs_transfer === true" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                                        <p v-if="currentProject.eventsConfig.transfers_paid_by === 'couple'" class="text-[9px] text-blue-700 font-bold">
+                                            💙 Los gastos de traslado serán costeados por los novios.
+                                        </p>
+                                        <p v-else class="text-[9px] text-blue-700 font-bold">
+                                            ⚠️ Recorda que los gastos de traslado correrán por cuenta tuya.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -750,6 +780,7 @@
                             dietary: g.dietary || 'None',
                             dietary_detail: g.dietary_detail || '',
                             shoe_size: '',
+                            needs_transfer: null,
                             rsvp_answers: g.rsvp_answers || {} // Load existing answers if any
                         }];
 
@@ -764,6 +795,7 @@
                                 dietary: 'None',
                                 dietary_detail: '',
                                 shoe_size: '',
+                                needs_transfer: null,
                                 rsvp_answers: {}
                             });
                         }
@@ -776,6 +808,7 @@
                             }
                             if (!sg.rsvp_answers) sg.rsvp_answers = {};
                             if (!sg.shoe_size) sg.shoe_size = '';
+                            if (sg.needs_transfer === undefined) sg.needs_transfer = null;
                             return sg;
                         });
                     }
@@ -792,9 +825,10 @@
                         });
                     }
 
-                    // Ensure all sub_guests have shoe_size field initialized
+                    // Ensure all sub_guests have shoe_size and needs_transfer fields initialized
                     g.sub_guests.forEach(sg => {
                         if (!sg.shoe_size) sg.shoe_size = '';
+                        if (sg.needs_transfer === undefined) sg.needs_transfer = null;
                     });
 
                     guest.value = g;
@@ -847,6 +881,25 @@
                             // Scroll suave al primer campo con error
                             setTimeout(() => {
                                 const el = document.querySelector('input[placeholder*="Ej: 38"]');
+                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 100);
+                            return;
+                        }
+                    }
+
+                    // Validación: si el casamiento tiene traslados, es obligatorio indicar si se necesita o no
+                    const projectConfig = currentProject.value.eventsConfig || {};
+                    if (projectConfig.has_transfers) {
+                        const missingTransfer = guest.value.sub_guests.filter(sg =>
+                            sg.status !== 'Declined' &&
+                            sg.needs_transfer === undefined || sg.needs_transfer === null
+                        );
+                        if (missingTransfer.length > 0) {
+                            const nombres = missingTransfer.map(sg => getFullName(sg) || 'Invitado').join(', ');
+                            error.value = `Por favor indicá si necesitas traslado para: ${nombres}. Este campo es obligatorio.`;
+                            // Scroll suave al primer campo con error
+                            setTimeout(() => {
+                                const el = document.querySelector('input[type="radio"][value="true"]');
                                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }, 100);
                             return;
