@@ -202,6 +202,20 @@
 
     <div id="app" class="w-full max-w-lg">
 
+        <!-- LANGUAGE SELECTOR -->
+        <div class="flex justify-center gap-4 mb-8">
+            <button @click="currentLanguage = 'es'"
+                class="text-4xl transition-transform hover:scale-110"
+                :class="currentLanguage === 'es' ? 'scale-125' : 'opacity-50'">
+                🇪🇸
+            </button>
+            <button @click="currentLanguage = 'en'"
+                class="text-4xl transition-transform hover:scale-110"
+                :class="currentLanguage === 'en' ? 'scale-125' : 'opacity-50'">
+                🇬🇧
+            </button>
+        </div>
+
         <!-- HEADER -->
         <div class="text-center mb-10" v-if="currentProject">
             <h1 class="text-4xl md:text-5xl font-serif font-bold text-brand-dark mb-2 tracking-tight">
@@ -220,14 +234,14 @@
                         <div class="space-y-6">
                             <div>
                                 <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Apellido</label>
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{{ t('apellido') }}</label>
                                 <input type="text" v-model="form.lastName" required
                                     class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300"
                                     placeholder="Ej: Pérez">
                             </div>
                             <div>
                                 <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nombre</label>
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{{ t('nombre') }}</label>
                                 <input type="text" v-model="form.firstName" required
                                     class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300"
                                     placeholder="Ej: Juan">
@@ -241,7 +255,7 @@
 
                         <button type="submit"
                             class="w-full mt-10 bg-brand-dark text-white font-bold py-5 tracking-[0.2em] uppercase text-xs hover:bg-brand-crimson transition-all shadow-xl">
-                            Confirmar Asistencia
+                            {{ t('confirmarAsistencia') }}
                         </button>
                     </form>
                 </div>
@@ -249,11 +263,10 @@
                 <!-- STEP 2: CONFIRMATION -->
                 <div v-else-if="step === 2" key="step2" class="p-6 md:p-10 flex flex-col max-h-[90vh]">
                     <div class="text-center mb-8 shrink-0">
-                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-2">Bienvenido
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-2">{{ t('bienvenido') }}
                         </div>
                         <h2 class="text-3xl font-serif font-bold text-brand-dark mb-1">{{ getFullName(guest) }}</h2>
-                        <p class="text-[10px] text-brand-crimson font-bold uppercase tracking-widest italic">Por favor,
-                            confirma la asistencia para cada persona</p>
+                        <p class="text-[10px] text-brand-crimson font-bold uppercase tracking-widest italic">{{ t('confirmaCadaPersona') }}</p>
                     </div>
 
                     <div class="space-y-6 overflow-y-auto pr-2 custom-scrollbar mb-8 flex-1">
@@ -268,7 +281,7 @@
                                 <!-- Name Input -->
                                 <div>
                                     <label
-                                        class="block text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Integrante</label>
+                                        class="block text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">{{ t('integrante') }}</label>
                                     <div v-if="idx > 0" class="grid grid-cols-2 gap-2">
                                         <input type="text" v-model="sg.lastName" placeholder="Apellido"
                                             class="w-full bg-white border border-brand-pink/50 px-3 py-2 text-xs font-semibold outline-none focus:border-brand-crimson transition-all">
@@ -286,7 +299,7 @@
                                 <!-- Attendance Question & Buttons -->
                                 <div class="text-center">
                                     <label
-                                        class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.15em] mb-4">¿Asistirá?</label>
+                                        class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.15em] mb-4">{{ t('asistira') }}</label>
 
                                     <!-- MULTI-EVENT UI -->
                                     <div v-if="currentProject && currentProject.eventsConfig && currentProject.eventsConfig.multi_event"
@@ -319,12 +332,12 @@
                                         <button @click="sg.status = 'Confirmed'"
                                             class="flex-1 min-w-[80px] py-3.5 flex flex-col items-center justify-center gap-1 transition-all border font-bold text-[9px] uppercase tracking-widest"
                                             :class="sg.status === 'Confirmed' ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg scale-105 z-10' : 'bg-white text-slate-400 border-slate-100 hover:border-emerald-600/30'">
-                                            <i class="ph-bold ph-check text-xs"></i> <span>SÍ</span>
+                                            <i class="ph-bold ph-check text-xs"></i> <span>{{ t('si') }}</span>
                                         </button>
                                         <button @click="sg.status = 'Declined'"
                                             class="flex-1 min-w-[80px] py-3.5 flex flex-col items-center justify-center gap-1 transition-all border font-bold text-[9px] uppercase tracking-widest"
                                             :class="sg.status === 'Declined' ? 'bg-brand-dark text-white border-brand-dark shadow-lg scale-105 z-10' : 'bg-white text-slate-400 border-slate-100 hover:border-brand-dark/30'">
-                                            <i class="ph-bold ph-x text-xs"></i> <span>NO</span>
+                                            <i class="ph-bold ph-x text-xs"></i> <span>{{ t('no') }}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -333,21 +346,21 @@
                                 <div v-if="sg.status !== 'Declined'">
                                     <label
                                         class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                        <i class="ph ph-fork-knife"></i> Restricción Alimentaria
+                                        <i class="ph ph-fork-knife"></i> {{ t('restriccionAlimentaria') }}
                                     </label>
                                     <select v-model="sg.dietary"
                                         class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
-                                        <option value="None">Sin Restricción</option>
-                                        <option value="Celiaco">Celíaco</option>
-                                        <option value="Vegano">Vegano</option>
-                                        <option value="Vegetariano">Vegetariano</option>
-                                        <option value="Kosher">Kosher</option>
-                                        <option value="Otro">Otro (especificar)</option>
+                                        <option value="None">{{ t('sinRestriccion') }}</option>
+                                        <option value="Celiaco">{{ t('celiaco') }}</option>
+                                        <option value="Vegano">{{ t('vegano') }}</option>
+                                        <option value="Vegetariano">{{ t('vegetariano') }}</option>
+                                        <option value="Kosher">{{ t('kosher') }}</option>
+                                        <option value="Otro">{{ t('otro') }}</option>
                                     </select>
-                                    <input v-if="sg.dietary === 'Otro'" 
-                                           type="text" 
-                                           v-model="sg.dietary_detail" 
-                                           placeholder="* Obligatorio: especifique su restricción"
+                                    <input v-if="sg.dietary === 'Otro'"
+                                           type="text"
+                                           v-model="sg.dietary_detail"
+                                           :placeholder="t('especifique')"
                                            :class="[
                                                'w-full mt-2 px-4 py-3 text-sm outline-none transition-all border',
                                                sg.dietary_detail && sg.dietary_detail.trim()
@@ -360,15 +373,15 @@
                                 <div v-if="sg.status !== 'Declined'" class="mt-4">
                                     <label
                                         class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                        <i class="ph ph-baby"></i> Edad / Categoría
+                                        <i class="ph ph-baby"></i> {{ t('edad') }}
                                     </label>
                                     <select v-model="sg.ageCategory"
                                         class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
-                                        <option value="">Seleccionar...</option>
-                                        <option value="Adulto">Adulto (&gt;18)</option>
-                                        <option value="Teen">Teen (13-17)</option>
-                                        <option value="Niño">Niño (3-12)</option>
-                                        <option value="Bebé">Bebé (0-2)</option>
+                                        <option value="">{{ t('seleccionar') }}</option>
+                                        <option value="Adulto">{{ t('adulto') }}</option>
+                                        <option value="Teen">{{ t('teen') }}</option>
+                                        <option value="Niño">{{ t('nino') }}</option>
+                                        <option value="Bebé">{{ t('bebe') }}</option>
                                     </select>
                                 </div>
 
@@ -376,9 +389,9 @@
                                 <div v-if="sg.status !== 'Declined' && isMarcelloGonzaWedding" class="mt-4">
                                     <label
                                         class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                        <i class="ph ph-shoe"></i> Talle de Calzado
+                                        <i class="ph ph-shoe"></i> {{ t('talleCalzado') }}
                                     </label>
-                                    <input type="text" v-model="sg.shoe_size" placeholder="Ej: 38, 42, 45.5"
+                                    <input type="text" v-model="sg.shoe_size" :placeholder="t('talleEj')"
                                         class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
                                 </div>
 
@@ -386,28 +399,28 @@
                                 <div v-if="sg.status !== 'Declined' && currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers" class="mt-4">
                                     <label
                                         class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                        <i class="ph ph-car"></i> ¿Necesitas Traslado?
+                                        <i class="ph ph-car"></i> {{ t('necesitaTraslado') }}
                                     </label>
                                     <div class="space-y-2">
                                         <label class="flex items-center gap-3 cursor-pointer">
                                             <input type="radio" :value="true" v-model="sg.needs_transfer"
                                                 class="w-4 h-4 cursor-pointer">
-                                            <span class="text-sm font-bold text-brand-dark">Sí, necesito traslado</span>
+                                            <span class="text-sm font-bold text-brand-dark">{{ t('si') }}</span>
                                         </label>
                                         <label class="flex items-center gap-3 cursor-pointer">
                                             <input type="radio" :value="false" v-model="sg.needs_transfer"
                                                 class="w-4 h-4 cursor-pointer">
-                                            <span class="text-sm font-bold text-brand-dark">No, no necesito traslado</span>
+                                            <span class="text-sm font-bold text-brand-dark">{{ t('no') }}</span>
                                         </label>
                                     </div>
 
                                     <!-- Transfers Cost Message -->
                                     <div v-if="sg.needs_transfer === true" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
                                         <p v-if="currentProject.eventsConfig.transfers_paid_by === 'couple'" class="text-[9px] text-blue-700 font-bold">
-                                            💙 Los gastos de traslado serán costeados por los novios.
+                                            {{ t('losNoviosPagan') }}
                                         </p>
                                         <p v-else class="text-[9px] text-blue-700 font-bold">
-                                            ⚠️ Recorda que los gastos de traslado correrán por cuenta tuya.
+                                            {{ t('tuPagar') }}
                                         </p>
                                     </div>
                                 </div>
@@ -418,10 +431,9 @@
                     <div class="shrink-0">
                         <button @click="confirmAttendance"
                             class="w-full py-6 bg-brand-dark text-white font-bold tracking-[0.25em] uppercase text-xs hover:bg-brand-crimson transition-all shadow-xl">
-                            Enviar Confirmación
+                            {{ t('enviarConfirmacion') }}
                         </button>
-                        <p class="text-[9px] text-center text-slate-400 mt-4 uppercase tracking-[0.2em]">Puedes
-                            modificar esto más tarde si los planes cambian</p>
+                        <p class="text-[9px] text-center text-slate-400 mt-4 uppercase tracking-[0.2em]">{{ t('puedesModificar') }}</p>
                     </div>
                 </div>
 
@@ -431,15 +443,15 @@
                         class="w-24 h-24 bg-rose-50 text-brand-crimson rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce border border-brand-pink/30">
                         <i class="ph ph-heart-straight text-4xl"></i>
                     </div>
-                    <h2 class="text-3xl font-serif font-bold text-brand-dark mb-3">¡Muchas Gracias!</h2>
-                    <p class="font-sans text-sm text-slate-400 tracking-widest uppercase mb-2">Tu confirmación ha sido guardada.</p>
+                    <h2 class="text-3xl font-serif font-bold text-brand-dark mb-3">{{ t('muchasGracias') }}</h2>
+                    <p class="font-sans text-sm text-slate-400 tracking-widest uppercase mb-2">{{ t('confirmacionGuardada') }}</p>
 
                     <!-- MURAL: Mensaje enviado con éxito -->
                     <div v-if="muralSent" class="mural-success-badge">
                         <div class="float-heart text-3xl mb-2">💌</div>
-                        <p style="font-family:'Caveat',cursive;font-size:20px;color:#F6D8D9;margin:0 0 4px 0;">¡Tu mensaje llegó!</p>
+                        <p style="font-family:'Caveat',cursive;font-size:20px;color:#F6D8D9;margin:0 0 4px 0;">{{ t('tuMensajeArribo') }}</p>
                         <p style="font-family:'Work Sans',sans-serif;font-size:11px;color:rgba(244,236,232,0.5);letter-spacing:0.12em;text-transform:uppercase;">
-                            Los novios lo verán en su mural especial
+                            {{ t('losNoviosVeran') }}
                         </p>
                         <div style="margin-top:12px;padding:12px;background:rgba(196,39,69,0.12);border:1px dashed rgba(196,39,69,0.4);">
                             <p style="font-family:'Caveat',cursive;font-size:17px;color:#F4ECE8;margin:0;line-height:1.4;">"{{ muralMessageText }}"</p>
@@ -451,27 +463,27 @@
                     <div v-else>
                         <button v-if="!showMuralForm" @click="showMuralForm = true" class="mural-btn">
                             <span style="font-size:18px;margin-right:8px;">💌</span>
-                            Hacé click acá para dejarles un mensaje a los novios
+                            {{ t('dejarMensaje') }}
                         </button>
 
                         <!-- MURAL: Formulario -->
                         <div v-if="showMuralForm" class="mural-form-card">
-                            <h3>✍️ Dejales un mensaje a los novios</h3>
-                            <p style="font-family:'Work Sans',sans-serif;font-size:11px;color:rgba(244,236,232,0.5);letter-spacing:0.1em;text-transform:uppercase;margin:0 0 16px;">Aparecerá en su mural el día de la boda</p>
+                            <h3>✍️ {{ t('dejalesUnMensaje') }}</h3>
+                            <p style="font-family:'Work Sans',sans-serif;font-size:11px;color:rgba(244,236,232,0.5);letter-spacing:0.1em;text-transform:uppercase;margin:0 0 16px;">{{ t('apareceraMural') }}</p>
 
                             <textarea
                                 v-model="muralMessageText"
                                 :maxlength="200"
                                 rows="4"
-                                placeholder="Escribí tu mensaje para los novios..."
+                                :placeholder="t('escribeMensaje')"
                             ></textarea>
                             <div class="char-counter" :class="muralMessageText.length >= 180 ? 'warn' : 'ok'">
                                 {{ muralMessageText.length }} / 200
                             </div>
 
                             <div style="margin-top:12px;">
-                                <label style="display:block;font-family:'Work Sans',sans-serif;font-size:10px;font-weight:700;color:rgba(244,236,232,0.5);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">Tu firma</label>
-                                <input type="text" v-model="muralSenderName" :maxlength="80" placeholder="Tu nombre o grupo familiar..." />
+                                <label style="display:block;font-family:'Work Sans',sans-serif;font-size:10px;font-weight:700;color:rgba(244,236,232,0.5);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">{{ t('tuFirma') }}</label>
+                                <input type="text" v-model="muralSenderName" :maxlength="80" :placeholder="t('nombreOGrupo')" />
                             </div>
 
                             <div v-if="muralError" style="margin-top:10px;padding:8px 12px;background:rgba(246,29,87,0.15);border:1px solid rgba(246,29,87,0.4);font-family:'Work Sans',sans-serif;font-size:11px;color:#F61D57;letter-spacing:0.08em;">
@@ -483,11 +495,11 @@
                                 @click="sendMuralMessage"
                                 :disabled="muralSending || muralMessageText.trim().length === 0 || muralSenderName.trim().length === 0"
                             >
-                                <span v-if="muralSending">Enviando...</span>
-                                <span v-else>💌 Enviar Mensaje</span>
+                                <span v-if="muralSending">{{ t('enviando') }}</span>
+                                <span v-else>💌 {{ t('enviarMensaje') }}</span>
                             </button>
 
-                            <button @click="showMuralForm = false" style="background:transparent;border:none;color:rgba(244,236,232,0.35);font-family:'Work Sans',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;margin-top:10px;width:100%;">Cancelar</button>
+                            <button @click="showMuralForm = false" style="background:transparent;border:none;color:rgba(244,236,232,0.35);font-family:'Work Sans',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;margin-top:10px;width:100%;">{{ t('cancelar') }}</button>
                         </div>
                     </div>
                 </div>
@@ -497,17 +509,16 @@
             <div v-if="showFuzzyModal"
                 class="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center p-8 text-center z-10">
                 <div class="border border-brand-pink p-8 bg-white shadow-2xl">
-                    <h3 class="text-2xl font-serif font-bold text-brand-dark mb-3">¿Has querido decir...?</h3>
-                    <p class="text-slate-400 text-xs mb-8 uppercase tracking-[0.2em]">Encontramos un nombre similar en
-                        la lista.</p>
+                    <h3 class="text-2xl font-serif font-bold text-brand-dark mb-3">{{ t('hasQueridoDecir') }}</h3>
+                    <p class="text-slate-400 text-xs mb-8 uppercase tracking-[0.2em]">{{ t('encontramosSimilar') }}</p>
 
                     <button @click="acceptFuzzyMatch"
                         class="w-full bg-brand-crimson text-white py-5 px-8 font-bold text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-brand-dark transition-all mb-4">
-                        Sí, soy {{ getFullName(fuzzyCandidate) }}
+                        {{ t('soySi') }} {{ getFullName(fuzzyCandidate) }}
                     </button>
                     <button @click="rejectFuzzyMatch"
                         class="w-full text-brand-dark/40 font-bold text-[10px] uppercase tracking-[0.2em] hover:text-brand-crimson transition-colors">
-                        No, ese no soy yo
+                        {{ t('noSoyo') }}
                     </button>
                 </div>
             </div>
@@ -520,6 +531,126 @@
 
         createApp({
             setup() {
+                // LANGUAGE STATE
+                const currentLanguage = ref('es');
+
+                // TRANSLATIONS
+                const translations = {
+                    es: {
+                        apellido: 'Apellido',
+                        nombre: 'Nombre',
+                        confirmarAsistencia: 'Confirmar Asistencia',
+                        bienvenido: 'Bienvenido',
+                        confirmaCadaPersona: 'Por favor, confirma la asistencia para cada persona',
+                        integrante: 'Integrante',
+                        asistira: '¿Asistirá?',
+                        si: 'SÍ',
+                        no: 'NO',
+                        restriccionAlimentaria: 'Restricción Alimentaria',
+                        sinRestriccion: 'Sin Restricción',
+                        celiaco: 'Celíaco',
+                        vegano: 'Vegano',
+                        vegetariano: 'Vegetariano',
+                        kosher: 'Kosher',
+                        otro: 'Otro (especificar)',
+                        especifique: '* Obligatorio: especifique su restricción',
+                        edad: 'Edad / Categoría',
+                        seleccionar: 'Seleccionar...',
+                        adulto: 'Adulto (>18)',
+                        teen: 'Teen (13-17)',
+                        nino: 'Niño (3-12)',
+                        bebe: 'Bebé (0-2)',
+                        talleCalzado: 'Talle de Calzado',
+                        talleEj: 'Ej: 38, 42, 45.5',
+                        necesitaTraslado: '¿Necesitas Traslado?',
+                        losNoviosPagan: '💙 Los gastos de traslado serán costeados por los novios.',
+                        tuPagar: '⚠️ Recorda que los gastos de traslado correrán por cuenta tuya.',
+                        enviarConfirmacion: 'Enviar Confirmación',
+                        puedesModificar: 'Puedes modificar esto más tarde si los planes cambian',
+                        muchasGracias: '¡Muchas Gracias!',
+                        confirmacionGuardada: 'Tu confirmación ha sido guardada.',
+                        dejarMensaje: 'Hacé click acá para dejarles un mensaje a los novios',
+                        dejalesUnMensaje: '✍️ Dejales un mensaje a los novios',
+                        apareceraMural: 'Aparecerá en su mural el día de la boda',
+                        escribeMensaje: 'Escribí tu mensaje para los novios...',
+                        tuFirma: 'Tu firma',
+                        nombreOGrupo: 'Tu nombre o grupo familiar...',
+                        enviarMensaje: '💌 Enviar Mensaje',
+                        cancelar: 'Cancelar',
+                        hasQueridoDecir: '¿Has querido decir...?',
+                        encontramosSimilar: 'Encontramos un nombre similar en la lista.',
+                        soySi: 'Sí, soy',
+                        noSoyo: 'No, ese no soy yo',
+                        error: 'Error',
+                        tuMensajeArribo: '¡Tu mensaje llegó!',
+                        losNoviosVeran: 'Los novios lo verán en su mural especial',
+                        enviando: 'Enviando...',
+                        noEncontramosTuInvitacion: 'No encontramos tu invitación. Verifica el nombre y apellido.',
+                        ingrestaAlMenos2Letras: 'Ingresa al menos 2 letras del apellido.',
+                        porFavorIntentaNuevamente: 'Por favor intenta buscar nuevamente con el nombre exacto.',
+                        errorAlBuscar: 'Error al buscar tu invitación. Intenta de nuevo más tarde.',
+                        noSeCargoProyecto: 'No se ha cargado el proyecto. Por favor, ingresa el código de la boda primero.'
+                    },
+                    en: {
+                        apellido: 'Last Name',
+                        nombre: 'First Name',
+                        confirmarAsistencia: 'Confirm Attendance',
+                        bienvenido: 'Welcome',
+                        confirmaCadaPersona: 'Please confirm attendance for each person',
+                        integrante: 'Attendee',
+                        asistira: 'Will you attend?',
+                        si: 'YES',
+                        no: 'NO',
+                        restriccionAlimentaria: 'Dietary Restriction',
+                        sinRestriccion: 'No Restriction',
+                        celiaco: 'Celiac',
+                        vegano: 'Vegan',
+                        vegetariano: 'Vegetarian',
+                        kosher: 'Kosher',
+                        otro: 'Other (specify)',
+                        especifique: '* Required: specify your restriction',
+                        edad: 'Age / Category',
+                        seleccionar: 'Select...',
+                        adulto: 'Adult (>18)',
+                        teen: 'Teen (13-17)',
+                        nino: 'Child (3-12)',
+                        bebe: 'Baby (0-2)',
+                        talleCalzado: 'Shoe Size',
+                        talleEj: 'E.g: 38, 42, 45.5',
+                        necesitaTraslado: 'Do you need transportation?',
+                        losNoviosPagan: '💙 The bride and groom will cover transportation costs.',
+                        tuPagar: '⚠️ Remember that transportation costs are your responsibility.',
+                        enviarConfirmacion: 'Send Confirmation',
+                        puedesModificar: 'You can modify this later if plans change',
+                        muchasGracias: 'Thank You!',
+                        confirmacionGuardada: 'Your confirmation has been saved.',
+                        dejarMensaje: 'Click here to leave a message for the bride and groom',
+                        dejalesUnMensaje: '✍️ Leave a message for the bride and groom',
+                        apareceraMural: 'It will appear on their special wall on the wedding day',
+                        escribeMensaje: 'Write your message for the bride and groom...',
+                        tuFirma: 'Your signature',
+                        nombreOGrupo: 'Your name or family group...',
+                        enviarMensaje: '💌 Send Message',
+                        cancelar: 'Cancel',
+                        hasQueridoDecir: 'Did you mean...?',
+                        encontramosSimilar: 'We found a similar name in the guest list.',
+                        soySi: 'Yes, I am',
+                        noSoyo: 'No, that\'s not me',
+                        error: 'Error',
+                        tuMensajeArribo: 'Your message arrived!',
+                        losNoviosVeran: 'The bride and groom will see it on their special wall',
+                        enviando: 'Sending...',
+                        noEncontramosTuInvitacion: 'We couldn\'t find your invitation. Please verify your name and last name.',
+                        ingrestaAlMenos2Letras: 'Please enter at least 2 letters of your last name.',
+                        porFavorIntentaNuevamente: 'Please try searching again with your exact name.',
+                        errorAlBuscar: 'Error searching for your invitation. Please try again later.',
+                        noSeCargoProyecto: 'The wedding project has not been loaded. Please enter the wedding code first.'
+                    }
+                };
+
+                // Helper function to get translated text
+                const t = (key) => translations[currentLanguage.value][key] || translations.es[key];
+
                 // STATE
                 const step = ref(1); // Start directly at Step 1 (Search)
                 const form = reactive({ firstName: '', lastName: '' });
@@ -635,7 +766,7 @@
                     error.value = '';
 
                     if (!currentProject.value) {
-                        error.value = "No se ha cargado el proyecto. Por favor, ingresa el código de la boda primero.";
+                        error.value = t('noSeCargoProyecto');
                         loading.value = false;
                         return;
                     }
@@ -645,7 +776,7 @@
                         const lastName = normalize(form.lastName);
 
                         if (lastName.length < 2) {
-                            error.value = 'Ingresa al menos 2 letras del apellido.';
+                            error.value = t('ingrestaAlMenos2Letras');
                             loading.value = false;
                             return;
                         }
@@ -749,15 +880,15 @@
                             if (matchedGuest) {
                                 selectGuest(matchedGuest);
                             } else {
-                                error.value = 'No encontramos tu invitación. Verifica el nombre y apellido.';
+                                error.value = t('noEncontramosTuInvitacion');
                             }
                         } else {
-                            error.value = 'No se encontraron invitados para este evento.';
+                            error.value = t('noEncontramosTuInvitacion');
                         }
 
                     } catch (e) {
                         console.error("Error searching for guest:", e);
-                        error.value = 'Error al buscar tu invitación. Intenta de nuevo más tarde.';
+                        error.value = t('errorAlBuscar');
                     } finally {
                         loading.value = false;
                     }
@@ -843,7 +974,7 @@
 
                 const rejectFuzzyMatch = () => {
                     showFuzzyModal.value = false;
-                    error.value = "Por favor intenta buscar nuevamente con el nombre exacto.";
+                    error.value = t('porFavorIntentaNuevamente');
                 };
 
                 const confirmAttendance = async () => {
@@ -1117,7 +1248,9 @@
                     isMarcelloGonzaWedding,
                     // Mural
                     showMuralForm, muralMessageText, muralSenderName,
-                    muralSending, muralSent, muralError, sendMuralMessage
+                    muralSending, muralSent, muralError, sendMuralMessage,
+                    // Language
+                    currentLanguage, t
                 };
             }
         }).mount('#app');
