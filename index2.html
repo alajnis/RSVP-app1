@@ -322,7 +322,7 @@
                                                 </div>
                                                 <span
                                                     class="text-xs font-bold text-brand-dark uppercase tracking-wide">{{
-                                                    evt.label }}</span>
+                                                    translateEventLabel(evt.label) }}</span>
                                             </div>
 
                                             <span class="text-[9px] font-bold uppercase tracking-widest"
@@ -1263,6 +1263,27 @@
                     }
                 };
 
+                const translateEventLabel = (label) => {
+                    if (!label) return '';
+                    const lowerLabel = label.toLowerCase();
+                    const translations = {
+                        es: {
+                            'boda': 'BODA',
+                            'boda (principal)': 'BODA (PRINCIPAL)',
+                            'welcome party': 'WELCOME PARTY',
+                            'rehearsal': 'ENSAYO'
+                        },
+                        en: {
+                            'boda': 'WEDDING',
+                            'boda (principal)': 'WEDDING (MAIN)',
+                            'welcome party': 'WELCOME PARTY',
+                            'ensayo': 'REHEARSAL'
+                        }
+                    };
+                    const lang = currentLanguage.value;
+                    return translations[lang][lowerLabel] || label;
+                };
+
                 const isMarcelloGonzaWedding = computed(() => {
                     if (!currentProject.value) return false;
                     const couple = (currentProject.value.coupleName || '').toLowerCase();
@@ -1292,7 +1313,7 @@
                     showMuralForm, muralMessageText, muralSenderName,
                     muralSending, muralSent, muralError, sendMuralMessage,
                     // Language
-                    currentLanguage, t
+                    currentLanguage, t, translateEventLabel
                 };
             }
         }).mount('#app');
