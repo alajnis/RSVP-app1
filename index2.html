@@ -200,18 +200,20 @@
 
 <body class="bg-brand-beige min-h-screen flex items-center justify-center p-4 text-brand-dark font-sans">
 
-    <div id="app" class="w-full max-w-lg">
+    <div id="app" class="w-full max-w-lg relative">
 
-        <!-- LANGUAGE SELECTOR -->
-        <div class="flex justify-center gap-4 mb-8">
+        <!-- LANGUAGE SELECTOR - TOP RIGHT -->
+        <div class="absolute -top-16 right-0 flex gap-3 z-20">
             <button @click="currentLanguage = 'es'"
-                class="text-4xl transition-transform hover:scale-110"
-                :class="currentLanguage === 'es' ? 'scale-125' : 'opacity-50'">
+                class="text-3xl transition-all hover:scale-110"
+                :class="currentLanguage === 'es' ? 'scale-125' : 'opacity-40'"
+                title="Español">
                 🇪🇸
             </button>
             <button @click="currentLanguage = 'en'"
-                class="text-4xl transition-transform hover:scale-110"
-                :class="currentLanguage === 'en' ? 'scale-125' : 'opacity-50'">
+                class="text-3xl transition-all hover:scale-110"
+                :class="currentLanguage === 'en' ? 'scale-125' : 'opacity-40'"
+                title="English">
                 🇬🇧
             </button>
         </div>
@@ -321,7 +323,7 @@
 
                                             <span class="text-[9px] font-bold uppercase tracking-widest"
                                                 :class="sg.rsvp_answers[evt.id] === 'confirmed' ? 'text-green-600' : 'text-slate-300'">
-                                                {{ sg.rsvp_answers[evt.id] === 'confirmed' ? 'CONFIRMADO' : 'NO ASISTE'
+                                                {{ sg.rsvp_answers[evt.id] === 'confirmed' ? t('confirmado') : t('noAsiste')
                                                 }}
                                             </span>
                                         </div>
@@ -589,7 +591,21 @@
                         ingrestaAlMenos2Letras: 'Ingresa al menos 2 letras del apellido.',
                         porFavorIntentaNuevamente: 'Por favor intenta buscar nuevamente con el nombre exacto.',
                         errorAlBuscar: 'Error al buscar tu invitación. Intenta de nuevo más tarde.',
-                        noSeCargoProyecto: 'No se ha cargado el proyecto. Por favor, ingresa el código de la boda primero.'
+                        noSeCargoProyecto: 'No se ha cargado el proyecto. Por favor, ingresa el código de la boda primero.',
+                        confirmado: 'CONFIRMADO',
+                        noAsiste: 'NO ASISTE',
+                        enero: 'Enero',
+                        febrero: 'Febrero',
+                        marzo: 'Marzo',
+                        abril: 'Abril',
+                        mayo: 'Mayo',
+                        junio: 'Junio',
+                        julio: 'Julio',
+                        agosto: 'Agosto',
+                        septiembre: 'Septiembre',
+                        octubre: 'Octubre',
+                        noviembre: 'Noviembre',
+                        diciembre: 'Diciembre'
                     },
                     en: {
                         apellido: 'Last Name',
@@ -644,7 +660,21 @@
                         ingrestaAlMenos2Letras: 'Please enter at least 2 letters of your last name.',
                         porFavorIntentaNuevamente: 'Please try searching again with your exact name.',
                         errorAlBuscar: 'Error searching for your invitation. Please try again later.',
-                        noSeCargoProyecto: 'The wedding project has not been loaded. Please enter the wedding code first.'
+                        noSeCargoProyecto: 'The wedding project has not been loaded. Please enter the wedding code first.',
+                        confirmado: 'CONFIRMED',
+                        noAsiste: 'NOT ATTENDING',
+                        enero: 'January',
+                        febrero: 'February',
+                        marzo: 'March',
+                        abril: 'April',
+                        mayo: 'May',
+                        junio: 'June',
+                        julio: 'July',
+                        agosto: 'August',
+                        septiembre: 'September',
+                        octubre: 'October',
+                        noviembre: 'November',
+                        diciembre: 'December'
                     }
                 };
 
@@ -1217,8 +1247,13 @@
                 const formatDate = (dateString) => {
                     if (!dateString) return '';
                     const [y, m, d] = dateString.split('-').map(Number);
-                    const date = new Date(y, m - 1, d);
-                    return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+                    const months = currentLanguage.value === 'es'
+                        ? ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+                        : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                    const monthName = months[m - 1];
+                    return currentLanguage.value === 'es'
+                        ? `${d} de ${monthName} de ${y}`
+                        : `${monthName} ${d}${['st', 'nd', 'rd'][((d % 100) - 20) % 30] || 'th'}, ${y}`;
                 };
 
                 const isMarcelloGonzaWedding = computed(() => {
