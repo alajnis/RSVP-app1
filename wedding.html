@@ -1319,11 +1319,11 @@
                 const isMarcelloGonzaWedding = computed(() => {
                     if (!currentProject.value) return false;
                     const couple = (currentProject.value.coupleName || '').toLowerCase();
-                    const date = currentProject.value.weddingDate;
+                    const date = currentProject.value.weddingDate || '';
 
                     const hasCoupleNames = (couple.includes('marcella') || couple.includes('marcela')) &&
                                           (couple.includes('gonza') || couple.includes('gonzalo'));
-                    const hasDate = date && date.includes('2027-03-27');
+                    const hasDate = date.includes('2027-03-27') || date.includes('27/03/2027');
 
                     return hasCoupleNames && hasDate;
                 });
