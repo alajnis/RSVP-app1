@@ -410,18 +410,18 @@
                                         </p>
                                     </div>
                                 </div>
-
-                                <!-- Phone Number (Required if wedding has transfers and guest needs transfer) -->
-                                <div v-if="currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers && guest && guest.sub_guests && guest.sub_guests.some(sg => sg.status === 'Confirmed' && sg.needs_transfer === true)" class="mt-4">
-                                    <label
-                                        class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                        <i class="ph ph-phone"></i> {{ t('telefono') }} <span class="text-brand-crimson">*</span>
-                                    </label>
-                                    <input type="tel" v-model="guest.phone" :placeholder="t('telefonoEj')"
-                                        class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
-                                </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Phone Number (Required if wedding has transfers and guest needs transfer) -->
+                    <div v-if="currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers && guest && guest.sub_guests && guest.sub_guests.some(sg => sg.status === 'Confirmed' && sg.needs_transfer === true)" class="mt-6 p-6 border border-brand-pink bg-white">
+                        <label
+                            class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                            <i class="ph ph-phone"></i> {{ t('telefono') }} <span class="text-brand-crimson">*</span>
+                        </label>
+                        <input type="tel" v-model="guest.phone" :placeholder="t('telefonoEj')"
+                            class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
                     </div>
 
                     <div class="shrink-0">
