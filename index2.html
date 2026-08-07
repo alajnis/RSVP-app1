@@ -382,7 +382,7 @@
                                 </div>
 
                                 <!-- Transfers (Only if wedding has transfers and guest confirmed) -->
-                                <div v-if="sg.status !== 'Declined' && currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers" class="mt-4">
+                                <div v-if="sg.status === 'Confirmed' && currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers" class="mt-4">
                                     <label
                                         class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                         <i class="ph ph-car"></i> {{ t('necesitaTraslado') }}
@@ -410,18 +410,18 @@
                                         </p>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- Phone Number (Always shown if guest confirmed, required if needs transfer) -->
-                        <div v-if="guest && guest.sub_guests && guest.sub_guests.some(sg => sg.status === 'Confirmed')" class="p-6 border border-brand-pink bg-white">
-                            <label
-                                class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                <i class="ph ph-phone"></i> {{ t('telefono') }}
-                                <span v-if="currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers && guest.sub_guests.some(sg => sg.status === 'Confirmed' && sg.needs_transfer === true)" class="text-brand-crimson">*</span>
-                            </label>
-                            <input type="tel" v-model="guest.phone" :placeholder="t('telefonoEj')"
-                                class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
+                                <!-- Phone Number (Only if Confirmed) -->
+                                <div v-if="sg.status === 'Confirmed'" class="mt-4">
+                                    <label
+                                        class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <i class="ph ph-phone"></i> {{ t('telefono') }}
+                                        <span v-if="currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers && sg.needs_transfer === true" class="text-brand-crimson">*</span>
+                                    </label>
+                                    <input type="tel" v-model="sg.phone" :placeholder="t('telefonoEj')"
+                                        class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1089,12 +1089,14 @@
                             return;
                         }
 
-                        // Validación: si hay alguien que confirmó Y necesita traslado, el teléfono es obligatorio
-                        const confirmedWithTransfer = guest.value.sub_guests.some(sg =>
-                            sg.status === 'Confirmed' && sg.needs_transfer === true
+                        // Validación: si hay alguien que confirmó Y necesita traslado, su teléfono es obligatorio
+                        const missingPhoneWithTransfer = guest.value.sub_guests.filter(sg =>
+                            sg.status === 'Confirmed' && sg.needs_transfer === true &&
+                            (!sg.phone || !sg.phone.trim())
                         );
-                        if (confirmedWithTransfer && (!guest.value.phone || !guest.value.phone.trim())) {
-                            error.value = `Por favor completá tu teléfono. Es obligatorio cuando necesitas traslado.`;
+                        if (missingPhoneWithTransfer.length > 0) {
+                            const nombres = missingPhoneWithTransfer.map(sg => getFullName(sg) || 'Invitado').join(', ');
+                            error.value = `Por favor completá el teléfono de: ${nombres}. Es obligatorio cuando necesitas traslado.`;
                             // Scroll suave al campo de teléfono
                             setTimeout(() => {
                                 const el = document.querySelector('input[type="tel"]');
