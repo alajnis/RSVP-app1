@@ -1084,9 +1084,11 @@
                             return;
                         }
 
-                        // Validación: si hay alguien que necesita traslado, el teléfono es obligatorio
-                        const needsTransferGuest = guest.value.sub_guests.some(sg => sg.needs_transfer === true);
-                        if (needsTransferGuest && (!guest.value.phone || !guest.value.phone.trim())) {
+                        // Validación: si hay alguien que confirmó Y necesita traslado, el teléfono es obligatorio
+                        const confirmedWithTransfer = guest.value.sub_guests.some(sg =>
+                            sg.status === 'Confirmed' && sg.needs_transfer === true
+                        );
+                        if (confirmedWithTransfer && (!guest.value.phone || !guest.value.phone.trim())) {
                             error.value = `Por favor completá tu teléfono. Es obligatorio cuando necesitas traslado.`;
                             // Scroll suave al campo de teléfono
                             setTimeout(() => {
