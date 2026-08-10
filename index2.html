@@ -1038,7 +1038,7 @@
 
                     // Validación: si algún invitado confirmado eligió "Otro" en restricción, debe especificar cuál
                     const missingDietary = guest.value.sub_guests.filter(sg =>
-                        sg.status !== 'Declined' &&
+                        sg.status === 'Confirmed' &&
                         sg.dietary === 'Otro' &&
                         (!sg.dietary_detail || !sg.dietary_detail.trim())
                     );
@@ -1056,7 +1056,7 @@
                     // Validación: si es el casamiento de Marcella & Gonza, talle de calzado es obligatorio para confirmados
                     if (isMarcelloGonzaWedding.value) {
                         const missingShoeSize = guest.value.sub_guests.filter(sg =>
-                            sg.status !== 'Declined' &&
+                            sg.status === 'Confirmed' &&
                             (!sg.shoe_size || !sg.shoe_size.trim())
                         );
                         if (missingShoeSize.length > 0) {
@@ -1071,12 +1071,12 @@
                         }
                     }
 
-                    // Validación: si el casamiento tiene traslados, es obligatorio indicar si se necesita o no
+                    // Validación: si el casamiento tiene traslados, es obligatorio indicar si se necesita o no (solo si confirmó)
                     const projectConfig = currentProject.value.eventsConfig || {};
                     if (projectConfig.has_transfers) {
                         const missingTransfer = guest.value.sub_guests.filter(sg =>
-                            sg.status !== 'Declined' &&
-                            sg.needs_transfer === undefined || sg.needs_transfer === null
+                            sg.status === 'Confirmed' &&
+                            (sg.needs_transfer === undefined || sg.needs_transfer === null)
                         );
                         if (missingTransfer.length > 0) {
                             const nombres = missingTransfer.map(sg => getFullName(sg) || 'Invitado').join(', ');
