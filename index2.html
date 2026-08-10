@@ -1217,7 +1217,8 @@
 
                     } catch (e) {
                         console.error('Error saving attendance:', e);
-                        error.value = 'Error al guardar la confirmación. Por favor, inténtalo de nuevo.';
+                        console.error('Error details:', e.message, e.details);
+                        error.value = e.message || 'Error al guardar la confirmación. Por favor, inténtalo de nuevo.';
                         loading.value = false;
                     }
                 };
