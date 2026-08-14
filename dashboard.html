@@ -667,15 +667,19 @@
                 const isAdmin = computed(() => session.value && session.value.role === 'admin');
 
                 const filteredProjects = computed(() => {
-                    if (!searchQuery.value) return projects.value;
-                    const q = searchQuery.value.toLowerCase();
-                    return projects.value.filter(p =>
-                        p.coupleName.toLowerCase().includes(q) ||
-                        p.brideName.toLowerCase().includes(q) ||
-                        p.groomName.toLowerCase().includes(q) ||
-                        p.weddingDate.includes(q) ||
-                        (p.venue && p.venue.toLowerCase().includes(q))
-                    );
+                    let result = projects.value;
+                    if (searchQuery.value) {
+                        const q = searchQuery.value.toLowerCase();
+                        result = result.filter(p =>
+                            p.coupleName.toLowerCase().includes(q) ||
+                            p.brideName.toLowerCase().includes(q) ||
+                            p.groomName.toLowerCase().includes(q) ||
+                            p.weddingDate.includes(q) ||
+                            (p.venue && p.venue.toLowerCase().includes(q))
+                        );
+                    }
+                    // Sort by wedding date: closest first (ascending order)
+                    return result.sort((a, b) => new Date(a.weddingDate) - new Date(b.weddingDate));
                 });
 
                 const totalGuestsAllProjects = computed(() => {
