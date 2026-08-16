@@ -521,7 +521,7 @@
 
         <!-- VERSION FOOTER -->
         <div class="fixed bottom-2 left-2 text-[10px] text-slate-300 font-mono pointer-events-none z-50">
-            v2.4 - Stats Fix
+            v2.5 - Guest Count Fixed
         </div>
 
     </div>
@@ -641,10 +641,6 @@
                             updated_at: p.updated_at
                         }));
 
-                        console.log('[Dashboard] All projects loaded from DB:');
-                        allProjects.forEach((p, idx) => {
-                            console.log(`  ${idx + 1}. ${p.coupleName} (${p.id})`);
-                        });
 
                         // Filter for Couple role
                         if (session.value && session.value.role === 'couple') {
@@ -655,11 +651,8 @@
 
                         // Load stats for all projects
                         for (const project of projects.value) {
-                            // Use safe call for stats
                             try {
-                                console.log(`[Dashboard] Loading stats for project ${project.id} (${project.coupleName})`);
                                 projectStats.value[project.id] = await getProjectStats(project.id, supabase);
-                                console.log(`[Dashboard] Stats loaded:`, projectStats.value[project.id]);
                             } catch (err) {
                                 console.error('Error loading stats for', project.id, err);
                                 projectStats.value[project.id] = { totalGuests: 0, confirmed: 0, tables: 0 };
@@ -939,10 +932,6 @@
 
                         let guestList = guests || [];
 
-                        // DEBUG: Log first guest's project_id to verify
-                        if (guestList.length > 0) {
-                            console.log(`[Stats] First guest project_id:`, guestList[0].project_id, `vs expected:`, projectId);
-                        }
 
                         const { data: tables } = await supabase
                             .from('tables')
@@ -954,32 +943,22 @@
                         // If no guests found and there are guests in DB, it means old data without project_id
                         // For backwards compatibility with legacy guests, use assignments to find guests
                         if (guestList.length === 0) {
-                            console.warn(`[Stats] No guests with project_id for ${projectId}. Checking assignments...`);
-                            const { data: assignments, error: assignError } = await supabase
+                            const { data: assignments } = await supabase
                                 .from('assignments')
                                 .select('guest_id')
                                 .eq('project_id', projectId);
 
-                            console.log(`[Stats] Assignments query result:`, { count: (assignments || []).length, error: assignError });
-
                             if (assignments && assignments.length > 0) {
                                 const guestIds = [...new Set((assignments || []).map(a => a.guest_id))];
-                                console.log(`[Stats] Found ${guestIds.length} guests via assignments for project ${projectId}`);
                                 // Fetch those specific guests
                                 const { data: legacyGuests } = await supabase
                                     .from('guests')
                                     .select('*')
                                     .in('id', guestIds);
                                 guestList = legacyGuests || [];
-                                console.log(`[Stats] Loaded ${guestList.length} legacy guests via assignments`);
-                            } else {
-                                console.warn(`[Stats] No assignments found for project ${projectId} either. This project has no guests.`);
                             }
                         }
 
-                        if (guestList.length > 0) {
-                            console.log(`[Stats] Project ${projectId}: ${guestList.length} guests found`);
-                        }
 
                         // Total spots invited - count how many people are invited (including companions)
                         // If guest has sub_guests, count them; otherwise use guests_confirmed (or 1 if not set)
