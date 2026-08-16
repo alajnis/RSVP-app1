@@ -1,0 +1,5 @@
+{
+  "auto-deploy": true,
+  "buildCommand": "echo 'Static files deployment'",
+  "startCommand": "echo 'Static files - no start needed'"
+}
