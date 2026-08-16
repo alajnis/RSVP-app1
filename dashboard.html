@@ -223,14 +223,18 @@
                         <div class="text-left border-r border-brand-pink/30 pr-4">
                             <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
                                 Invitados</div>
-                            <div class="text-xl font-serif font-bold text-brand-dark">{{ (projectStats[project.id] &&
-                                projectStats[project.id].totalGuests) || 0 }}</div>
+                            <div v-if="projectStats[project.id]" class="text-xl font-serif font-bold text-brand-dark">{{ projectStats[project.id].totalGuests }}</div>
+                            <div v-else class="text-xs text-slate-400 italic flex items-center gap-1">
+                                <i class="ph-fill ph-spinner animate-spin text-xs"></i> Cargando...
+                            </div>
                         </div>
                         <div class="text-left pl-4">
                             <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
                                 Confirm.</div>
-                            <div class="text-xl font-serif font-bold text-brand-dark">{{ (projectStats[project.id] &&
-                                projectStats[project.id].confirmed) || 0 }}</div>
+                            <div v-if="projectStats[project.id]" class="text-xl font-serif font-bold text-brand-dark">{{ projectStats[project.id].confirmed }}</div>
+                            <div v-else class="text-xs text-slate-400 italic flex items-center gap-1">
+                                <i class="ph-fill ph-spinner animate-spin text-xs"></i> Cargando...
+                            </div>
                         </div>
                     </div>
 
