@@ -113,27 +113,35 @@
                     <i class="ph-bold ph-spinner animate-spin"></i> Cargando eventos...
                 </div>
                 <!-- Admin Actions -->
-                <div class="flex flex-wrap gap-2 md:gap-4" v-if="isAdmin">
-                    <template v-if="!isLoading">
-                        <button @click="handleExportAll"
+                <div class="flex flex-col items-end gap-2" v-if="isAdmin">
+                    <div class="flex flex-wrap gap-2 md:gap-4">
+                        <template v-if="!isLoading">
+                            <button @click="handleExportAll"
+                                class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-brand-crimson transition-all">
+                                Export All
+                            </button>
+                            <button @click="openProjectModal()"
+                                class="bg-brand-crimson hover:bg-brand-dark text-white px-4 md:px-8 py-2 md:py-3 rounded-none font-bold tracking-widest uppercase text-[10px] md:text-xs transition-all shadow-xl">
+                                Nuevo Casamiento
+                            </button>
+                        </template>
+                        <button @click="logout"
                             class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-brand-crimson transition-all">
-                            Export All
+                            Salir
                         </button>
-                        <button @click="openProjectModal()"
-                            class="bg-brand-crimson hover:bg-brand-dark text-white px-4 md:px-8 py-2 md:py-3 rounded-none font-bold tracking-widest uppercase text-[10px] md:text-xs transition-all shadow-xl">
-                            Nuevo Casamiento
-                        </button>
-                    </template>
-                    <button @click="logout"
-                        class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-brand-crimson transition-all">
-                        Salir
-                    </button>
+                    </div>
+                    <div class="text-[11px] text-slate-400">
+                        Desarrollado por <a href="https://impruvia.netlify.app/" target="_blank" class="text-brand-crimson hover:underline font-semibold">Impruvia</a> para <a href="https://www.sfeventsboutique.com/" target="_blank" class="text-brand-crimson hover:underline font-semibold">Events Boutique</a>
+                    </div>
                 </div>
-                <div v-else-if="!isAdmin && !isLoading" class="flex gap-4">
+                <div v-else-if="!isAdmin && !isLoading" class="flex flex-col items-end gap-2">
                     <button @click="logout"
                         class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-xs hover:text-brand-crimson transition-all">
                         Cerrar Sesión
                     </button>
+                    <div class="text-[11px] text-slate-400">
+                        Desarrollado por <a href="https://impruvia.netlify.app/" target="_blank" class="text-brand-crimson hover:underline font-semibold">Impruvia</a> para <a href="https://www.sfeventsboutique.com/" target="_blank" class="text-brand-crimson hover:underline font-semibold">Events Boutique</a>
+                    </div>
                 </div>
             </div>
         </header>
@@ -522,11 +530,6 @@
                 {{ toast.message }}
             </div>
         </transition>
-
-        <!-- CREDITS FOOTER -->
-        <div class="fixed bottom-4 left-0 right-0 text-center text-[11px] text-slate-400">
-            Desarrollado por <a href="https://impruvia.netlify.app/" target="_blank" class="text-brand-crimson hover:underline font-semibold">Impruvia</a> para <a href="https://www.sfeventsboutique.com/" target="_blank" class="text-brand-crimson hover:underline font-semibold">Events Boutique</a>
-        </div>
 
         <!-- VERSION FOOTER -->
         <div class="fixed bottom-2 left-2 text-[10px] text-slate-300 font-mono pointer-events-none z-50">
