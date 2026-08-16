@@ -928,7 +928,16 @@
                         const guestList = guests || [];
                         const tableList = tables || [];
 
-                        console.log(`[Stats] Project ${projectId}: ${guestList.length} guests found`, guestList);
+                        if (guestList.length === 0) {
+                            console.warn(`[Stats] NO GUESTS FOUND for project ${projectId}. Querying directly...`);
+                            // Try alternative query to debug
+                            const { data: allGuests } = await supabase.from('guests').select('*');
+                            console.log(`[Stats] Total guests in DB: ${(allGuests || []).length}`);
+                            const guestsForThisProject = (allGuests || []).filter(g => g.project_id === projectId);
+                            console.log(`[Stats] Guests for project ${projectId}:`, guestsForThisProject);
+                        } else {
+                            console.log(`[Stats] Project ${projectId}: ${guestList.length} guests found`);
+                        }
 
                         // Total spots invited - count how many people are invited (including companions)
                         // If guest has sub_guests, count them; otherwise use guests_confirmed (or 1 if not set)
