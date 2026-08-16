@@ -872,6 +872,7 @@
                     if (!confirm('¿Eliminar este casamiento y todos sus datos?')) return;
 
                     try {
+                        const supabase = window.supabaseClient;
                         const { error } = await supabase
                             .from('projects')
                             .delete()
@@ -898,6 +899,7 @@
                 // METHODS - Stats
                 const getProjectStats = async (projectId) => {
                     try {
+                        const supabase = window.supabaseClient;
                         // Query Supabase for guests and tables
                         const { data: guests } = await supabase
                             .from('guests')
@@ -1003,6 +1005,7 @@
                         XLSX.utils.book_append_sheet(wb, wsOverview, "Resumen");
 
                         // Individual project sheets - fetch from Supabase
+                        const supabase = window.supabaseClient;
                         for (const project of projects.value) {
                             const { data: guests } = await supabase
                                 .from('guests')
