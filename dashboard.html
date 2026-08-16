@@ -572,6 +572,18 @@
                     }
 
                     loadProjects();
+
+                    // Reload stats every 10 seconds to catch new guests
+                    setInterval(async () => {
+                        console.log('[Dashboard] Auto-refreshing stats...');
+                        for (const project of projects.value) {
+                            try {
+                                projectStats.value[project.id] = await getProjectStats(project.id, window.supabase || window.supabaseClient);
+                            } catch (err) {
+                                console.error('Error refreshing stats for', project.id, err);
+                            }
+                        }
+                    }, 10000);
                 });
 
                 const loadProjects = async () => {
@@ -921,6 +933,11 @@
                         }
 
                         let guestList = guests || [];
+
+                        // DEBUG: Log first guest's project_id to verify
+                        if (guestList.length > 0) {
+                            console.log(`[Stats] First guest project_id:`, guestList[0].project_id, `vs expected:`, projectId);
+                        }
 
                         const { data: tables } = await supabase
                             .from('tables')
