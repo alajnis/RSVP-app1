@@ -641,7 +641,10 @@
                             updated_at: p.updated_at
                         }));
 
-                        console.log('[Dashboard] All projects loaded from DB:', allProjects.map(p => ({ id: p.id, name: p.coupleName })));
+                        console.log('[Dashboard] All projects loaded from DB:');
+                        allProjects.forEach((p, idx) => {
+                            console.log(`  ${idx + 1}. ${p.coupleName} (${p.id})`);
+                        });
 
                         // Filter for Couple role
                         if (session.value && session.value.role === 'couple') {
