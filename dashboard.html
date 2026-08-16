@@ -640,9 +640,12 @@
                         for (const project of projects.value) {
                             // Use safe call for stats
                             try {
-                                projectStats.value[project.id] = await getProjectStats(project.id);
+                                console.log(`[Dashboard] Loading stats for project ${project.id} (${project.coupleName})`);
+                                projectStats.value[project.id] = await getProjectStats(project.id, supabase);
+                                console.log(`[Dashboard] Stats loaded:`, projectStats.value[project.id]);
                             } catch (err) {
-                                console.warn('Error loading stats for', project.id, err);
+                                console.error('Error loading stats for', project.id, err);
+                                projectStats.value[project.id] = { totalGuests: 0, confirmed: 0, tables: 0 };
                             }
                         }
 
@@ -897,12 +900,12 @@
                 };
 
                 // METHODS - Stats
-                const getProjectStats = async (projectId) => {
+                const getProjectStats = async (projectId, supabaseClient) => {
                     try {
-                        // Use global supabase client
-                        const supabase = window.supabase || window.supabaseClient;
+                        // Use provided supabase client or fallback to global
+                        const supabase = supabaseClient || window.supabase || window.supabaseClient;
                         if (!supabase) {
-                            console.error('Supabase not initialized');
+                            console.error('Supabase not initialized for stats');
                             return { totalGuests: 0, confirmed: 0, tables: 0 };
                         }
 
@@ -1002,10 +1005,11 @@
                 const handleExportAll = async () => { // FIX: Make async
                     try {
                         const wb = XLSX.utils.book_new();
+                        const supabase = window.supabase || window.supabaseClient;
 
                         // Overview Sheet
                         const overviewData = await Promise.all(projects.value.map(async (p) => { // FIX: await Promise.all
-                            const stats = await getProjectStats(p.id); // FIX: await stats
+                            const stats = await getProjectStats(p.id, supabase); // FIX: await stats
                             return {
                                 'Pareja': p.coupleName,
                                 'Fecha': formatDate(p.weddingDate),
@@ -1024,7 +1028,6 @@
                         XLSX.utils.book_append_sheet(wb, wsOverview, "Resumen");
 
                         // Individual project sheets - fetch from Supabase
-                        const supabase = window.supabase || window.supabaseClient;
                         for (const project of projects.value) {
                             const { data: guests } = await supabase
                                 .from('guests')
