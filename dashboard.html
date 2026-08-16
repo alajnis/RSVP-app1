@@ -641,6 +641,8 @@
                             updated_at: p.updated_at
                         }));
 
+                        console.log('[Dashboard] All projects loaded from DB:', allProjects.map(p => ({ id: p.id, name: p.coupleName })));
+
                         // Filter for Couple role
                         if (session.value && session.value.role === 'couple') {
                             projects.value = allProjects.filter(p => p.id === session.value.projectId);
