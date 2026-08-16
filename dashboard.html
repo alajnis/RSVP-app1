@@ -920,22 +920,37 @@
                             return { totalGuests: 0, confirmed: 0, tables: 0 };
                         }
 
+                        let guestList = guests || [];
+
                         const { data: tables } = await supabase
                             .from('tables')
                             .select('id')
                             .eq('project_id', projectId);
 
-                        const guestList = guests || [];
                         const tableList = tables || [];
 
+                        // If no guests found and there are guests in DB, it means old data without project_id
+                        // For backwards compatibility with legacy guests, use assignments to find guests
                         if (guestList.length === 0) {
-                            console.warn(`[Stats] NO GUESTS FOUND for project ${projectId}. Querying directly...`);
-                            // Try alternative query to debug
-                            const { data: allGuests } = await supabase.from('guests').select('*');
-                            console.log(`[Stats] Total guests in DB: ${(allGuests || []).length}`);
-                            const guestsForThisProject = (allGuests || []).filter(g => g.project_id === projectId);
-                            console.log(`[Stats] Guests for project ${projectId}:`, guestsForThisProject);
-                        } else {
+                            console.warn(`[Stats] No guests with project_id for ${projectId}. Checking assignments...`);
+                            const { data: assignments } = await supabase
+                                .from('assignments')
+                                .select('guest_id')
+                                .eq('project_id', projectId);
+
+                            if (assignments && assignments.length > 0) {
+                                const guestIds = [...new Set((assignments || []).map(a => a.guest_id))];
+                                console.log(`[Stats] Found ${guestIds.length} guests via assignments for project ${projectId}`);
+                                // Fetch those specific guests
+                                const { data: legacyGuests } = await supabase
+                                    .from('guests')
+                                    .select('*')
+                                    .in('id', guestIds);
+                                guestList = legacyGuests || [];
+                            }
+                        }
+
+                        if (guestList.length > 0) {
                             console.log(`[Stats] Project ${projectId}: ${guestList.length} guests found`);
                         }
 
