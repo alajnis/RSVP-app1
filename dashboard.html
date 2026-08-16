@@ -933,10 +933,12 @@
                         // For backwards compatibility with legacy guests, use assignments to find guests
                         if (guestList.length === 0) {
                             console.warn(`[Stats] No guests with project_id for ${projectId}. Checking assignments...`);
-                            const { data: assignments } = await supabase
+                            const { data: assignments, error: assignError } = await supabase
                                 .from('assignments')
                                 .select('guest_id')
                                 .eq('project_id', projectId);
+
+                            console.log(`[Stats] Assignments query result:`, { count: (assignments || []).length, error: assignError });
 
                             if (assignments && assignments.length > 0) {
                                 const guestIds = [...new Set((assignments || []).map(a => a.guest_id))];
@@ -947,6 +949,9 @@
                                     .select('*')
                                     .in('id', guestIds);
                                 guestList = legacyGuests || [];
+                                console.log(`[Stats] Loaded ${guestList.length} legacy guests via assignments`);
+                            } else {
+                                console.warn(`[Stats] No assignments found for project ${projectId} either. This project has no guests.`);
                             }
                         }
 
