@@ -872,7 +872,7 @@
                     if (!confirm('¿Eliminar este casamiento y todos sus datos?')) return;
 
                     try {
-                        const supabase = window.supabaseClient;
+                        const supabase = window.supabase || window.supabaseClient;
                         const { error } = await supabase
                             .from('projects')
                             .delete()
@@ -899,7 +899,13 @@
                 // METHODS - Stats
                 const getProjectStats = async (projectId) => {
                     try {
-                        const supabase = window.supabaseClient;
+                        // Use global supabase client
+                        const supabase = window.supabase || window.supabaseClient;
+                        if (!supabase) {
+                            console.error('Supabase not initialized');
+                            return { totalGuests: 0, confirmed: 0, tables: 0 };
+                        }
+
                         // Query Supabase for guests and tables
                         const { data: guests, error: guestError } = await supabase
                             .from('guests')
@@ -907,7 +913,8 @@
                             .eq('project_id', projectId);
 
                         if (guestError) {
-                            console.error('Error fetching guests:', guestError);
+                            console.error('Error fetching guests for project', projectId, ':', guestError);
+                            return { totalGuests: 0, confirmed: 0, tables: 0 };
                         }
 
                         const { data: tables } = await supabase
@@ -918,7 +925,7 @@
                         const guestList = guests || [];
                         const tableList = tables || [];
 
-                        console.log(`[Stats] Project ${projectId}: ${guestList.length} guests found`);
+                        console.log(`[Stats] Project ${projectId}: ${guestList.length} guests found`, guestList);
 
                         // Total spots invited - count how many people are invited (including companions)
                         // If guest has sub_guests, count them; otherwise use guests_confirmed (or 1 if not set)
@@ -1017,7 +1024,7 @@
                         XLSX.utils.book_append_sheet(wb, wsOverview, "Resumen");
 
                         // Individual project sheets - fetch from Supabase
-                        const supabase = window.supabaseClient;
+                        const supabase = window.supabase || window.supabaseClient;
                         for (const project of projects.value) {
                             const { data: guests } = await supabase
                                 .from('guests')
