@@ -1088,7 +1088,7 @@
 
                     // Validación: si algún invitado confirmado eligió "Otro" en restricción, debe especificar cuál
                     const missingDietary = guest.value.sub_guests.filter(sg =>
-                        sg.status === 'Confirmed' &&
+                        isAttending(sg) &&
                         sg.dietary === 'Otro' &&
                         (!sg.dietary_detail || !sg.dietary_detail.trim())
                     );
