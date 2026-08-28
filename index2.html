@@ -371,8 +371,8 @@
                                     </select>
                                 </div>
 
-                                <!-- Shoe Size (Only for Marcella & Gonza wedding, if Confirmed) -->
-                                <div v-if="sg.status !== 'Declined' && isMarcelloGonzaWedding" class="mt-4">
+                                <!-- Shoe Size (Only for Marcella & Gonza wedding, if attending) -->
+                                <div v-if="isSubGuestAttending(sg) && isMarcelloGonzaWedding" class="mt-4">
                                     <label
                                         class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                         <i class="ph ph-shoe"></i> {{ t('talleCalzado') }}
@@ -381,8 +381,8 @@
                                         class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
                                 </div>
 
-                                <!-- Arrival Day in Mendoza (Only for Marcella & Gonza wedding, if Confirmed) -->
-                                <div v-if="sg.status !== 'Declined' && isMarcelloGonzaWedding" class="mt-4">
+                                <!-- Arrival Day in Mendoza (Only for Marcella & Gonza wedding, if attending) -->
+                                <div v-if="isSubGuestAttending(sg) && isMarcelloGonzaWedding" class="mt-4">
                                     <label
                                         class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                         <i class="ph ph-calendar-check"></i> {{ t('diaLlegadaMendoza') }}
@@ -392,8 +392,8 @@
                                         class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
                                 </div>
 
-                                <!-- Song Request (Only for Marcella & Gonza wedding, if Confirmed) -->
-                                <div v-if="sg.status !== 'Declined' && isMarcelloGonzaWedding" class="mt-4">
+                                <!-- Song Request (Only for Marcella & Gonza wedding, if attending) -->
+                                <div v-if="isSubGuestAttending(sg) && isMarcelloGonzaWedding" class="mt-4">
                                     <label
                                         class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                         <i class="ph ph-music-notes"></i> {{ t('temaMusical') }}
@@ -1083,9 +1083,12 @@
                         return;
                     }
 
+                    // Estado efectivo de asistencia (ver isSubGuestAttending)
+                    const isAttending = isSubGuestAttending;
+
                     // Validación: si algún invitado confirmado eligió "Otro" en restricción, debe especificar cuál
                     const missingDietary = guest.value.sub_guests.filter(sg =>
-                        sg.status === 'Confirmed' &&
+                        isAttending(sg) &&
                         sg.dietary === 'Otro' &&
                         (!sg.dietary_detail || !sg.dietary_detail.trim())
                     );
@@ -1103,7 +1106,7 @@
                     // Validación: si es el casamiento de Marcella & Gonza, talle de calzado es obligatorio para confirmados
                     if (isMarcelloGonzaWedding.value) {
                         const missingShoeSize = guest.value.sub_guests.filter(sg =>
-                            sg.status === 'Confirmed' &&
+                            isAttending(sg) &&
                             (!sg.shoe_size || !sg.shoe_size.trim())
                         );
                         if (missingShoeSize.length > 0) {
@@ -1119,7 +1122,7 @@
 
                         // Día de llegada a Mendoza es obligatorio para confirmados
                         const missingArrivalDay = guest.value.sub_guests.filter(sg =>
-                            sg.status === 'Confirmed' &&
+                            isAttending(sg) &&
                             (!sg.arrival_day || !sg.arrival_day.trim())
                         );
                         if (missingArrivalDay.length > 0) {
@@ -1134,7 +1137,7 @@
 
                         // Tema musical es obligatorio para confirmados
                         const missingSongRequest = guest.value.sub_guests.filter(sg =>
-                            sg.status === 'Confirmed' &&
+                            isAttending(sg) &&
                             (!sg.song_request || !sg.song_request.trim())
                         );
                         if (missingSongRequest.length > 0) {
@@ -1152,7 +1155,7 @@
                     const projectConfig = currentProject.value.eventsConfig || {};
                     if (projectConfig.has_transfers) {
                         const missingTransfer = guest.value.sub_guests.filter(sg =>
-                            sg.status === 'Confirmed' &&
+                            isAttending(sg) &&
                             (sg.needs_transfer === undefined || sg.needs_transfer === null)
                         );
                         if (missingTransfer.length > 0) {
@@ -1168,7 +1171,7 @@
 
                         // Validación: si hay alguien que confirmó Y necesita traslado, su teléfono es obligatorio
                         const missingPhoneWithTransfer = guest.value.sub_guests.filter(sg =>
-                            sg.status === 'Confirmed' && sg.needs_transfer === true &&
+                            isAttending(sg) && sg.needs_transfer === true &&
                             (!sg.phone || !sg.phone.trim())
                         );
                         if (missingPhoneWithTransfer.length > 0) {
@@ -1397,6 +1400,18 @@
                     return translations[lang][lowerLabel] || label;
                 };
 
+                // Estado efectivo de asistencia de un sub-invitado.
+                // En multi-evento sg.status recién se calcula al guardar, así que se deriva
+                // desde rsvp_answers para que el template y las validaciones coincidan.
+                const isSubGuestAttending = (sg) => {
+                    if (!sg) return false;
+                    const cfg = currentProject.value ? (currentProject.value.eventsConfig || {}) : {};
+                    if (cfg.multi_event) {
+                        return Object.values(sg.rsvp_answers || {}).some(ans => ans === 'confirmed');
+                    }
+                    return sg.status === 'Confirmed';
+                };
+
                 const isMarcelloGonzaWedding = computed(() => {
                     if (!currentProject.value) return false;
                     const couple = (currentProject.value.coupleName || '').toLowerCase();
@@ -1421,7 +1436,7 @@
                     showFuzzyModal, fuzzyCandidate, acceptFuzzyMatch, rejectFuzzyMatch,
                     getFullName,
                     loading, lastNameSearch, searchResults, selectedGuest,
-                    isMarcelloGonzaWedding,
+                    isMarcelloGonzaWedding, isSubGuestAttending,
                     // Mural
                     showMuralForm, muralMessageText, muralSenderName,
                     muralSending, muralSent, muralError, sendMuralMessage,
