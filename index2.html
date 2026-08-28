@@ -403,8 +403,8 @@
                                         class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
                                 </div>
 
-                                <!-- Transfers (Only if wedding has transfers and guest confirmed) -->
-                                <div v-if="sg.status === 'Confirmed' && currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers" class="mt-4">
+                                <!-- Transfers (Only if wedding has transfers and guest is attending) -->
+                                <div v-if="isSubGuestAttending(sg) && currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers" class="mt-4">
                                     <label
                                         class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                         <i class="ph ph-car"></i> {{ t('necesitaTraslado') }}
@@ -433,8 +433,8 @@
                                     </div>
                                 </div>
 
-                                <!-- Phone Number (Only if Confirmed) -->
-                                <div v-if="sg.status === 'Confirmed'" class="mt-4">
+                                <!-- Phone Number (Only if attending) -->
+                                <div v-if="isSubGuestAttending(sg)" class="mt-4">
                                     <label
                                         class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                         <i class="ph ph-phone"></i> {{ t('telefono') }}
@@ -1088,7 +1088,7 @@
 
                     // Validación: si algún invitado confirmado eligió "Otro" en restricción, debe especificar cuál
                     const missingDietary = guest.value.sub_guests.filter(sg =>
-                        isAttending(sg) &&
+                        sg.status === 'Confirmed' &&
                         sg.dietary === 'Otro' &&
                         (!sg.dietary_detail || !sg.dietary_detail.trim())
                     );
@@ -1171,7 +1171,7 @@
 
                         // Validación: si hay alguien que confirmó Y necesita traslado, su teléfono es obligatorio
                         const missingPhoneWithTransfer = guest.value.sub_guests.filter(sg =>
-                            isAttending(sg) && sg.needs_transfer === true &&
+                            sg.status === 'Confirmed' && sg.needs_transfer === true &&
                             (!sg.phone || !sg.phone.trim())
                         );
                         if (missingPhoneWithTransfer.length > 0) {
