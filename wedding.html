@@ -1109,6 +1109,24 @@
                                                    placeholder="Ej: 38, 42, 45.5"
                                                    class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
                                         </div>
+                                        <div v-if="isMarcelloGonzaWedding" class="col-span-2">
+                                            <label
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Día de Llegada a Mendoza</label>
+                                            <input type="text"
+                                                   v-model="sg.arrival_day"
+                                                   maxlength="40"
+                                                   placeholder="Ej: Viernes 26 de marzo"
+                                                   class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
+                                        </div>
+                                        <div v-if="isMarcelloGonzaWedding" class="col-span-2">
+                                            <label
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Tema Musical Sugerido</label>
+                                            <input type="text"
+                                                   v-model="sg.song_request"
+                                                   maxlength="40"
+                                                   placeholder="Ej: Bailando - Enrique Iglesias"
+                                                   class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
+                                        </div>
                                         <div v-if="currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers" class="col-span-2">
                                             <label
                                                 class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">¿Necesita Traslado?</label>
@@ -1588,7 +1606,7 @@
                         phone: '',
                         dietary: 'None',
                         rsvp_status: 'Pending',
-                        sub_guests: [{ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '', shoe_size: '', needs_transfer: null }]
+                        sub_guests: [{ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '', shoe_size: '', arrival_day: '', song_request: '', needs_transfer: null }]
                     });
                     showGuestModal.value = true;
                 };
@@ -1610,7 +1628,7 @@
                         showToast('Máximo 10 integrantes', 'error');
                         return;
                     }
-                    guestForm.sub_guests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '', shoe_size: '', needs_transfer: null });
+                    guestForm.sub_guests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '', shoe_size: '', arrival_day: '', song_request: '', needs_transfer: null });
                     guestForm.guests_confirmed = guestForm.sub_guests.length;
                 };
 
@@ -1712,14 +1730,16 @@
                                     if (!item.ageCategory) item.ageCategory = '';
                                     if (!item.dietary_detail) item.dietary_detail = '';
                                     if (!item.shoe_size) item.shoe_size = '';
+                                    if (!item.arrival_day) item.arrival_day = '';
+                                    if (!item.song_request) item.song_request = '';
                                     if (item.needs_transfer === undefined) item.needs_transfer = null;
                                 });
                             } else {
-                                sg = [{ firstName: fName, lastName: lName, status: guest.rsvp_status || 'Pending', dietary: guest.dietary || 'None', dietary_detail: guest.dietary_detail || '', ageCategory: 'Adulto', shoe_size: '', needs_transfer: null }];
+                                sg = [{ firstName: fName, lastName: lName, status: guest.rsvp_status || 'Pending', dietary: guest.dietary || 'None', dietary_detail: guest.dietary_detail || '', ageCategory: 'Adulto', shoe_size: '', arrival_day: '', song_request: '', needs_transfer: null }];
                             }
 
                             while (sg.length < (guest.guests_confirmed || 1)) {
-                                sg.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', dietary_detail: '', ageCategory: '', shoe_size: '', needs_transfer: null });
+                                sg.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', dietary_detail: '', ageCategory: '', shoe_size: '', arrival_day: '', song_request: '', needs_transfer: null });
                             }
                             return sg;
                         })()
@@ -1901,9 +1921,11 @@
                                         'Email Contácto': g.email || '-',
                                         'Teléfono Contácto': g.phone || '-'
                                     };
-                                    // Add shoe size only for Marcella & Gonza wedding
+                                    // Add shoe size, arrival day and song request only for Marcella & Gonza wedding
                                     if (isMarcelloGonzaWedding.value) {
                                         baseRow['Talle de Calzado'] = sg.shoe_size || '-';
+                                        baseRow['Día de Llegada a Mendoza'] = sg.arrival_day || '-';
+                                        baseRow['Tema Musical Sugerido'] = sg.song_request || '-';
                                     }
                                     // Add transfers column if transfers are enabled
                                     if (eventsConfig && eventsConfig.has_transfers) {
@@ -1930,9 +1952,11 @@
                                     'Email Contácto': g.email || '-',
                                     'Teléfono Contácto': g.phone || '-'
                                 };
-                                // Add shoe size only for Marcella & Gonza wedding
+                                // Add shoe size, arrival day and song request only for Marcella & Gonza wedding
                                 if (isMarcelloGonzaWedding.value) {
                                     baseRow['Talle de Calzado'] = '-';
+                                    baseRow['Día de Llegada a Mendoza'] = '-';
+                                    baseRow['Tema Musical Sugerido'] = '-';
                                 }
                                 // Add transfers column if transfers are enabled
                                 if (eventsConfig && eventsConfig.has_transfers) {

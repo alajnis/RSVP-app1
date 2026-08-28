@@ -381,6 +381,28 @@
                                         class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
                                 </div>
 
+                                <!-- Arrival Day in Mendoza (Only for Marcella & Gonza wedding, if Confirmed) -->
+                                <div v-if="sg.status !== 'Declined' && isMarcelloGonzaWedding" class="mt-4">
+                                    <label
+                                        class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <i class="ph ph-calendar-check"></i> {{ t('diaLlegadaMendoza') }}
+                                    </label>
+                                    <input type="text" v-model="sg.arrival_day" maxlength="40"
+                                        :placeholder="t('diaLlegadaEj')"
+                                        class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
+                                </div>
+
+                                <!-- Song Request (Only for Marcella & Gonza wedding, if Confirmed) -->
+                                <div v-if="sg.status !== 'Declined' && isMarcelloGonzaWedding" class="mt-4">
+                                    <label
+                                        class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <i class="ph ph-music-notes"></i> {{ t('temaMusical') }}
+                                    </label>
+                                    <input type="text" v-model="sg.song_request" maxlength="40"
+                                        :placeholder="t('temaMusicalEj')"
+                                        class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
+                                </div>
+
                                 <!-- Transfers (Only if wedding has transfers and guest confirmed) -->
                                 <div v-if="sg.status === 'Confirmed' && currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers" class="mt-4">
                                     <label
@@ -584,6 +606,10 @@
                         bebe: 'Bebé (0-2)',
                         talleCalzado: 'Talle de Calzado',
                         talleEj: 'Ej: 38, 42, 45.5',
+                        diaLlegadaMendoza: '¿Qué día llegás a Mendoza?',
+                        diaLlegadaEj: 'Ej: Viernes 26 de marzo',
+                        temaMusical: '¿Algún tema que te gustaría que suene?',
+                        temaMusicalEj: 'Ej: Bailando - Enrique Iglesias',
                         necesitaTraslado: '¿Necesitas Traslado?',
                         losNoviosPagan: '💙 Los gastos de traslado serán costeados por los novios.',
                         tuPagar: '⚠️ Recorda que los gastos de traslado correrán por cuenta tuya.',
@@ -659,6 +685,10 @@
                         bebe: 'Baby (0-2)',
                         talleCalzado: 'Shoe Size',
                         talleEj: 'E.g: 38, 42, 45.5',
+                        diaLlegadaMendoza: 'What day do you arrive in Mendoza?',
+                        diaLlegadaEj: 'E.g: Friday, March 26th',
+                        temaMusical: 'Any song you would like to hear?',
+                        temaMusicalEj: 'E.g: Dancing - Enrique Iglesias',
                         necesitaTraslado: 'Do you need transportation?',
                         losNoviosPagan: '💙 The bride and groom will cover transportation costs.',
                         tuPagar: '⚠️ Remember that transportation costs are your responsibility.',
@@ -973,6 +1003,8 @@
                             dietary: g.dietary || 'None',
                             dietary_detail: g.dietary_detail || '',
                             shoe_size: '',
+                            arrival_day: '',
+                            song_request: '',
                             needs_transfer: null,
                             rsvp_answers: g.rsvp_answers || {} // Load existing answers if any
                         }];
@@ -988,6 +1020,8 @@
                                 dietary: 'None',
                                 dietary_detail: '',
                                 shoe_size: '',
+                                arrival_day: '',
+                                song_request: '',
                                 needs_transfer: null,
                                 rsvp_answers: {}
                             });
@@ -1001,6 +1035,8 @@
                             }
                             if (!sg.rsvp_answers) sg.rsvp_answers = {};
                             if (!sg.shoe_size) sg.shoe_size = '';
+                            if (!sg.arrival_day) sg.arrival_day = '';
+                            if (!sg.song_request) sg.song_request = '';
                             if (sg.needs_transfer === undefined) sg.needs_transfer = null;
                             return sg;
                         });
@@ -1018,9 +1054,11 @@
                         });
                     }
 
-                    // Ensure all sub_guests have shoe_size and needs_transfer fields initialized
+                    // Ensure all sub_guests have shoe_size, arrival_day, song_request and needs_transfer fields initialized
                     g.sub_guests.forEach(sg => {
                         if (!sg.shoe_size) sg.shoe_size = '';
+                        if (!sg.arrival_day) sg.arrival_day = '';
+                        if (!sg.song_request) sg.song_request = '';
                         if (sg.needs_transfer === undefined) sg.needs_transfer = null;
                     });
 
@@ -1074,6 +1112,36 @@
                             // Scroll suave al primer campo con error
                             setTimeout(() => {
                                 const el = document.querySelector('input[placeholder*="Ej: 38"]');
+                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 100);
+                            return;
+                        }
+
+                        // Día de llegada a Mendoza es obligatorio para confirmados
+                        const missingArrivalDay = guest.value.sub_guests.filter(sg =>
+                            sg.status === 'Confirmed' &&
+                            (!sg.arrival_day || !sg.arrival_day.trim())
+                        );
+                        if (missingArrivalDay.length > 0) {
+                            const nombres = missingArrivalDay.map(sg => getFullName(sg) || 'Invitado').join(', ');
+                            error.value = `Por favor indicá qué día llega a Mendoza: ${nombres}. Este campo es obligatorio.`;
+                            setTimeout(() => {
+                                const el = document.querySelector('input[placeholder*="Viernes 26"]');
+                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 100);
+                            return;
+                        }
+
+                        // Tema musical es obligatorio para confirmados
+                        const missingSongRequest = guest.value.sub_guests.filter(sg =>
+                            sg.status === 'Confirmed' &&
+                            (!sg.song_request || !sg.song_request.trim())
+                        );
+                        if (missingSongRequest.length > 0) {
+                            const nombres = missingSongRequest.map(sg => getFullName(sg) || 'Invitado').join(', ');
+                            error.value = `Por favor indicá un tema que te gustaría escuchar: ${nombres}. Este campo es obligatorio.`;
+                            setTimeout(() => {
+                                const el = document.querySelector('input[placeholder*="Bailando"]');
                                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }, 100);
                             return;
