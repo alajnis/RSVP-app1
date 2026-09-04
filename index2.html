@@ -567,6 +567,14 @@
                 title="English">
                 ENG
             </button>
+            <button v-if="isMarcelloGonzaWedding" @click="currentLanguage = 'pt'"
+                class="px-3 py-1 text-sm font-bold transition-all hover:scale-110 rounded border"
+                :class="currentLanguage === 'pt'
+                    ? 'bg-brand-crimson text-white border-brand-crimson'
+                    : 'bg-white text-brand-dark border-slate-300 opacity-50'"
+                title="Português">
+                PORT
+            </button>
         </div>
     </div>
 
@@ -657,6 +665,85 @@
                         infoTransfersGuest: '⚠️ Recorda que los gastos de traslado correrán por cuenta tuya. Mas cercano al evento vamos a brindar información sobre costos y recorridos.',
                         infoTransfersCouple: '💙 Los gastos de traslado serán costeados por los novios. Mas cercano al evento vamos a brindar información sobre recorridos.',
                         desarrolladoPor: 'Desarrollado por',
+                        para: 'para'
+                    },
+                    pt: {
+                        apellido: 'Sobrenome',
+                        nombre: 'Nome',
+                        confirmarAsistencia: 'Confirmar Presença',
+                        bienvenido: 'Bem-vindo',
+                        confirmaCadaPersona: 'Por favor, confirme a presença de cada pessoa',
+                        integrante: 'Convidado',
+                        asistira: 'Vai comparecer?',
+                        si: 'SIM',
+                        no: 'NÃO',
+                        restriccionAlimentaria: 'Restrição Alimentar',
+                        sinRestriccion: 'Sem Restrição',
+                        celiaco: 'Celíaco',
+                        vegano: 'Vegano',
+                        vegetariano: 'Vegetariano',
+                        kosher: 'Kosher',
+                        otro: 'Outra (especificar)',
+                        especifique: '* Obrigatório: especifique sua restrição',
+                        edad: 'Idade / Categoria',
+                        seleccionar: 'Selecionar...',
+                        adulto: 'Adulto (>18)',
+                        teen: 'Adolescente (13-17)',
+                        nino: 'Criança (3-12)',
+                        bebe: 'Bebê (0-2)',
+                        talleCalzado: 'Tamanho do Calçado',
+                        talleEj: 'Ex: 38, 42, 45.5',
+                        diaLlegadaMendoza: 'Que dia você chega em Mendoza?',
+                        diaLlegadaEj: 'Ex: Sexta-feira, 26 de março',
+                        temaMusical: 'Alguma música que você gostaria de ouvir?',
+                        temaMusicalEj: 'Ex: Bailando - Enrique Iglesias',
+                        necesitaTraslado: 'Precisa de Traslado?',
+                        losNoviosPagan: '💙 As despesas de traslado serão custeadas pelos noivos.',
+                        tuPagar: '⚠️ Lembre-se que as despesas de traslado ficarão por sua conta.',
+                        enviarConfirmacion: 'Enviar Confirmação',
+                        puedesModificar: 'Você pode alterar isso mais tarde se os planos mudarem',
+                        muchasGracias: 'Muito Obrigado!',
+                        confirmacionGuardada: 'Sua confirmação foi salva.',
+                        dejarMensaje: 'Clique aqui para deixar uma mensagem para os noivos',
+                        dejalesUnMensaje: '✍️ Deixe uma mensagem para os noivos',
+                        apareceraMural: 'Vai aparecer no mural deles no dia do casamento',
+                        escribeMensaje: 'Escreva sua mensagem para os noivos...',
+                        tuFirma: 'Sua assinatura',
+                        nombreOGrupo: 'Seu nome ou grupo familiar...',
+                        enviarMensaje: '💌 Enviar Mensagem',
+                        cancelar: 'Cancelar',
+                        hasQueridoDecir: 'Você quis dizer...?',
+                        encontramosSimilar: 'Encontramos um nome similar na lista.',
+                        soySi: 'Sim, sou',
+                        noSoyo: 'Não, esse não sou eu',
+                        error: 'Erro',
+                        tuMensajeArribo: 'Sua mensagem chegou!',
+                        losNoviosVeran: 'Os noivos vão vê-la no mural especial',
+                        enviando: 'Enviando...',
+                        noEncontramosTuInvitacion: 'Não encontramos seu convite. Verifique o nome e sobrenome.',
+                        ingrestaAlMenos2Letras: 'Digite pelo menos 2 letras do sobrenome.',
+                        porFavorIntentaNuevamente: 'Por favor, tente buscar novamente com o nome exato.',
+                        errorAlBuscar: 'Erro ao buscar seu convite. Tente novamente mais tarde.',
+                        noSeCargoProyecto: 'O projeto não foi carregado. Por favor, insira o código do casamento primeiro.',
+                        confirmado: 'CONFIRMADO',
+                        noAsiste: 'NÃO VAI COMPARECER',
+                        enero: 'Janeiro',
+                        febrero: 'Fevereiro',
+                        marzo: 'Março',
+                        abril: 'Abril',
+                        mayo: 'Maio',
+                        junio: 'Junho',
+                        julio: 'Julho',
+                        agosto: 'Agosto',
+                        septiembre: 'Setembro',
+                        octubre: 'Outubro',
+                        noviembre: 'Novembro',
+                        diciembre: 'Dezembro',
+                        telefono: 'Telefone',
+                        telefonoEj: '+54 9 351 123 4567',
+                        infoTransfersGuest: '⚠️ Lembre-se que as despesas de traslado ficarão por sua conta. Mais perto do evento vamos fornecer informações sobre custos e trajetos.',
+                        infoTransfersCouple: '💙 As despesas de traslado serão custeadas pelos noivos. Mais perto do evento vamos fornecer informações sobre os trajetos.',
+                        desarrolladoPor: 'Desenvolvido por',
                         para: 'para'
                     },
                     en: {
@@ -1367,16 +1454,18 @@
                 const formatDate = (dateString) => {
                     if (!dateString) return '';
                     const [y, m, d] = dateString.split('-').map(Number);
-                    const months = currentLanguage.value === 'es'
-                        ? ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
-                        : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                    const monthName = months[m - 1];
-                    if (currentLanguage.value === 'es') {
-                        return `${d} de ${monthName} de ${y}`;
-                    } else {
+                    const monthsByLang = {
+                        es: ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'],
+                        en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                        pt: ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+                    };
+                    const monthName = (monthsByLang[currentLanguage.value] || monthsByLang.es)[m - 1];
+                    if (currentLanguage.value === 'en') {
                         const suffix = (d % 10 === 1 && d !== 11) ? 'st' : (d % 10 === 2 && d !== 12) ? 'nd' : (d % 10 === 3 && d !== 13) ? 'rd' : 'th';
                         return `${monthName} ${d}${suffix}, ${y}`;
                     }
+                    // es y pt comparten el mismo formato "D de mes de AAAA"
+                    return `${d} de ${monthName} de ${y}`;
                 };
 
                 const translateEventLabel = (label) => {
@@ -1394,10 +1483,17 @@
                             'boda (principal)': 'WEDDING (MAIN)',
                             'welcome party': 'WELCOME PARTY',
                             'ensayo': 'REHEARSAL'
+                        },
+                        pt: {
+                            'boda': 'CASAMENTO',
+                            'boda (principal)': 'CASAMENTO (PRINCIPAL)',
+                            'welcome party': 'WELCOME PARTY',
+                            'rehearsal': 'ENSAIO',
+                            'ensayo': 'ENSAIO'
                         }
                     };
                     const lang = currentLanguage.value;
-                    return translations[lang][lowerLabel] || label;
+                    return (translations[lang] && translations[lang][lowerLabel]) || label;
                 };
 
                 // Estado efectivo de asistencia de un sub-invitado.
