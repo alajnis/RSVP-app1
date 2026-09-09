@@ -695,11 +695,6 @@
             </div>
         </transition>
 
-        <!-- VERSION FOOTER -->
-        <div class="fixed bottom-2 left-2 text-[10px] text-slate-300 font-mono pointer-events-none z-50">
-            v2.5 - Guest Count Fixed
-        </div>
-
     </div>
 
     <script>
@@ -858,15 +853,16 @@
                             projects.value = allProjects;
                         }
 
-                        // Load stats for all projects
-                        for (const project of projects.value) {
+                        // Load stats for all projects in parallel (evita que el primero de la
+                        // lista quede "Cargando..." mientras espera a que terminen los demás)
+                        await Promise.all(projects.value.map(async (project) => {
                             try {
                                 projectStats.value[project.id] = await getProjectStats(project.id, supabase);
                             } catch (err) {
                                 console.error('Error loading stats for', project.id, err);
                                 projectStats.value[project.id] = { totalGuests: 0, confirmed: 0, tables: 0 };
                             }
-                        }
+                        }));
 
                     } catch (e) {
                         console.error('Error loading projects:', e);
