@@ -154,7 +154,7 @@
 
                         // Help command
                         if (input === 'help') {
-                            const codes = ['• admin'];
+                            const codes = ['• admin', '• usuario'];
                             projects.value.forEach(p => {
                                 const projectCodes = getProjectCodes(p);
                                 if (projectCodes.length > 0) {
@@ -165,8 +165,8 @@
                             return;
                         }
 
-                        // Admin login
-                        if (input === 'admin') {
+                        // Admin login (mismos permisos para 'admin' y 'usuario')
+                        if (input === 'admin' || input === 'usuario') {
                             localStorage.setItem('rsvp_session', JSON.stringify({ role: 'admin' }));
                             window.location.href = 'dashboard.html';
                             return;
