@@ -35,3 +35,6 @@ yarn-error.log*
 
 # OS generated files
 Thumbs.db
+
+# Contiene el SERVICE_ROLE_KEY real, no debe subirse a git
+add_rsvp_reminder_cron.sql

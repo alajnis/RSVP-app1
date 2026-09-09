@@ -120,6 +120,10 @@
                                 class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-brand-crimson transition-all">
                                 Export All
                             </button>
+                            <button @click="openProvidersModal()"
+                                class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-brand-crimson transition-all">
+                                Proveedores
+                            </button>
                             <button @click="openProjectModal()"
                                 class="bg-brand-crimson hover:bg-brand-dark text-white px-4 md:px-8 py-2 md:py-3 rounded-none font-bold tracking-widest uppercase text-[10px] md:text-xs transition-all shadow-xl">
                                 Nuevo Casamiento
@@ -309,6 +313,25 @@
                         </div>
 
                         <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                                Email de contacto <span class="text-slate-300 normal-case font-normal">(completá al menos uno)</span>
+                            </p>
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <input type="email" v-model="projectForm.brideEmail" placeholder="Email de la novia"
+                                        class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300">
+                                </div>
+                                <div>
+                                    <input type="email" v-model="projectForm.groomEmail" placeholder="Email del novio"
+                                        class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300">
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2">
+                                Lo usamos para avisarles automáticamente si faltando 45 días o menos para la boda queda más del 10% de invitados sin responder.
+                            </p>
+                        </div>
+
+                        <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Fecha
                                 del Casamiento</label>
                             <input type="date" v-model="projectForm.weddingDate" :min="minDate" required
@@ -316,10 +339,17 @@
                         </div>
 
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Lugar
-                                (Opcional)</label>
-                            <input type="text" v-model="projectForm.venue" placeholder="Palacio Duhau"
-                                class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Lugar</label>
+                            <select v-model="projectForm.venue" required
+                                class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all">
+                                <option value="" disabled>Seleccionar locación...</option>
+                                <option v-if="projectForm.venue && !locationProviderNames.includes(projectForm.venue)"
+                                    :value="projectForm.venue">{{ projectForm.venue }} (actual)</option>
+                                <option v-for="name in locationProviderNames" :key="name" :value="name">{{ name }}</option>
+                            </select>
+                            <p v-if="locationProviderNames.length === 0" class="text-[10px] text-slate-400 mt-2">
+                                No hay proveedores activos en la categoría Locaciones. Agregalos desde el botón Proveedores.
+                            </p>
                         </div>
 
                         <!-- MULTI-EVENT CONFIGURATION -->
@@ -416,6 +446,140 @@
                             submitButtonText }}</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- MODAL: PROVIDERS ABM -->
+        <div v-if="showProvidersModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/20 backdrop-blur-sm"
+            @click.self="closeProvidersModal">
+            <div
+                class="bg-white shadow-2xl w-full max-w-3xl overflow-hidden transform transition-all animate-fade-in border border-brand-pink flex flex-col"
+                style="max-height: 90vh; height: auto;">
+                <div
+                    class="px-8 py-6 border-b border-brand-pink/30 flex justify-between items-center bg-brand-beige/50 shrink-0">
+                    <h3 class="font-serif font-bold text-2xl text-brand-dark">Proveedores</h3>
+                    <button @click="closeProvidersModal"
+                        class="text-brand-dark hover:text-brand-crimson transition-colors"><i
+                            class="ph-bold ph-x text-xl"></i></button>
+                </div>
+
+                <div class="p-8 overflow-y-auto flex-1" style="min-height: 0;">
+
+                    <!-- Provider Form (Create / Edit) -->
+                    <form @submit.prevent="saveProvider"
+                        class="bg-brand-beige/20 border border-brand-pink/30 p-6 mb-8 space-y-4">
+                        <h4 class="text-xs font-bold text-brand-dark uppercase tracking-widest">
+                            {{ editingProvider ? 'Editar Proveedor' : 'Nuevo Proveedor' }}
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nombre</label>
+                                <input type="text" v-model="providerForm.name" placeholder="Nombre del proveedor"
+                                    required
+                                    class="w-full px-4 py-3 border border-brand-pink bg-white focus:border-brand-crimson outline-none transition-all placeholder-slate-300">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Categoría</label>
+                                <select v-model="providerForm.category" required
+                                    class="w-full px-4 py-3 border border-brand-pink bg-white focus:border-brand-crimson outline-none transition-all">
+                                    <option value="" disabled>Seleccionar...</option>
+                                    <optgroup v-for="group in providerFamilyGroups" :key="group.family" :label="group.family">
+                                        <option v-for="cat in group.categories" :key="cat" :value="cat">{{ cat }}</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                                Email(s) <span class="text-slate-300 normal-case font-normal">(separados por coma)</span>
+                            </label>
+                            <input type="text" v-model="providerForm.emailsText"
+                                placeholder="contacto@proveedor.com, ventas@proveedor.com" required
+                                class="w-full px-4 py-3 border border-brand-pink bg-white focus:border-brand-crimson outline-none transition-all placeholder-slate-300">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <button type="button" @click="providerForm.is_active = !providerForm.is_active"
+                                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+                                    :class="providerForm.is_active ? 'bg-brand-crimson' : 'bg-slate-300'">
+                                    <span class="sr-only">Activo</span>
+                                    <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                                        :class="providerForm.is_active ? 'translate-x-6' : 'translate-x-1'"></span>
+                                </button>
+                                <span class="text-xs font-bold text-brand-dark">{{ providerForm.is_active ? 'Activo' : 'Inactivo' }}</span>
+                            </label>
+                            <div class="flex gap-3">
+                                <button v-if="editingProvider" type="button" @click="resetProviderForm"
+                                    class="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-brand-crimson transition-colors">
+                                    Cancelar edición
+                                </button>
+                                <button type="submit"
+                                    class="bg-brand-crimson hover:bg-brand-dark text-white px-6 py-3 font-bold tracking-widest uppercase text-[10px] transition-all shadow-lg">
+                                    {{ editingProvider ? 'Guardar Cambios' : 'Agregar Proveedor' }}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Filters -->
+                    <div class="flex flex-col md:flex-row gap-3 mb-4">
+                        <div class="relative flex-1">
+                            <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" v-model="providerSearch" placeholder="Buscar proveedor..."
+                                class="w-full pl-11 pr-4 py-3 border border-brand-pink bg-white focus:border-brand-crimson outline-none transition-all text-sm">
+                        </div>
+                        <select v-model="providerCategoryFilter"
+                            class="px-4 py-3 border border-brand-pink bg-white focus:border-brand-crimson outline-none transition-all text-sm">
+                            <option value="">Todas las categorías</option>
+                            <optgroup v-for="group in providerFamilyGroups" :key="group.family" :label="group.family">
+                                <option v-for="cat in group.categories" :key="cat" :value="cat">{{ cat }}</option>
+                            </optgroup>
+                        </select>
+                        <label class="flex items-center gap-2 px-4 py-3 border border-brand-pink bg-white text-xs font-bold text-brand-dark cursor-pointer whitespace-nowrap">
+                            <input type="checkbox" v-model="providerShowInactive" class="w-4 h-4 cursor-pointer">
+                            Ver inactivos
+                        </label>
+                    </div>
+
+                    <!-- Providers List -->
+                    <div v-if="providersLoading" class="text-center py-10 text-slate-400 text-xs uppercase tracking-widest">
+                        <i class="ph-bold ph-spinner animate-spin text-xl block mb-2"></i> Cargando proveedores...
+                    </div>
+                    <div v-else-if="filteredProviders.length === 0" class="text-center py-10 text-slate-400 text-xs uppercase tracking-widest">
+                        No se encontraron proveedores
+                    </div>
+                    <div v-else class="divide-y divide-brand-pink/20 border border-brand-pink/30">
+                        <div v-for="provider in filteredProviders" :key="provider.id"
+                            class="flex items-center justify-between gap-4 px-4 py-3 hover:bg-brand-beige/20 transition-colors"
+                            :class="!provider.is_active ? 'opacity-50' : ''">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-brand-dark text-sm truncate">{{ provider.name }}</span>
+                                    <span class="text-[9px] font-bold uppercase tracking-widest text-brand-crimson bg-brand-pink/30 px-2 py-0.5 shrink-0">{{ provider.category }}</span>
+                                </div>
+                                <div class="text-xs text-slate-400 truncate">{{ (provider.emails || []).join(', ') }}</div>
+                            </div>
+                            <div class="flex items-center gap-3 shrink-0">
+                                <button type="button" @click="toggleProviderActive(provider)"
+                                    class="text-[9px] font-bold uppercase tracking-widest px-3 py-1.5 border transition-all"
+                                    :class="provider.is_active ? 'border-brand-crimson text-brand-crimson hover:bg-brand-crimson hover:text-white' : 'border-slate-300 text-slate-400 hover:border-brand-dark hover:text-brand-dark'">
+                                    {{ provider.is_active ? 'Desactivar' : 'Activar' }}
+                                </button>
+                                <button type="button" @click="editProvider(provider)"
+                                    class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-crimson transition-colors">
+                                    <i class="ph-bold ph-pencil-simple text-sm"></i>
+                                </button>
+                                <button type="button" @click="deleteProvider(provider.id)"
+                                    class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-crimson transition-colors">
+                                    <i class="ph-bold ph-trash text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -554,6 +718,8 @@
                 const projectForm = reactive({
                     brideName: '',
                     groomName: '',
+                    brideEmail: '',
+                    groomEmail: '',
                     weddingDate: '',
                     venue: '',
                     hasTransfers: false,
@@ -562,6 +728,35 @@
                 const toast = reactive({ show: false, message: '', type: 'success' });
                 const session = ref(null);
                 const minDate = new Date().toISOString().split('T')[0];
+
+                // PROVIDERS STATE (ABM de Proveedores)
+                const showProvidersModal = ref(false);
+                const providers = ref([]);
+                const providersLoading = ref(false);
+                const editingProvider = ref(null);
+                const providerSearch = ref('');
+                const providerCategoryFilter = ref('');
+                const providerShowInactive = ref(false);
+                // Categorías reales agrupadas por familia (revisadas por la dueña).
+                // Cada familia mapea a una plantilla de email en wedding.html (ver providerFamilies allá).
+                const providerFamilyGroups = [
+                    { family: 'Locaciones', categories: ['Venue (Estancia)', 'Venue (Salón)', 'Venue (Hostería)', 'Venue (Quinta)', 'Venue (Bodega)', 'Venue (Club de Playa)', 'Venue (Playas)', 'Venue (Alojamiento / Salón)'] },
+                    { family: 'Catering', categories: ['Catering'] },
+                    { family: 'Ambientación', categories: ['Ambientación'] },
+                    { family: 'Técnica y Sonido', categories: ['Técnica / DJ'] },
+                    { family: 'Barra', categories: ['Barra'] },
+                    { family: 'Foto y Video', categories: ['Foto', 'Video', 'Foto y video'] },
+                    { family: 'Shows y Entretenimiento', categories: ['Shows', 'Extras (Glitter)', 'Extras (Cotillón)', 'Extras (Glitter / Cotillón)', 'Extras (Cabina de fotos)', 'Extras (Cabina / Combi)', 'Extras (Juegos)', 'Extras (Foto imán)', 'Extras (Social Print)', 'Extras (Contenido)', 'Extras (Niños)'] },
+                    { family: 'Otros Servicios', categories: ['Maquillaje / Peinado', 'Ceremonia', 'Ceremonia (Juez de paz)', 'Ceremonia (Rabino)', 'Detalles', 'Hotelería', 'Carpas', 'Baños químicos'] }
+                ];
+                // Lista plana de todas las categorías reales (para el <select> del ABM y filtros)
+                const providerCategories = providerFamilyGroups.flatMap(g => g.categories);
+                const providerForm = reactive({
+                    name: '',
+                    category: '',
+                    emailsText: '',
+                    is_active: true
+                });
 
                 // LOGS STATE
                 console.log("🚀 DASHBOARD VERSION: 2.1 - MULTI-EVENT FIX APPLIED");
@@ -644,6 +839,8 @@
                             id: p.id,
                             brideName: p.bride_name,
                             groomName: p.groom_name,
+                            brideEmail: p.bride_email,
+                            groomEmail: p.groom_email,
                             coupleName: p.couple_name || `${p.bride_name || ''} & ${p.groom_name || ''}`.trim(),
                             weddingDate: p.wedding_date,
                             venue: p.venue,
@@ -759,12 +956,15 @@
                     projectForm.id = null;
                     projectForm.brideName = '';
                     projectForm.groomName = '';
+                    projectForm.brideEmail = '';
+                    projectForm.groomEmail = '';
                     projectForm.weddingDate = '';
                     projectForm.venue = '';
                     // RESET MULTI-EVENT
                     projectForm.isMultiEvent = false;
                     projectForm.extraEvents = [];
                     showProjectModal.value = true;
+                    if (providers.value.length === 0) loadProviders();
                 };
 
                 const editProject = (project) => {
@@ -772,6 +972,8 @@
                     projectForm.id = project.id;
                     projectForm.brideName = project.brideName;
                     projectForm.groomName = project.groomName;
+                    projectForm.brideEmail = project.brideEmail || '';
+                    projectForm.groomEmail = project.groomEmail || '';
                     projectForm.weddingDate = project.weddingDate;
                     projectForm.venue = project.venue || '';
 
@@ -791,11 +993,17 @@
                     }
 
                     showProjectModal.value = true;
+                    if (providers.value.length === 0) loadProviders();
                 };
 
                 const saveProject = async () => {
-                    if (!projectForm.brideName || !projectForm.groomName || !projectForm.weddingDate) {
+                    if (!projectForm.brideName || !projectForm.groomName || !projectForm.weddingDate || !projectForm.venue) {
                         showToast('Complete todos los campos requeridos', 'error');
+                        return;
+                    }
+
+                    if (!projectForm.brideEmail?.trim() && !projectForm.groomEmail?.trim()) {
+                        showToast('Completá al menos un email de contacto (novia o novio)', 'error');
                         return;
                     }
 
@@ -870,6 +1078,8 @@
                             wedding_date: projectForm.weddingDate,
                             bride_name: projectForm.brideName,
                             groom_name: projectForm.groomName,
+                            bride_email: projectForm.brideEmail?.trim() || null,
+                            groom_email: projectForm.groomEmail?.trim() || null,
                             venue: projectForm.venue || '',
                             events_config: eventsConfig,
                             login_code: loginCode
@@ -892,6 +1102,163 @@
                         showToast('Error al guardar: ' + e.message, 'error');
                     }
                 };
+
+                // METHODS - Providers ABM
+                const openProvidersModal = () => {
+                    showProvidersModal.value = true;
+                    resetProviderForm();
+                    loadProviders();
+                };
+
+                const closeProvidersModal = () => {
+                    showProvidersModal.value = false;
+                    resetProviderForm();
+                };
+
+                const resetProviderForm = () => {
+                    editingProvider.value = null;
+                    providerForm.name = '';
+                    providerForm.category = '';
+                    providerForm.emailsText = '';
+                    providerForm.is_active = true;
+                };
+
+                const loadProviders = async () => {
+                    providersLoading.value = true;
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+                        const { data, error } = await supabase
+                            .from('providers')
+                            .select('*')
+                            .order('name', { ascending: true });
+
+                        if (error) throw error;
+                        providers.value = data || [];
+                    } catch (e) {
+                        console.error('Error loading providers:', e);
+                        showToast('Error cargando proveedores: ' + e.message, 'error');
+                    } finally {
+                        providersLoading.value = false;
+                    }
+                };
+
+                const saveProvider = async () => {
+                    const emails = providerForm.emailsText
+                        .split(',')
+                        .map(e => e.trim())
+                        .filter(Boolean);
+
+                    if (emails.length === 0) {
+                        showToast('Ingresá al menos un email', 'error');
+                        return;
+                    }
+
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+                        const payload = {
+                            name: providerForm.name.trim(),
+                            category: providerForm.category,
+                            emails,
+                            is_active: providerForm.is_active
+                        };
+
+                        if (editingProvider.value) {
+                            const { error } = await supabase
+                                .from('providers')
+                                .update(payload)
+                                .eq('id', editingProvider.value.id);
+                            if (error) throw error;
+                            showToast('Proveedor actualizado');
+                        } else {
+                            const { error } = await supabase
+                                .from('providers')
+                                .insert({ id: crypto.randomUUID(), ...payload });
+                            if (error) throw error;
+                            showToast('Proveedor agregado');
+                        }
+
+                        resetProviderForm();
+                        await loadProviders();
+                    } catch (e) {
+                        console.error('Error saving provider:', e);
+                        showToast('Error al guardar proveedor: ' + e.message, 'error');
+                    }
+                };
+
+                const editProvider = (provider) => {
+                    editingProvider.value = provider;
+                    providerForm.name = provider.name;
+                    providerForm.category = provider.category;
+                    providerForm.emailsText = (provider.emails || []).join(', ');
+                    providerForm.is_active = provider.is_active;
+                    // Scroll to form for visibility
+                    setTimeout(() => {
+                        const el = document.querySelector('#app form input[type="text"]');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 50);
+                };
+
+                const toggleProviderActive = async (provider) => {
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+                        const { error } = await supabase
+                            .from('providers')
+                            .update({ is_active: !provider.is_active })
+                            .eq('id', provider.id);
+                        if (error) throw error;
+                        provider.is_active = !provider.is_active;
+                    } catch (e) {
+                        console.error('Error toggling provider:', e);
+                        showToast('Error al cambiar estado: ' + e.message, 'error');
+                    }
+                };
+
+                const deleteProvider = async (id) => {
+                    if (!confirm('¿Eliminar este proveedor? Esta acción no se puede deshacer.')) return;
+
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+                        const { error } = await supabase
+                            .from('providers')
+                            .delete()
+                            .eq('id', id);
+                        if (error) throw error;
+
+                        providers.value = providers.value.filter(p => p.id !== id);
+                        showToast('Proveedor eliminado');
+                    } catch (e) {
+                        console.error('Error deleting provider:', e);
+                        showToast('Error al eliminar: ' + e.message, 'error');
+                    }
+                };
+
+                const filteredProviders = computed(() => {
+                    let result = providers.value;
+                    if (!providerShowInactive.value) {
+                        result = result.filter(p => p.is_active);
+                    }
+                    if (providerCategoryFilter.value) {
+                        result = result.filter(p => p.category === providerCategoryFilter.value);
+                    }
+                    if (providerSearch.value.trim()) {
+                        const q = providerSearch.value.trim().toLowerCase();
+                        result = result.filter(p =>
+                            p.name.toLowerCase().includes(q) ||
+                            (p.emails || []).some(e => e.toLowerCase().includes(q))
+                        );
+                    }
+                    return result;
+                });
+
+                // Nombres de proveedores activos de la familia Locaciones (todas las categorías Venue),
+                // para el dropdown de "Lugar" del casamiento
+                const locationProviderNames = computed(() => {
+                    const locationCategories = providerFamilyGroups.find(g => g.family === 'Locaciones').categories;
+                    return providers.value
+                        .filter(p => p.is_active && locationCategories.includes(p.category))
+                        .map(p => p.name)
+                        .sort((a, b) => a.localeCompare(b));
+                });
 
                 const deleteProject = async (id) => {
                     if (!confirm('¿Eliminar este casamiento y todos sus datos?')) return;
@@ -1243,7 +1610,27 @@
                     // Multi-Event
                     addNewEvent,
                     removeNewEvent,
-                    minDate
+                    minDate,
+                    // Providers ABM
+                    showProvidersModal,
+                    providers,
+                    providersLoading,
+                    editingProvider,
+                    providerSearch,
+                    providerCategoryFilter,
+                    providerShowInactive,
+                    providerCategories,
+                    providerFamilyGroups,
+                    providerForm,
+                    filteredProviders,
+                    locationProviderNames,
+                    openProvidersModal,
+                    closeProvidersModal,
+                    resetProviderForm,
+                    saveProvider,
+                    editProvider,
+                    toggleProviderActive,
+                    deleteProvider
                 };
             }
         }).mount('#app');

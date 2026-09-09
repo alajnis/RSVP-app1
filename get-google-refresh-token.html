@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Obtener Refresh Token de Google (una sola vez)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #222; }
+  h1 { font-size: 1.4rem; }
+  input { width: 100%; padding: 10px; margin: 6px 0 16px; border: 1px solid #ccc; box-sizing: border-box; }
+  label { font-weight: bold; font-size: 13px; }
+  button { background: #C42745; color: white; border: none; padding: 12px 24px; font-weight: bold; cursor: pointer; }
+  button:hover { background: #1A1A1A; }
+  .step { background: #f4ece8; border: 1px solid #f6d8d9; padding: 16px; margin: 16px 0; }
+  pre { background: #1A1A1A; color: #0f0; padding: 16px; overflow-x: auto; font-size: 12px; }
+  .hidden { display: none; }
+  #error { color: #C42745; font-weight: bold; }
+</style>
+</head>
+<body>
+
+  <h1>Obtener GOOGLE_REFRESH_TOKEN (paso único)</h1>
+  <p>Esta página se ejecuta solo en tu navegador (localhost), no envía nada a ningún servidor propio.
+     Sirve para hacer el consentimiento OAuth con <strong>sofia@sfeventsboutique.com</strong> una sola vez
+     y obtener el <code>refresh_token</code> que la Edge Function va a usar para siempre.</p>
+
+  <div class="step" id="step1">
+    <label>Client ID (de Google Cloud Console)</label>
+    <input type="text" id="clientId" placeholder="xxxx.apps.googleusercontent.com">
+    <label>Client Secret</label>
+    <input type="text" id="clientSecret" placeholder="GOCSPX-xxxx">
+    <label>Redirect URI (debe coincidir EXACTO con el configurado en Google Cloud)</label>
+    <input type="text" id="redirectUri" value="http://localhost:5500/get-google-refresh-token.html">
+    <button onclick="startAuth()">1. Iniciar sesión con Google</button>
+  </div>
+
+  <div class="step hidden" id="step2">
+    <p>Copiá el código de la URL (parámetro <code>code</code>) y pegalo acá:</p>
+    <input type="text" id="authCode" placeholder="Código de autorización">
+    <button onclick="exchangeCode()">2. Obtener Refresh Token</button>
+  </div>
+
+  <div class="step hidden" id="result">
+    <p><strong>✅ Listo.</strong> Copiá este valor y guardalo como variable de entorno
+       <code>GOOGLE_REFRESH_TOKEN</code> en Dokploy (junto a <code>GOOGLE_CLIENT_ID</code> y
+       <code>GOOGLE_CLIENT_SECRET</code>):</p>
+    <pre id="tokenOutput"></pre>
+  </div>
+
+  <p id="error"></p>
+
+<script>
+  const SCOPE = 'https://www.googleapis.com/auth/gmail.compose';
+
+  // Persist form values across the redirect back from Google
+  window.addEventListener('DOMContentLoaded', () => {
+    ['clientId', 'clientSecret', 'redirectUri'].forEach(id => {
+      const saved = localStorage.getItem('grt_' + id);
+      if (saved) document.getElementById(id).value = saved;
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) {
+      document.getElementById('step1').classList.add('hidden');
+      document.getElementById('step2').classList.remove('hidden');
+      document.getElementById('authCode').value = code;
+    }
+  });
+
+  function startAuth() {
+    const clientId = document.getElementById('clientId').value.trim();
+    const redirectUri = document.getElementById('redirectUri').value.trim();
+    if (!clientId || !redirectUri) {
+      document.getElementById('error').textContent = 'Completá Client ID y Redirect URI primero.';
+      return;
+    }
+    localStorage.setItem('grt_clientId', clientId);
+    localStorage.setItem('grt_clientSecret', document.getElementById('clientSecret').value.trim());
+    localStorage.setItem('grt_redirectUri', redirectUri);
+
+    const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    url.searchParams.set('client_id', clientId);
+    url.searchParams.set('redirect_uri', redirectUri);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('scope', SCOPE);
+    url.searchParams.set('access_type', 'offline');
+    url.searchParams.set('prompt', 'consent'); // fuerza que Google devuelva refresh_token siempre
+    window.location.href = url.toString();
+  }
+
+  async function exchangeCode() {
+    const clientId = document.getElementById('clientId').value.trim();
+    const clientSecret = document.getElementById('clientSecret').value.trim();
+    const redirectUri = document.getElementById('redirectUri').value.trim();
+    const code = document.getElementById('authCode').value.trim();
+
+    try {
+      const res = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          code,
+          grant_type: 'authorization_code',
+          redirect_uri: redirectUri,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error_description || data.error || 'Error desconocido');
+      if (!data.refresh_token) {
+        throw new Error('Google no devolvió refresh_token. Revocá el acceso previo en https://myaccount.google.com/permissions y repetí el proceso.');
+      }
+      document.getElementById('step2').classList.add('hidden');
+      document.getElementById('result').classList.remove('hidden');
+      document.getElementById('tokenOutput').textContent = data.refresh_token;
+    } catch (e) {
+      document.getElementById('error').textContent = 'Error: ' + e.message;
+    }
+  }
+</script>
+</body>
+</html>

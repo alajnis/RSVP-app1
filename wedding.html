@@ -305,8 +305,13 @@
                     </button>
                     <button @click="currentView = 'mural'"
                         class="flex-1 md:w-44 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
-                        :class="currentView === 'mural' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4'">
+                        :class="currentView === 'mural' ? 'bg-brand-crimson text-white shadow-xl' : (isCouple ? 'text-brand-dark/50 hover:text-brand-dark px-4' : 'text-brand-dark/50 hover:text-brand-dark px-4 border-r border-brand-pink/30')">
                         Mural
+                    </button>
+                    <button v-if="!isCouple" @click="currentView = 'providers'"
+                        class="flex-1 md:w-44 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
+                        :class="currentView === 'providers' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4'">
+                        Proveedores
                     </button>
                 </div>
                 <div class="flex gap-4 p-2 items-center">
@@ -889,6 +894,170 @@
             </div>
         </div>
 
+        <!-- VIEW 4: PROVIDERS (Solicitud de Presupuestos, solo admin) -->
+        <div v-if="currentView === 'providers' && !isCouple"
+            class="flex-1 flex flex-col min-h-0 animate-fade-in">
+
+            <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-serif font-bold text-brand-dark">Solicitud de Presupuestos</h2>
+                    <p class="text-xs font-bold text-brand-dark/40 uppercase tracking-widest mt-1">
+                        Elegí una categoría y seleccioná los proveedores a contactar
+                    </p>
+                </div>
+                <!-- Action bar (arriba, siempre visible) -->
+                <div v-if="selectedProviderCategories.length > 0" class="flex items-center gap-4 shrink-0">
+                    <span class="text-xs font-bold text-brand-dark/50 uppercase tracking-widest whitespace-nowrap">
+                        {{ selectedProviderIds.length }} seleccionado{{ selectedProviderIds.length !== 1 ? 's' : '' }}
+                    </span>
+                    <button @click="openBudgetRequestModal" :disabled="selectedProviderIds.length === 0"
+                        class="bg-brand-crimson hover:bg-brand-dark text-white px-8 py-4 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-brand-crimson flex items-center gap-2 whitespace-nowrap">
+                        <i class="ph-bold ph-paper-plane-tilt text-lg"></i> Generar Solicitud
+                    </button>
+                </div>
+            </div>
+
+            <!-- Category Filter (agrupado por familia, cada chip filtra por categoría exacta) -->
+            <div class="mb-4 space-y-3">
+                <div v-for="group in providerFamilyGroups" :key="group.family">
+                    <p class="text-[9px] font-bold text-brand-dark/40 uppercase tracking-[0.15em] mb-1.5">{{ group.family }}</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button v-for="cat in group.categories" :key="cat" @click="toggleProviderCategory(cat)"
+                            class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all border"
+                            :class="selectedProviderCategories.includes(cat) ? 'bg-brand-crimson text-white border-brand-crimson' : 'bg-white text-brand-dark/60 border-brand-pink hover:border-brand-crimson'">
+                            {{ cat }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search + "Ver todos" switch -->
+            <div v-if="selectedProviderCategories.length > 0" class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+                <div class="relative max-w-md flex-1">
+                    <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" v-model="providerSearchQuery" placeholder="Buscar proveedor por nombre..."
+                        class="w-full pl-11 pr-4 py-3 border border-brand-pink bg-white focus:border-brand-crimson outline-none transition-all text-sm">
+                </div>
+                <label v-if="categoryHasAnyRequest" class="flex items-center gap-2 cursor-pointer shrink-0">
+                    <button type="button" @click="providerShowAll = !providerShowAll"
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+                        :class="providerShowAll ? 'bg-brand-crimson' : 'bg-slate-300'">
+                        <span class="sr-only">Ver todos</span>
+                        <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                            :class="providerShowAll ? 'translate-x-6' : 'translate-x-1'"></span>
+                    </button>
+                    <span class="text-xs font-bold text-brand-dark uppercase tracking-widest">Ver todos</span>
+                </label>
+            </div>
+            <div v-if="selectedProviderCategories.length > 0 && categoryHasAnyRequest && !providerShowAll" class="mb-4 -mt-2">
+                <p class="text-[11px] text-slate-400">Mostrando solo los proveedores a los que ya se les pidió presupuesto en este casamiento.</p>
+            </div>
+
+            <!-- No category selected -->
+            <div v-if="selectedProviderCategories.length === 0" class="text-center py-16 text-slate-400">
+                <i class="ph-bold ph-storefront text-5xl mb-4 block"></i>
+                <p class="text-xs font-bold uppercase tracking-widest">Elegí una categoría para ver los proveedores</p>
+            </div>
+
+            <!-- Loading -->
+            <div v-else-if="providersLoading" class="text-center py-16 text-slate-400 text-xs uppercase tracking-widest">
+                <i class="ph-bold ph-spinner animate-spin text-2xl block mb-3"></i> Cargando proveedores...
+            </div>
+
+            <!-- Empty category / no search results -->
+            <div v-else-if="categoryProviders.length === 0" class="text-center py-16 text-slate-400">
+                <p v-if="providerSearchQuery.trim()" class="text-xs font-bold uppercase tracking-widest">No se encontraron proveedores para "{{ providerSearchQuery }}"</p>
+                <template v-else-if="categoryHasAnyRequest && !providerShowAll">
+                    <p class="text-xs font-bold uppercase tracking-widest">No hay proveedores solicitados todavía en esta categoría</p>
+                    <p class="text-[11px] mt-2">Activá "Ver todos" para ver el resto de los proveedores</p>
+                </template>
+                <template v-else>
+                    <p class="text-xs font-bold uppercase tracking-widest">No hay proveedores activos en esta categoría</p>
+                    <p class="text-[11px] mt-2">Podés dar de alta proveedores desde el panel de Proveedores en el Dashboard</p>
+                </template>
+            </div>
+
+            <!-- Providers List -->
+            <div v-else class="flex-1 flex flex-col min-h-0">
+                <div class="flex-1 overflow-y-auto border border-brand-pink/30 divide-y divide-brand-pink/20 mb-6">
+                    <label v-for="provider in categoryProviders" :key="provider.id"
+                        class="flex items-center justify-between gap-4 px-5 py-4 transition-colors"
+                        :class="isProviderAlreadyRequested(provider.id) ? 'opacity-50 bg-slate-50 cursor-not-allowed' : 'hover:bg-brand-beige/20 cursor-pointer'">
+                        <div class="flex items-center gap-4 min-w-0 flex-1">
+                            <input type="checkbox" :value="provider.id" v-model="selectedProviderIds"
+                                :disabled="isProviderAlreadyRequested(provider.id)"
+                                class="w-5 h-5 shrink-0 accent-brand-crimson"
+                                :class="isProviderAlreadyRequested(provider.id) ? 'cursor-not-allowed' : 'cursor-pointer'">
+                            <div class="min-w-0">
+                                <div class="font-bold text-brand-dark text-sm truncate">{{ provider.name }}</div>
+                                <div class="text-xs text-slate-400 truncate">{{ (provider.emails || []).join(', ') }}</div>
+                            </div>
+                        </div>
+                        <div v-if="providerLastRequestDate(provider.id)"
+                            class="shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 whitespace-nowrap">
+                            <i class="ph-fill ph-check-circle"></i>
+                            Presupuesto solicitado el {{ providerLastRequestDate(provider.id) }}
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: BUDGET REQUEST PREVIEW / EDIT -->
+        <div v-if="showBudgetRequestModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm"
+            @click.self="closeBudgetRequestModal">
+            <div
+                class="bg-white shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all animate-fade-in border border-brand-pink flex flex-col"
+                style="max-height: 90vh;">
+                <div class="px-8 py-6 border-b border-brand-pink/30 flex justify-between items-center bg-brand-beige/50 shrink-0">
+                    <div>
+                        <h3 class="font-serif font-bold text-2xl text-brand-dark">Solicitud de Presupuesto</h3>
+                        <p class="text-xs text-slate-400 mt-1">{{ selectedProviderIds.length }} proveedor{{ selectedProviderIds.length !== 1 ? 'es' : '' }} de {{ selectedProviderCategories.join(', ') }}</p>
+                    </div>
+                    <button @click="closeBudgetRequestModal"
+                        class="text-brand-dark hover:text-brand-crimson transition-colors"><i
+                            class="ph-bold ph-x text-xl"></i></button>
+                </div>
+
+                <div class="p-8 overflow-y-auto flex-1 space-y-6" style="min-height: 0;">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Enviado por</label>
+                        <select v-model="budgetRequestForm.senderKey"
+                            class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all text-sm">
+                            <option v-for="sender in emailSenders" :key="sender.key" :value="sender.key">{{ sender.email }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Asunto</label>
+                        <input type="text" v-model="budgetRequestForm.subject"
+                            class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Mensaje</label>
+                        <textarea v-model="budgetRequestForm.body" rows="16"
+                            class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all text-sm font-sans leading-relaxed"></textarea>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 px-4 py-3 text-[11px] text-blue-700">
+                        <i class="ph-bold ph-info"></i>
+                        Se creará un borrador independiente en Gmail para cada uno de los {{ selectedProviderIds.length }} proveedores seleccionados. No se envía nada automáticamente.
+                    </div>
+                </div>
+
+                <div class="px-8 py-5 border-t border-brand-pink/30 bg-white flex gap-4 shrink-0">
+                    <button type="button" @click="closeBudgetRequestModal"
+                        class="flex-1 py-4 border border-brand-pink text-brand-dark font-bold uppercase tracking-widest text-[10px] hover:bg-brand-beige transition-all">
+                        Cancelar
+                    </button>
+                    <button type="button" @click="generateBudgetDrafts" :disabled="generatingDrafts"
+                        class="flex-1 py-4 bg-brand-dark text-white font-bold uppercase tracking-widest text-[10px] hover:bg-brand-crimson transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2">
+                        <i v-if="generatingDrafts" class="ph-bold ph-spinner animate-spin"></i>
+                        {{ generatingDrafts ? 'Generando...' : 'Generar Borradores en Gmail' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- MODAL: TABLE FORM -->
         <div v-if="showTableModal"
             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm"
@@ -1188,6 +1357,287 @@
                 const currentView = ref('seating');
                 const muralMessages = ref([]);
                 const muralRef = ref(null);
+
+                // PROVIDERS (Solicitud de Presupuestos)
+                // Categorías reales agrupadas por familia (revisadas por la dueña). Cada chip del
+                // selector es una categoría exacta; el subtítulo de familia es solo organizativo.
+                // La plantilla de email a usar se elige por la familia, no por la categoría exacta.
+                const providerFamilyGroups = [
+                    { family: 'Locaciones', categories: ['Venue (Estancia)', 'Venue (Salón)', 'Venue (Hostería)', 'Venue (Quinta)', 'Venue (Bodega)', 'Venue (Club de Playa)', 'Venue (Playas)', 'Venue (Alojamiento / Salón)'] },
+                    { family: 'Catering', categories: ['Catering'] },
+                    { family: 'Ambientación', categories: ['Ambientación'] },
+                    { family: 'Técnica y Sonido', categories: ['Técnica / DJ'] },
+                    { family: 'Barra', categories: ['Barra'] },
+                    { family: 'Foto y Video', categories: ['Foto', 'Video', 'Foto y video'] },
+                    { family: 'Shows y Entretenimiento', categories: ['Shows', 'Extras (Glitter)', 'Extras (Cotillón)', 'Extras (Glitter / Cotillón)', 'Extras (Cabina de fotos)', 'Extras (Cabina / Combi)', 'Extras (Juegos)', 'Extras (Foto imán)', 'Extras (Social Print)', 'Extras (Contenido)', 'Extras (Niños)'] },
+                    { family: 'Otros Servicios', categories: ['Maquillaje / Peinado', 'Ceremonia', 'Ceremonia (Juez de paz)', 'Ceremonia (Rabino)', 'Detalles', 'Hotelería', 'Carpas', 'Baños químicos'] }
+                ];
+                const providerCategories = providerFamilyGroups.flatMap(g => g.categories);
+
+                // Familia a la que pertenece una categoría exacta (para elegir la plantilla de email)
+                const familyForCategory = (category) => {
+                    const group = providerFamilyGroups.find(g => g.categories.includes(category));
+                    return group ? group.family : 'Otros Servicios';
+                };
+                const providers = ref([]);
+                const providersLoading = ref(false);
+                const budgetRequestsLog = ref([]); // log de este proyecto únicamente
+                // Categorías seleccionadas (varias, pero siempre dentro de una misma familia).
+                const selectedProviderCategories = ref([]);
+
+                // Click en un chip: si ya hay categorías elegidas de OTRA familia, se reemplaza la
+                // selección entera por esta sola; si es la misma familia (o no hay nada elegido), alterna.
+                const toggleProviderCategory = (cat) => {
+                    const currentFamily = selectedProviderCategories.value.length > 0
+                        ? familyForCategory(selectedProviderCategories.value[0])
+                        : null;
+                    const clickedFamily = familyForCategory(cat);
+
+                    if (currentFamily && currentFamily !== clickedFamily) {
+                        selectedProviderCategories.value = [cat];
+                        // Cambiar de familia sí descarta la selección de proveedores anterior,
+                        // porque esos proveedores ya no van a estar visibles en la lista nueva.
+                        selectedProviderIds.value = [];
+                        providerShowAll.value = false;
+                        return;
+                    }
+
+                    const idx = selectedProviderCategories.value.indexOf(cat);
+                    if (idx === -1) {
+                        selectedProviderCategories.value = [...selectedProviderCategories.value, cat];
+                    } else {
+                        selectedProviderCategories.value = selectedProviderCategories.value.filter(c => c !== cat);
+                    }
+                };
+                const selectedProviderIds = ref([]);
+                const providerSearchQuery = ref('');
+                const providerShowAll = ref(false);
+                const showBudgetRequestModal = ref(false);
+                const generatingDrafts = ref(false);
+                // Casillas de correo desde las que se pueden generar los borradores.
+                // Cada una requiere su propio refresh token de Google configurado en el servidor
+                // (ver GUIA_GMAIL_SETUP.md); si no está conectada, la Edge Function devuelve error.
+                const emailSenders = [
+                    { key: 'sofia', email: 'sofia@sfeventsboutique.com' },
+                    { key: 'guadalupe', email: 'guadalupe.alberti@sfeventsboutique.com' },
+                    { key: 'luz', email: 'luz.adaro@sfeventsboutique.com' }
+                ];
+                const budgetRequestForm = reactive({ senderKey: emailSenders[0].key, subject: '', body: '' });
+
+                // Plantillas de email por categoría (placeholders auto-completables entre corchetes)
+                const providerEmailTemplates = {
+                    'Locaciones': {
+                        subject: 'Solicitud de presupuesto y disponibilidad - Boda [Nombre Novia] & [Nombre Novio] - [Fecha Evento]',
+                        body: `Hola! ¿Qué tal?
+
+Espero que muy bien.
+
+Te escribo desde el equipo de Events Boutique porque nos encontramos en la búsqueda de la locación ideal para el casamiento de una de nuestras parejas, [Nombre Novia] y [Nombre Novio].
+
+Al revisar su propuesta y el entorno que ofrecen, creemos que su espacio se alinea perfectamente con la experiencia que los chicos desean vivir. Por este motivo, nos encantaría consultarles su disponibilidad para el próximo [Día de la semana, ej: sábado] [Fecha del evento] y solicitarles una cotización formal.
+
+Te comparto los datos preliminares del evento:
+- Cantidad estimada de invitados: [Número, ej: 150] adultos.
+- Formato del evento: [Formal / Informal / Boda de Destino].
+- Cronograma estimado: Contemplamos un total de 9 horas de evento (8 horas de fiesta estándar + 1 hora destinada a la ceremonia en el lugar).
+
+Para poder avanzar en el análisis junto a los novios, nos sería de gran ayuda que nos detallen los siguientes puntos:
+1. Valores vigentes del paquete de alquiler de espacio (especificar si varía por temporada alta o baja).
+2. Detalle de infraestructura incluida (mobiliario base, climatización, estacionamiento, personal de coordinación y seguridad, potencia del grupo electrógeno).
+3. Listado de proveedores exclusivos o recomendados (catering, barra, ambientación, técnica) y si aplican algún tipo de fee o canon de ingreso en caso de optar por un proveedor externo.
+4. Tarifas especiales de hotelería o alojamiento en el predio (si aplica para bodas de destino).
+5. Modalidades, formas de pago y política de señas para el congelamiento de la fecha.
+
+Quedamos a total disposición ante cualquier duda o para coordinar una visita al espacio en las próximas semanas.
+
+Muchas gracias por tu atención.
+
+Un beso grande,
+
+[Tu Nombre]
+Events Boutique`
+                    },
+                    'Catering': {
+                        subject: 'Pedido de cotización gastronómica - Boda [Nombre Novia] & [Nombre Novio] - [Fecha Evento]',
+                        body: `Hola! ¿Qué tal?
+
+Espero que estés teniendo una excelente semana.
+
+Paso por acá en representación de Events Boutique para solicitarles un presupuesto gastronómico formal para el casamiento de nuestros novios, [Nombre Novia] y [Nombre Novio], que tendrá lugar el [Fecha del evento] en [Nombre de la Locación].
+
+Los chicos buscan que la propuesta gastronómica sea un punto destacado del evento, combinando excelencia técnica con un servicio fluido. Te comparto las especificaciones generales:
+- Cantidad de comensales: [Número] adultos (y estimación de [Número] menores/proveedores).
+- Formato buscado: [Formal - Recepción + Cena de pasos / Informal - Cocktail largo + Estaciones / Family Style al centro de la mesa].
+
+Nos gustaría que la propuesta incluya el desglose de los siguientes servicios:
+- Cocktail de recepción: Detalle de finger food frío/caliente y opciones de cazuelas o estaciones temáticas.
+- Plato principal y postre: Alternativas de menú (maridajes, asado a las brasas o platos de autor).
+- Mesa dulce: Variedad de minicakes, tartas y opcionales especiales (ej: macarons, postres bandejeados).
+- Fin de fiesta: Opciones trasnochadas (pizzas, sándwiches de picaña, etc.).
+- Logística e infraestructura: Si el valor final ya contempla la mantelería, vajilla completa, cristalería, personal de cocina, camareros, fletes y viáticos del personal.
+
+Por favor, indíquennos también la validez de la cotización, la política ante platos especiales (celíacos, veganos, vegetarianos que estimamos no superará el 7% del total) y las condiciones comerciales para reservar el servicio.
+
+Quedamos atentos a su propuesta. ¡Muchas gracias!
+
+Besos,
+
+[Tu Nombre]
+Events Boutique`
+                    },
+                    'Ambientación': {
+                        subject: 'Solicitud de propuesta de ambientación - Boda [Nombre Novia] & [Nombre Novio] - [Fecha Evento]',
+                        body: `Hola! ¿Qué tal?
+
+Qué gusto saludarte.
+
+Te escribo desde el equipo de diseño de Events Boutique. Nos encontramos dando los primeros pasos en el desarrollo estético de la boda de [Nombre Novia] y [Nombre Novio], planificada para el [Fecha del evento] en [Nombre de la Locación], y nos encantaría trabajar esta propuesta junto a ustedes.
+
+Los novios tienen un estilo muy definido inspirado en un concepto [mencionar concepto, ej: Toscano / Selvático / Minimalista e Industrial]. La idea es diseñar una atmósfera orgánica, cuidando cada detalle visual. Contamos con un presupuesto aproximado de [Monto estimado, ej: USD 8.000].
+
+Para estructurar la propuesta de manera clara para los clientes, les pedimos detallar la cotización desglosada por los siguientes ítems separados:
+- Sector Bienvenida / Ingreso: Cartel con diseño personalizado, caminos de velas/fanales y arreglos florales de base.
+- Sector Ceremonia: Diseño del altar (arco floral orgánico, estructuras o medialunas de piso), alfombras (estilo persa / yute), y mobiliario/sillas para los invitados (ej: sillas cross o tiffany con almohadones).
+- Recepción / Exteriores: Distribución de livings completos, soportes decorativos para luminarias especiales (ej: lámparas de mimbre o ratán) y decoración de barras de tragos o estaciones de juego.
+- Salón Principal / Carpa: Distribución de mesas (redondas, mesones rústicos de madera o mesas bajas cafetín), arreglos florales centrales (guías continuas de follaje u olivos / floreros individuales), entelados, y extras de vajilla como platos de sitio.
+- Sector Pista / Cabina DJ: Intervención del frente de la cabina del DJ, paneles decorativos, follajes secos o detalles aéreos.
+- Elementos Gráficos y Detalles: Menú impreso por mesa o comensal, reservados de ceremonia y ramos/boutonnieres.
+
+Agradecemos que la propuesta incluya un panel de inspiración visual (moodboard), fotos de referencia del mobiliario cotizado, costos de logística (fletes, personal de armado/desarme para las jornadas requeridas) y las condiciones de pago.
+
+Cualquier duda, estamos a disposición para coordinar una llamada o revisar juntos el tablero de Pinterest de los novios.
+
+Un beso grande,
+
+[Tu Nombre]
+Events Boutique`
+                    },
+                    'Técnica y Sonido': {
+                        subject: 'Pedido de cotización de técnica y sonido - Boda [Nombre Novia] & [Nombre Novio] - [Fecha Evento]',
+                        body: `Hola! ¿Qué tal?
+
+Espero que estés muy bien.
+
+Nos comunicamos desde Events Boutique con el propósito de solicitarles un presupuesto técnico completo para la boda de [Nombre Novia] y [Nombre Novio], que se realizará el próximo [Fecha del evento] en [Nombre de la Locación]. Adjuntamos el plano del lugar para su referencia de distancias y dimensiones.
+
+Se trata de un evento formal para [Número] invitados, donde la dinámica de la iluminación ambiental y el impacto de la pista de baile son fundamentales. Requerimos una propuesta desglosada que contemple:
+
+1. Sonido por Sectores (Sistemas independientes):
+- Ceremonia: Sonido independiente para exterior, incluyendo micrófonos inalámbricos de alta gama y consola propia (indicar si se requiere grupo electrógeno insonorizado específico).
+- Recepción / Cena: Sistema de bafles activos distribuidos para música funcional y soporte de DJ presente.
+- Pista de Baile: Sistema Line Array adecuado para las dimensiones del espacio y sublows activos, junto con consola de sonido principal.
+
+2. Iluminación y Ambientación Lumínica:
+- Iluminación de exteriores y sectores de servicio: Guirnaldas de luces tipo kermesse (aproximadamente [Número] metros) y lámparas cálidas/par led para iluminar viñedos, arboledas o fachadas.
+- Iluminación perimetral interna: Par LED de alta potencia para enmarcar el salón principal.
+- Pista de Baile: Estructura de montaje (circular o cuadrilátero), cabezales móviles, barras LED, máquinas de humo y consolas de iluminación profesionales.
+
+3. Pantallas y Multimedia (Opcional/Adicional):
+- Módulos de pantalla LED de alta resolución (ej: 18 mt2 p.3.9) con escalador y operador de video para tandas y videos cronometrados.
+
+4. Soporte Logístico y Distribución:
+- Distribución de energía completa para catering, barras y servicios técnicos. Especificar si incluye grupos electrógenos principales y de backup (Kva sugeridos).
+
+Por favor, detállennos los costos incluyendo viáticos, traslados, seguros de riesgo de trabajo (ART) del personal de montaje y las especificaciones de cambio de moneda (dólar billete o tipo de cambio blue) al momento del pago.
+
+Quedamos a la espera de su cotización.
+
+Un beso,
+
+[Tu Nombre]
+Events Boutique`
+                    },
+                    'Barra': {
+                        subject: 'Solicitud de presupuesto de servicio de barra - Boda [Nombre Novia] & [Nombre Novio] - [Fecha Evento]',
+                        body: `Hola! ¿Qué tal?
+
+Espero que todo marche muy bien.
+
+Te escribo desde el equipo de Events Boutique. Nos encontramos organizando la boda de nuestros clientes, [Nombre Novia] y [Nombre Novio], programada para el [Fecha del evento] en [Nombre de la Locación], y nos gustaría contar con su servicio de coctelería.
+
+Para este evento de [Número] invitados, buscamos un servicio ágil, con estética cuidada y un menú que combine coctelería clásica y de autor. Solicitamos nos coticen sus diferentes opciones de barras contratables (ej: categorías Platinum / Black), detallando:
+
+- Carta de tragos propuesta: Variedad de cocktails incluidos (Gin Tonics, Juleps, Spritz, tragos con whisky, ron, etc.) y marcas de destilados que manejan en cada categoría.
+- Duración del servicio de barra libre: Contemplar un estándar de [Número, ej: 6 u 8] horas de barra abierta.
+- Infraestructura incluida: Estructura física de la barra (estilo visual, madera, hierro, espejada), cristalería de vidrio específica para cada tipo de trago, hielo, consumibles, bartenders y personal de apoyo.
+- Traslados y logística: Especificar si el presupuesto ya cubre los fletes y viáticos correspondientes a la zona del evento.
+
+Agradecemos nos indiquen las opciones de personalización (ej: cartas impresas en atriles o tragos diseñados especialmente para los novios), los términos de reserva y las modalidades de pago vigentes.
+
+Cualquier consulta, quedamos a tu completa disposición.
+
+Saludos cordiales,
+
+[Tu Nombre]
+Events Boutique`
+                    },
+                    'Foto y Video': {
+                        subject: 'Solicitud de presupuesto de cobertura fotográfica y audiovisual - Boda [Nombre Novia] & [Nombre Novio] - [Fecha Evento]',
+                        body: `Hola! ¿Qué tal?
+
+Espero que estés muy bien.
+
+Te contacto desde el equipo de Events Boutique. Nos encontramos en la etapa de selección de proveedores para la boda de [Nombre Novia] y [Nombre Novio], que se celebrará el [Fecha del evento] en [Nombre de la Locación]. Conocemos su trabajo y consideramos que su lenguaje visual se adapta perfectamente al perfil espontáneo y moderno que buscan los chicos.
+
+El evento contará con aproximadamente [Número] invitados, con ceremonia en el lugar y una cobertura estimada de [Número, ej: 12] horas de servicio (desde los preparativos iniciales de ambos novios hasta el fin de la fiesta).
+
+Nos gustaría recibir su catálogo de packs vigentes (ej: cobertura fotográfica pura, video cinematográfico o propuestas integrales) detallando:
+- Personal asignado: Cantidad de fotógrafos y camarógrafos en simultáneo para cubrir cada bloque cronológico.
+- Entregas de video: Especificaciones de formatos cortos y largos (Highlights de 3 min / Feature Film de 15-20 min), y si realizan edición en vivo (video de fin de fiesta).
+- Entregas fotográficas: Plazos estimados de entrega final (galerías online personalizadas) y formato de adelantos rápidos (sneak peek para redes sociales durante la primera semana).
+- Tecnología complementaria: Inclusión de tomas aéreas con Drone e iluminación controlada para fiesta.
+- Adicionales realizables: Valores separados para cobertura de civil, sesiones preboda (Save the date) o la incorporación de creadores de contenido dedicados (Wedding Content Creator / Reels en vivo).
+
+Por favor, detállennos la política de reserva de fecha (porcentaje de seña), formas de pago aceptadas para mantener congelado el valor y si los viáticos e insumos logísticos se encuentran incluidos en el precio base.
+
+Agradecemos desde ya su propuesta y disponibilidad.
+
+Un beso grande,
+
+[Tu Nombre]
+Events Boutique`
+                    },
+                    'Shows y Entretenimiento': {
+                        subject: 'Pedido de cotización de servicios de entretenimiento - Boda [Nombre Novia] & [Nombre Novio] - [Fecha Evento]',
+                        body: `Hola! ¿Qué tal?
+
+Espero que muy bien.
+
+Te contacto desde Events Boutique. Nos encontramos planificando las tandas de entretenimiento y momentos especiales para el casamiento de [Nombre Novia] y [Nombre Novio], el próximo [Fecha del evento] en [Nombre de la Locación].
+
+Con el objetivo de sorprender a los invitados y elevar la energía de la fiesta, estamos evaluando incorporar diferentes activaciones. Nos interesaría recibir una propuesta económica formal y la ficha de requerimientos técnicos para los siguientes servicios:
+
+- Opción A - Shows de Efectos Visuales: Cotización para intervenciones de show de láser coreografiado, ráfagas de CO2 para momentos pico de la pista, o shows lumínicos integrados.
+- Opción B - Cabinas Interactivas y Recuerdos: Cabinas de fotos tradicionales, plataformas de video 360°, o túneles LED reflectivos (detallar tiempo de contratación base, personal en pista y si la entrega de material es ilimitada/digital).
+- Opción C - Estaciones de Tendencia: Servicio de Glitter Bar / Makeup para invitados durante la fiesta (cantidad de maquilladores recomendados para [Número] personas, insumos y propuesta visual del stand).
+
+Les pedimos que cada opción incluya su duración asignada, necesidades específicas de conectividad eléctrica o espacio físico en el salón, seguros del personal interviniente y los costos de traslado y armado correspondientes.
+
+Ante cualquier consulta quedamos a su disposición para definir los detalles.
+
+Un beso,
+
+[Tu Nombre]
+Events Boutique`
+                    },
+                    'Otros Servicios': {
+                        subject: 'Solicitud de presupuesto - Boda [Nombre Novia] & [Nombre Novio] - [Fecha Evento]',
+                        body: `Hola! ¿Qué tal?
+
+Espero que estés muy bien.
+
+Te contacto desde el equipo de Events Boutique. Nos encontramos organizando la boda de [Nombre Novia] y [Nombre Novio], que se realizará el [Fecha del evento] en [Nombre de la Locación], y nos gustaría solicitarles un presupuesto para su servicio.
+
+Quedamos a disposición para brindarles cualquier detalle adicional que necesiten para armar la propuesta.
+
+Muchas gracias, quedamos atentos.
+
+Un beso,
+
+[Tu Nombre]
+Events Boutique`
+                    }
+                };
 
                 // Get project ID from URL
                 const urlParams = new URLSearchParams(window.location.search);
@@ -2419,6 +2869,185 @@
                     return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
                 };
 
+                // ===== PROVIDERS (Solicitud de Presupuestos) =====
+                const loadProviders = async () => {
+                    providersLoading.value = true;
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+                        const { data, error } = await supabase
+                            .from('providers')
+                            .select('*')
+                            .eq('is_active', true)
+                            .order('name', { ascending: true });
+                        if (error) throw error;
+                        providers.value = data || [];
+                    } catch (e) {
+                        console.error('Error loading providers:', e);
+                        showToast('Error cargando proveedores: ' + e.message, 'error');
+                    } finally {
+                        providersLoading.value = false;
+                    }
+                };
+
+                const loadBudgetRequestsLog = async () => {
+                    if (!currentProjectId.value) return;
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+                        const { data, error } = await supabase
+                            .from('budget_requests_log')
+                            .select('*')
+                            .eq('project_id', currentProjectId.value)
+                            .order('created_at', { ascending: false });
+                        if (error) throw error;
+                        budgetRequestsLog.value = data || [];
+                    } catch (e) {
+                        console.error('Error loading budget requests log:', e);
+                    }
+                };
+
+                // Ya se le pidió presupuesto a este proveedor en este casamiento: no se puede volver a seleccionar
+                const isProviderAlreadyRequested = (providerId) => {
+                    return budgetRequestsLog.value.some(l => l.provider_id === providerId);
+                };
+
+                // Si ya se pidió presupuesto a alguien de alguna de las categorías elegidas en este proyecto,
+                // la lista arranca mostrando solo a esos (ya contactados); "Ver todos" revela también al resto.
+                const categoryHasAnyRequest = computed(() => {
+                    if (selectedProviderCategories.value.length === 0) return false;
+                    return budgetRequestsLog.value.some(l => selectedProviderCategories.value.includes(l.category));
+                });
+
+                const categoryProviders = computed(() => {
+                    if (selectedProviderCategories.value.length === 0) return [];
+                    let result = providers.value.filter(p => selectedProviderCategories.value.includes(p.category));
+
+                    if (categoryHasAnyRequest.value && !providerShowAll.value) {
+                        result = result.filter(p => isProviderAlreadyRequested(p.id));
+                    }
+
+                    const q = providerSearchQuery.value.trim().toLowerCase();
+                    if (q) {
+                        result = result.filter(p => p.name.toLowerCase().includes(q));
+                    }
+                    return result;
+                });
+
+                // Fecha (DD/MM/YYYY) de la última solicitud a este proveedor, en ESTE proyecto únicamente
+                const providerLastRequestDate = (providerId) => {
+                    const entry = budgetRequestsLog.value.find(l => l.provider_id === providerId);
+                    if (!entry) return null;
+                    const d = new Date(entry.created_at);
+                    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                };
+
+                // Reemplaza los placeholders que la app ya conoce; el resto queda editable a mano
+                const fillTemplatePlaceholders = (text) => {
+                    if (!currentProject.value) return text;
+                    const brideName = currentProject.value.brideName || '';
+                    const groomName = currentProject.value.groomName || '';
+                    const weddingDate = formatDate(currentProject.value.weddingDate) || '[Fecha del evento]';
+                    const venue = currentProject.value.venue || '[Nombre de la Locación]';
+                    return text
+                        .replaceAll('[Nombre Novia]', brideName)
+                        .replaceAll('[Nombre Novio]', groomName)
+                        .replaceAll('[Fecha del evento]', weddingDate)
+                        .replaceAll('[Fecha Evento]', weddingDate)
+                        .replaceAll('[Nombre de la Locación]', venue);
+                };
+
+                const openBudgetRequestModal = () => {
+                    if (selectedProviderCategories.value.length === 0) return;
+                    const family = familyForCategory(selectedProviderCategories.value[0]);
+                    const template = providerEmailTemplates[family];
+                    if (!template) return;
+                    budgetRequestForm.subject = fillTemplatePlaceholders(template.subject);
+                    budgetRequestForm.body = fillTemplatePlaceholders(template.body);
+                    showBudgetRequestModal.value = true;
+                };
+
+                const closeBudgetRequestModal = () => {
+                    showBudgetRequestModal.value = false;
+                };
+
+                // Crea los borradores en Gmail (vía Edge Function, en la casilla elegida en "Enviado por")
+                // y registra el log por proyecto para los que se crearon con éxito.
+                const generateBudgetDrafts = async () => {
+                    if (selectedProviderIds.value.length === 0) return;
+                    generatingDrafts.value = true;
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+
+                        const selectedProviders = categoryProviders.value
+                            .filter(p => selectedProviderIds.value.includes(p.id))
+                            .map(p => ({ id: p.id, emails: p.emails || [] }));
+
+                        // Llamada a la Supabase Edge Function que crea un Draft en Gmail por cada proveedor
+                        const functionsBase = SUPABASE_CONFIG.url.replace(/\/$/, '');
+                        const res = await fetch(`${functionsBase}/functions/v1/budget-drafts`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                                'apikey': SUPABASE_CONFIG.anonKey
+                            },
+                            body: JSON.stringify({
+                                senderKey: budgetRequestForm.senderKey,
+                                subject: budgetRequestForm.subject,
+                                body: budgetRequestForm.body,
+                                providers: selectedProviders
+                            })
+                        });
+
+                        if (!res.ok) {
+                            const errText = await res.text();
+                            throw new Error(`No se pudo conectar con Gmail (${res.status}): ${errText}`);
+                        }
+
+                        const { results } = await res.json();
+                        const succeeded = (results || []).filter(r => r.success).map(r => r.providerId);
+                        const failed = (results || []).filter(r => !r.success);
+
+                        if (succeeded.length > 0) {
+                            const logRows = succeeded.map(providerId => {
+                                const provider = providers.value.find(p => p.id === providerId);
+                                return {
+                                    id: crypto.randomUUID(),
+                                    project_id: currentProjectId.value,
+                                    provider_id: providerId,
+                                    category: provider ? provider.category : null
+                                };
+                            });
+                            const { error } = await supabase.from('budget_requests_log').insert(logRows);
+                            if (error) throw error;
+                            await loadBudgetRequestsLog();
+                        }
+
+                        if (failed.length === 0) {
+                            showToast(`Se crearon ${succeeded.length} borrador(es) en Gmail. Revisalos en la carpeta Borradores.`);
+                        } else if (succeeded.length > 0) {
+                            showToast(`${succeeded.length} borrador(es) creados, ${failed.length} fallaron. Revisá la consola para más detalle.`, 'error');
+                            console.error('Proveedores con error al crear el draft:', failed);
+                        } else {
+                            throw new Error('No se pudo crear ningún borrador. ' + (failed[0]?.error || ''));
+                        }
+
+                        selectedProviderIds.value = [];
+                        closeBudgetRequestModal();
+                    } catch (e) {
+                        console.error('Error generating budget drafts:', e);
+                        showToast('Error al generar la solicitud: ' + e.message, 'error');
+                    } finally {
+                        generatingDrafts.value = false;
+                    }
+                };
+
+                watch(currentView, (view) => {
+                    if (view === 'providers' && providers.value.length === 0) {
+                        loadProviders();
+                        loadBudgetRequestsLog();
+                    }
+                });
+
                 const getTableName = (id) => tables.value.find(t => t.id === id)?.name || 'Unknown';
                 const isSubGuestAssigned = (guest, idx) => {
                     const mainAssignment = assignments.value.find(a => a.guest_id === guest.id && (a.sub_guest_idx === null || a.sub_guest_idx === undefined));
@@ -2756,7 +3385,14 @@
                     // Mural
                     muralMessages, muralRef,
                     getPostitStyle, getPinColor,
-                    deleteMuralMessage, downloadMural
+                    deleteMuralMessage, downloadMural,
+                    // Providers
+                    providerCategories, providerFamilyGroups, providers, providersLoading, categoryProviders,
+                    providerShowAll, categoryHasAnyRequest,
+                    selectedProviderCategories, toggleProviderCategory, selectedProviderIds, providerLastRequestDate,
+                    providerSearchQuery, isProviderAlreadyRequested,
+                    showBudgetRequestModal, budgetRequestForm, generatingDrafts, emailSenders,
+                    openBudgetRequestModal, closeBudgetRequestModal, generateBudgetDrafts
                 };
             }
         }).mount('#app');
