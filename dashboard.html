@@ -339,10 +339,10 @@
                         </div>
 
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Lugar</label>
-                            <select v-model="projectForm.venue" required
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Lugar (opcional)</label>
+                            <select v-model="projectForm.venue"
                                 class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all">
-                                <option value="" disabled>Seleccionar locación...</option>
+                                <option value="">Seleccionar locación...</option>
                                 <option v-if="projectForm.venue && !locationProviderNames.includes(projectForm.venue)"
                                     :value="projectForm.venue">{{ projectForm.venue }} (actual)</option>
                                 <option v-for="name in locationProviderNames" :key="name" :value="name">{{ name }}</option>
@@ -993,7 +993,7 @@
                 };
 
                 const saveProject = async () => {
-                    if (!projectForm.brideName || !projectForm.groomName || !projectForm.weddingDate || !projectForm.venue) {
+                    if (!projectForm.brideName || !projectForm.groomName || !projectForm.weddingDate) {
                         showToast('Complete todos los campos requeridos', 'error');
                         return;
                     }
