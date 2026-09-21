@@ -634,6 +634,12 @@
                         <i class="ph-bold ph-trash"></i> Eliminar Lista Completa
                     </button>
 
+                    <!-- Ver Actividad / Log -->
+                    <button v-if="!isCouple" @click="openActivityLog()"
+                        class="bg-white border border-brand-pink hover:border-brand-crimson text-brand-dark px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-md flex items-center gap-2">
+                        <i class="ph-bold ph-clock-counter-clockwise"></i> Actividad
+                    </button>
+
                     <!-- Add Manually -->
                     <button @click="openGuestModal()"
                         class="bg-brand-crimson hover:bg-brand-dark text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg flex items-center gap-2">
@@ -1120,6 +1126,39 @@
                 </div>
                 <div v-else class="p-12 text-center bg-white text-brand-dark">
                     <p class="font-bold uppercase tracking-widest text-xs">No hay imagen disponible</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: ACTIVITY LOG -->
+        <div v-if="showActivityLogModal"
+            class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm"
+            @click.self="showActivityLogModal = false">
+            <div class="bg-white w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl animate-fade-in">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-brand-pink">
+                    <h3 class="font-serif text-xl font-bold text-brand-dark">Actividad reciente</h3>
+                    <button @click="showActivityLogModal = false"
+                        class="text-brand-dark/40 hover:text-brand-crimson transition-all">
+                        <i class="ph-bold ph-x text-xl"></i>
+                    </button>
+                </div>
+                <div class="overflow-y-auto p-6 space-y-3">
+                    <p v-if="activityLog.length === 0" class="text-xs text-slate-400 text-center py-8">
+                        No hay acciones registradas todavía para este casamiento.
+                    </p>
+                    <div v-for="entry in activityLog" :key="entry.id"
+                        class="border border-brand-pink/50 px-4 py-3 text-xs">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-bold uppercase tracking-widest text-brand-crimson">{{ activityLabel(entry.action) }}</span>
+                            <span class="text-slate-400">{{ new Date(entry.created_at).toLocaleString('es-AR') }}</span>
+                        </div>
+                        <div class="text-slate-500">
+                            Rol: {{ entry.actor_role || 'desconocido' }}
+                            <span v-if="entry.detail">
+                                — {{ JSON.stringify(entry.detail) }}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2197,15 +2236,58 @@ Events Boutique`
                     showGuestModal.value = true;
                 };
 
+                // Registra acciones destructivas (borrado de invitados, reset de proyecto) para
+                // poder reconstruir qué pasó si un proyecto aparece con datos faltantes.
+                // Falla en silencio: nunca debe bloquear la acción real del usuario.
+                const logActivity = async (action, detail) => {
+                    try {
+                        await supabase.from('activity_log').insert({
+                            project_id: currentProjectId.value,
+                            action,
+                            actor_role: isCouple.value ? 'couple' : 'admin',
+                            detail: detail || null
+                        });
+                    } catch (e) {
+                        console.error('Error logging activity:', e);
+                    }
+                };
+
+                const showActivityLogModal = ref(false);
+                const activityLog = ref([]);
+                const activityLabels = {
+                    delete_guest: 'Invitado eliminado',
+                    delete_all_guests: 'Lista completa eliminada',
+                    reset_project_data: 'Datos del casamiento reseteados'
+                };
+                const activityLabel = (action) => activityLabels[action] || action;
+                const openActivityLog = async () => {
+                    showActivityLogModal.value = true;
+                    try {
+                        const { data, error } = await supabase
+                            .from('activity_log')
+                            .select('*')
+                            .eq('project_id', currentProjectId.value)
+                            .order('created_at', { ascending: false })
+                            .limit(100);
+                        if (error) throw error;
+                        activityLog.value = data || [];
+                    } catch (e) {
+                        console.error('Error loading activity log:', e);
+                        showToast('Error al cargar la actividad', 'error');
+                    }
+                };
+
                 const deleteGuest = async (id) => {
                     if (confirm('¿Eliminar invitado?')) {
                         try {
+                            const guestBeingDeleted = guests.value.find(g => g.id === id);
                             const { error } = await supabase.from('guests').delete().eq('id', id);
                             if (error) throw error;
 
                             guests.value = guests.value.filter(g => g.id !== id);
                             assignments.value = assignments.value.filter(a => a.guest_id !== id);
                             showToast('Invitado eliminado');
+                            logActivity('delete_guest', { guest_id: id, guest_name: guestBeingDeleted ? guestBeingDeleted.name : null });
                         } catch (e) {
                             console.error(e);
                             showToast('Error al eliminar', 'error');
@@ -2221,12 +2303,14 @@ Events Boutique`
                     }
                     if (confirm('¿Estás seguro que querés eliminar LA LISTA COMPLETA de invitados? Esta acción no se puede deshacer.')) {
                         try {
+                            const countBeforeDelete = guests.value.length;
                             const { error } = await supabase.from('guests').delete().eq('project_id', currentProjectId.value);
                             if (error) throw error;
 
                             guests.value = [];
                             assignments.value = [];
                             showToast('Lista de invitados eliminada completamente');
+                            logActivity('delete_all_guests', { guests_deleted: countBeforeDelete });
                         } catch (e) {
                             console.error(e);
                             showToast('Error al eliminar la lista de invitados', 'error');
@@ -3161,7 +3245,9 @@ Events Boutique`
                 const resetData = async () => {
                     if (confirm('¿Resetear todos los datos de este casamiento?')) {
                         try {
-                            // Supabase cascade delete handles referenced stuff if configured, 
+                            const countBeforeReset = { guests: guests.value.length, tables: tables.value.length };
+
+                            // Supabase cascade delete handles referenced stuff if configured,
                             // but manual delete is safer.
                             // Deleting tables cascades to assignments.
                             // Deleting guests cascades to assignments.
@@ -3174,6 +3260,7 @@ Events Boutique`
                             guests.value = [];
                             assignments.value = [];
                             showToast('Datos reseteados');
+                            logActivity('reset_project_data', countBeforeReset);
                         } catch (e) { console.error(e); }
                     }
                 };
@@ -3371,6 +3458,7 @@ Events Boutique`
                     tableModalTitle, guestModalTitle,
                     openTableModal, editTable, saveTable, deleteTable, closeModal,
                     openGuestModal, editGuest, saveGuest, deleteGuest, deleteAllGuests, closeGuestModal,
+                    showActivityLogModal, activityLog, activityLabel, openActivityLog,
                     addSubGuest, removeSubGuest,
                     getIndividualConfirmedCount,
                     assignGuest, handleFileUpload, handleExport, handleFinalListExport, resetData, handleFloorPlanUpload,
