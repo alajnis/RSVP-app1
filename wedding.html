@@ -310,8 +310,13 @@
                     </button>
                     <button v-if="!isCouple" @click="currentView = 'providers'"
                         class="flex-1 md:w-44 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
-                        :class="currentView === 'providers' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4'">
+                        :class="currentView === 'providers' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4 border-r border-brand-pink/30'">
                         Proveedores
+                    </button>
+                    <button v-if="!isCouple" @click="currentView = 'activity'; openActivityLog()"
+                        class="flex-1 md:w-44 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
+                        :class="currentView === 'activity' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4'">
+                        Actividad
                     </button>
                 </div>
                 <div class="flex gap-4 p-2 items-center">
@@ -634,11 +639,6 @@
                         <i class="ph-bold ph-trash"></i> Eliminar Lista Completa
                     </button>
 
-                    <!-- Ver Actividad / Log -->
-                    <button v-if="!isCouple" @click="openActivityLog()"
-                        class="bg-white border border-brand-pink hover:border-brand-crimson text-brand-dark px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-md flex items-center gap-2">
-                        <i class="ph-bold ph-clock-counter-clockwise"></i> Actividad
-                    </button>
 
                     <!-- Add Manually -->
                     <button @click="openGuestModal()"
@@ -1009,6 +1009,35 @@
             </div>
         </div>
 
+        <!-- VIEW 5: ACTIVITY LOG (solo admin) -->
+        <div v-if="currentView === 'activity' && !isCouple"
+            class="flex-1 flex flex-col min-h-0 bg-white border border-brand-pink shadow-sm overflow-hidden animate-fade-in">
+            <div class="p-6 border-b border-slate-100">
+                <h2 class="text-2xl font-serif font-bold text-brand-dark">Actividad del Proyecto</h2>
+                <p class="text-xs font-bold text-brand-dark/40 uppercase tracking-widest mt-1">
+                    Registro de acciones sensibles: borrado de invitados, reseteo de datos, etc.
+                </p>
+            </div>
+            <div class="overflow-y-auto p-6 space-y-3">
+                <p v-if="activityLog.length === 0" class="text-xs text-slate-400 text-center py-8">
+                    No hay acciones registradas todavía para este casamiento.
+                </p>
+                <div v-for="entry in activityLog" :key="entry.id"
+                    class="border border-brand-pink/50 px-4 py-3 text-xs">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold uppercase tracking-widest text-brand-crimson">{{ activityLabel(entry.action) }}</span>
+                        <span class="text-slate-400">{{ new Date(entry.created_at).toLocaleString('es-AR') }}</span>
+                    </div>
+                    <div class="text-slate-500">
+                        Rol: {{ entry.actor_role || 'desconocido' }}
+                        <span v-if="entry.detail">
+                            — {{ JSON.stringify(entry.detail) }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- MODAL: BUDGET REQUEST PREVIEW / EDIT -->
         <div v-if="showBudgetRequestModal"
             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm"
@@ -1126,39 +1155,6 @@
                 </div>
                 <div v-else class="p-12 text-center bg-white text-brand-dark">
                     <p class="font-bold uppercase tracking-widest text-xs">No hay imagen disponible</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- MODAL: ACTIVITY LOG -->
-        <div v-if="showActivityLogModal"
-            class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm"
-            @click.self="showActivityLogModal = false">
-            <div class="bg-white w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl animate-fade-in">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-brand-pink">
-                    <h3 class="font-serif text-xl font-bold text-brand-dark">Actividad reciente</h3>
-                    <button @click="showActivityLogModal = false"
-                        class="text-brand-dark/40 hover:text-brand-crimson transition-all">
-                        <i class="ph-bold ph-x text-xl"></i>
-                    </button>
-                </div>
-                <div class="overflow-y-auto p-6 space-y-3">
-                    <p v-if="activityLog.length === 0" class="text-xs text-slate-400 text-center py-8">
-                        No hay acciones registradas todavía para este casamiento.
-                    </p>
-                    <div v-for="entry in activityLog" :key="entry.id"
-                        class="border border-brand-pink/50 px-4 py-3 text-xs">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="font-bold uppercase tracking-widest text-brand-crimson">{{ activityLabel(entry.action) }}</span>
-                            <span class="text-slate-400">{{ new Date(entry.created_at).toLocaleString('es-AR') }}</span>
-                        </div>
-                        <div class="text-slate-500">
-                            Rol: {{ entry.actor_role || 'desconocido' }}
-                            <span v-if="entry.detail">
-                                — {{ JSON.stringify(entry.detail) }}
-                            </span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -2252,7 +2248,6 @@ Events Boutique`
                     }
                 };
 
-                const showActivityLogModal = ref(false);
                 const activityLog = ref([]);
                 const activityLabels = {
                     delete_guest: 'Invitado eliminado',
@@ -2261,7 +2256,6 @@ Events Boutique`
                 };
                 const activityLabel = (action) => activityLabels[action] || action;
                 const openActivityLog = async () => {
-                    showActivityLogModal.value = true;
                     try {
                         const { data, error } = await supabase
                             .from('activity_log')
@@ -3458,7 +3452,7 @@ Events Boutique`
                     tableModalTitle, guestModalTitle,
                     openTableModal, editTable, saveTable, deleteTable, closeModal,
                     openGuestModal, editGuest, saveGuest, deleteGuest, deleteAllGuests, closeGuestModal,
-                    showActivityLogModal, activityLog, activityLabel, openActivityLog,
+                    activityLog, activityLabel, openActivityLog,
                     addSubGuest, removeSubGuest,
                     getIndividualConfirmedCount,
                     assignGuest, handleFileUpload, handleExport, handleFinalListExport, resetData, handleFloorPlanUpload,
