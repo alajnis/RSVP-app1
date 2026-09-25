@@ -1163,16 +1163,17 @@
                     No hay acciones registradas todavía para este casamiento.
                 </p>
                 <div v-for="entry in activityLog" :key="entry.id"
-                    class="border border-brand-pink/50 px-4 py-3 text-xs">
-                    <div class="flex items-center justify-between mb-1">
-                        <span class="font-bold uppercase tracking-widest text-brand-crimson">{{ activityLabel(entry.action) }}</span>
-                        <span class="text-slate-400">{{ new Date(entry.created_at).toLocaleString('es-AR') }}</span>
-                    </div>
-                    <div class="text-slate-500">
-                        Rol: {{ entry.actor_role || 'desconocido' }}
-                        <span v-if="entry.detail">
-                            — {{ JSON.stringify(entry.detail) }}
-                        </span>
+                    class="flex items-start gap-3 border border-brand-pink/50 px-4 py-3">
+                    <i :class="['ph-bold text-lg mt-0.5 shrink-0 text-brand-crimson', activityIcon(entry.action)]"></i>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between gap-3 mb-0.5">
+                            <span class="font-bold text-brand-dark text-sm">{{ activityLabel(entry.action) }}</span>
+                            <span class="text-[10px] text-slate-400 whitespace-nowrap">{{ new Date(entry.created_at).toLocaleString('es-AR') }}</span>
+                        </div>
+                        <div class="text-xs text-slate-500">{{ activityDescription(entry) }}</div>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-widest mt-1">
+                            Hecho desde: {{ activityActorLabel(entry.actor_role) }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2550,9 +2551,35 @@ Events Boutique`
                 const activityLabels = {
                     delete_guest: 'Invitado eliminado',
                     delete_all_guests: 'Lista completa eliminada',
-                    reset_project_data: 'Datos del casamiento reseteados'
+                    reset_project_data: 'Casamiento reseteado'
+                };
+                const activityIcons = {
+                    delete_guest: 'ph-user-minus',
+                    delete_all_guests: 'ph-users-three',
+                    reset_project_data: 'ph-arrow-counter-clockwise'
                 };
                 const activityLabel = (action) => activityLabels[action] || action;
+                const activityIcon = (action) => activityIcons[action] || 'ph-warning-circle';
+                const activityActorLabel = (role) => {
+                    if (role === 'admin') return 'Panel de administración';
+                    if (role === 'couple') return 'Acceso de la pareja (código de invitación)';
+                    return 'Desconocido';
+                };
+                const activityDescription = (entry) => {
+                    const d = entry.detail || {};
+                    switch (entry.action) {
+                        case 'delete_guest':
+                            return d.guest_name
+                                ? `Se eliminó al invitado "${d.guest_name}".`
+                                : 'Se eliminó un invitado (sin nombre registrado).';
+                        case 'delete_all_guests':
+                            return `Se eliminó la lista completa: ${d.guests_deleted ?? '?'} invitado${d.guests_deleted === 1 ? '' : 's'}.`;
+                        case 'reset_project_data':
+                            return `Se resetearon los datos del casamiento: ${d.guests ?? '?'} invitado${d.guests === 1 ? '' : 's'} y ${d.tables ?? '?'} mesa${d.tables === 1 ? '' : 's'} eliminadas.`;
+                        default:
+                            return '';
+                    }
+                };
                 const openActivityLog = async () => {
                     try {
                         const { data, error } = await supabase
@@ -3750,7 +3777,7 @@ Events Boutique`
                     tableModalTitle, guestModalTitle,
                     openTableModal, editTable, saveTable, deleteTable, closeModal,
                     openGuestModal, editGuest, saveGuest, deleteGuest, deleteAllGuests, closeGuestModal,
-                    activityLog, activityLabel, openActivityLog,
+                    activityLog, activityLabel, activityIcon, activityDescription, activityActorLabel, openActivityLog,
                     addSubGuest, removeSubGuest,
                     getIndividualConfirmedCount,
                     assignGuest, handleFileUpload, handleExport, handleFinalListExport, resetData, handleFloorPlanUpload,
