@@ -175,7 +175,7 @@ function buildRawMessage(to: string[], subject: string, htmlBody: string, signat
     signature.base64.replace(/(.{76})/g, '$1\r\n'),
   ].join('\r\n')
 
-  const message = `${headers}\r\n\r\n${htmlPart}\r\n\r\n${imagePart}\r\n\r\n--${boundary}--`
+  const message = `${headers}\r\n\r\n${htmlPart}\r\n${imagePart}\r\n--${boundary}--\r\n`
 
   return toBase64(message).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
