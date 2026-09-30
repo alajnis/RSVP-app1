@@ -202,9 +202,20 @@ async function createGmailDraft(accessToken: string, to: string[], subject: stri
   return data.id as string
 }
 
+const DEPLOY_VERSION = 'v2-html-signature-2026-09-30-fix2'
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS })
+  }
+
+  // Healthcheck simple para confirmar qué versión del código está realmente corriendo,
+  // sin depender de interpretaciones del body. GET a la función devuelve esto directo.
+  if (req.method === 'GET') {
+    return new Response(JSON.stringify({ version: DEPLOY_VERSION }), {
+      status: 200,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    })
   }
 
   if (req.method !== 'POST') {
