@@ -215,7 +215,24 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { senderKey, subject, body, providers } = await req.json()
+    const { senderKey, subject, body, providers, debug } = await req.json()
+
+    // Modo diagnóstico: devuelve el mensaje MIME crudo (decodificado) sin llamar a Gmail,
+    // para poder inspeccionar el armado del multipart/related sin depender de cómo lo
+    // renderiza el compositor de Gmail. Se activa pasando "debug": true en el body.
+    if (debug) {
+      const signature = SENDER_SIGNATURES[senderKey]
+      const htmlBody = buildHtmlBody(body || 'debug', !!signature)
+      const rawUrlSafe = buildRawMessage(['debug@example.com'], subject || 'debug', htmlBody, signature)
+      const rawStandard = rawUrlSafe.replace(/-/g, '+').replace(/_/g, '/')
+      const decoded = new TextDecoder().decode(
+        Uint8Array.from(atob(rawStandard), c => c.charCodeAt(0))
+      )
+      return new Response(JSON.stringify({ hasSignature: !!signature, mimeLength: decoded.length, mime: decoded }), {
+        status: 200,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      })
+    }
 
     if (!senderKey || !subject || !body || !Array.isArray(providers) || providers.length === 0) {
       return new Response(JSON.stringify({ error: 'Faltan senderKey, subject, body o providers' }), {
