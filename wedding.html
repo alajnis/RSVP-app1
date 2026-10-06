@@ -272,10 +272,9 @@
                 <!-- Guest link display & Logout -->
                 <div class="flex flex-col items-end gap-2 w-full md:w-auto">
                     <div class="flex w-full justify-between items-center mb-1">
-                        <span class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest">Link para
-                            Invitados</span>
+                        <span class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest">{{ t('linkInvitados') }}</span>
                         <button v-if="isCouple" @click="logout" class="text-brand-dark border-b-2 border-brand-crimson px-2 py-0.5 font-semibold uppercase tracking-widest text-[10px] hover:text-brand-crimson transition-all">
-                            Cerrar Sesión
+                            {{ t('cerrarSesion') }}
                         </button>
                     </div>
                     <div class="flex flex-col sm:flex-row gap-2 w-full max-w-md">
@@ -283,7 +282,7 @@
                             class="flex-1 bg-white border border-brand-pink px-4 py-3 text-sm font-mono text-brand-dark truncate outline-none shadow-inner">
                         <button @click="copyLink"
                             class="bg-brand-crimson hover:bg-brand-dark text-white px-8 py-3 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest transition-all shadow-lg active:scale-95 shrink-0 border border-brand-crimson">
-                            <i class="ph ph-copy text-lg"></i> Copiar
+                            <i class="ph ph-copy text-lg"></i> {{ t('copiar') }}
                         </button>
                     </div>
                 </div>
@@ -296,33 +295,32 @@
                     <button @click="currentView = 'seating'"
                         class="flex-1 md:w-44 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
                         :class="currentView === 'seating' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4 border-r border-brand-pink/30'">
-                        Plan de Mesas
+                        {{ t('tabMesas') }}
                     </button>
                     <button @click="currentView = 'guests'"
                         class="flex-1 md:w-44 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
                         :class="currentView === 'guests' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4 border-r border-brand-pink/30'">
-                        Lista de Invitados
+                        {{ t('tabInvitados') }}
                     </button>
                     <button @click="currentView = 'mural'"
                         class="flex-1 md:w-44 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
                         :class="currentView === 'mural' ? 'bg-brand-crimson text-white shadow-xl' : (isCouple ? 'text-brand-dark/50 hover:text-brand-dark px-4' : 'text-brand-dark/50 hover:text-brand-dark px-4 border-r border-brand-pink/30')">
-                        Mural
+                        {{ t('tabMural') }}
                     </button>
                     <button v-if="!isCouple" @click="currentView = 'providers'"
                         class="flex-1 md:w-44 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
                         :class="currentView === 'providers' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4 border-r border-brand-pink/30'">
-                        Proveedores
+                        {{ t('tabProveedores') }}
                     </button>
                     <button v-if="!isCouple" @click="currentView = 'activity'; openActivityLog()"
                         class="flex-1 md:w-44 py-4 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
                         :class="currentView === 'activity' ? 'bg-brand-crimson text-white shadow-xl' : 'text-brand-dark/50 hover:text-brand-dark px-4'">
-                        Actividad
+                        {{ t('tabActividad') }}
                     </button>
                 </div>
                 <div class="flex gap-4 p-2 items-center">
                     <button @click="handleExport"
-                        class="text-brand-dark text-[10px] font-bold uppercase tracking-widest border-b border-brand-crimson hover:text-brand-crimson transition-all">Exportar
-                        Excel</button>
+                        class="text-brand-dark text-[10px] font-bold uppercase tracking-widest border-b border-brand-crimson hover:text-brand-crimson transition-all">{{ t('exportarExcel') }}</button>
                 </div>
             </div>
         </header>
@@ -330,25 +328,25 @@
         <!-- SUMMARY STATS BAR -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12 shrink-0">
             <div class="bg-white border-b-4 border-brand-crimson p-6 shadow-sm">
-                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Capacidad Mesas</p>
+                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">{{ t('capacidadMesas') }}</p>
                 <p class="text-3xl font-serif font-bold text-brand-dark">{{ totalCapacity }}</p>
             </div>
             <div class="bg-white border-b-4 border-brand-pink p-6 shadow-sm">
-                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Asignados a Mesa</p>
+                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">{{ t('asignadosAMesa') }}</p>
                 <div class="flex items-baseline gap-2">
                     <p class="text-3xl font-serif font-bold text-brand-dark">{{ assignedGuestsCount }}</p>
                     <p class="text-xs text-brand-dark/40 font-bold">/ {{ totalGuestsInvited }}</p>
                 </div>
             </div>
             <div class="bg-white border-b-4 border-brand-crimson p-6 shadow-sm">
-                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Sin Respuesta</p>
+                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">{{ t('sinRespuesta') }}</p>
                 <div class="flex items-baseline gap-2">
                     <p class="text-3xl font-serif font-bold text-brand-magenta">{{ notRespondedCount }}</p>
                     <p class="text-xs text-brand-dark/40 font-bold">/ {{ totalGuestsInvited }}</p>
                 </div>
             </div>
             <div class="bg-white border-b-4 border-brand-pink p-6 shadow-sm">
-                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Confirmados / Totales
+                <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">{{ t('confirmadosTotales') }}
                 </p>
                 <div class="flex items-baseline gap-2">
                     <p class="text-3xl font-serif font-bold text-brand-dark">{{ confirmedGuestsCount }}</p>
@@ -363,7 +361,7 @@
             <!-- LEFT COLUMN: TABLES -->
             <div class="lg:col-span-8 pr-2">
                 <div class="flex justify-between items-center mb-10">
-                    <h2 class="text-2xl font-serif font-bold text-brand-dark">Distribución de Mesas</h2>
+                    <h2 class="text-2xl font-serif font-bold text-brand-dark">{{ t('distribucionMesas') }}</h2>
                     <div class="flex gap-4">
                         <!-- Floor Plan Buttons -->
                         <div class="flex gap-2 mr-4">
@@ -373,26 +371,26 @@
                             <button v-if="currentProject && currentProject.floorPlanUrl"
                                 @click="showFloorPlanModal = true"
                                 class="bg-white border border-brand-pink hover:border-brand-crimson text-brand-dark px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
-                                <i class="ph-bold ph-eye"></i> Ver Plano
+                                <i class="ph-bold ph-eye"></i> {{ t('verPlano') }}
                             </button>
 
                             <button @click="$refs.floorPlanInput.click()"
                                 class="bg-white border border-brand-pink hover:border-brand-crimson text-brand-dark px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
                                 <i class="ph-bold ph-upload-simple"></i> {{ currentProject &&
-                                currentProject.floorPlanUrl ? 'Cambiar Plano' : 'Adjuntar Plano' }}
+                                currentProject.floorPlanUrl ? t('cambiarPlano') : t('adjuntarPlano') }}
                             </button>
                         </div>
 
                         <button @click="openTableModal()"
                             class="bg-brand-crimson hover:bg-brand-dark text-white px-10 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all shadow-lg">
-                            Nueva Mesa
+                            {{ t('nuevaMesa') }}
                         </button>
                     </div>
                 </div>
                 <div class="flex gap-3 items-center">
                     <div
                         class="text-sm text-brand-dark/50 font-medium bg-white px-4 py-2 border border-brand-pink shadow-sm">
-                        Capacidad Total: <span class="text-brand-dark font-bold">{{ totalCapacity }}</span>
+                        {{ t('capacidadTotal') }} <span class="text-brand-dark font-bold">{{ totalCapacity }}</span>
                     </div>
                 </div>
 
@@ -402,13 +400,12 @@
                         class="w-20 h-20 bg-brand-beige rounded-full flex items-center justify-center mx-auto mb-6 text-brand-crimson/20">
                         <i class="ph-duotone ph-table text-4xl"></i>
                     </div>
-                    <h3 class="text-xl font-serif font-bold text-brand-dark mb-2">No hay mesas creadas</h3>
+                    <h3 class="text-xl font-serif font-bold text-brand-dark mb-2">{{ t('noHayMesasCreadas') }}</h3>
                     <p
                         class="text-[10px] font-bold text-brand-dark/40 uppercase tracking-[0.2em] mb-8 max-w-xs mx-auto">
-                        Comienza creando tu primera mesa para organizar a los invitados.</p>
+                        {{ t('comienzaCreandoMesa') }}</p>
                     <button @click="openTableModal"
-                        class="bg-brand-dark hover:bg-brand-crimson text-white px-10 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all shadow-lg">Crear
-                        Mesa</button>
+                        class="bg-brand-dark hover:bg-brand-crimson text-white px-10 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all shadow-lg">{{ t('crearMesa') }}</button>
                 </div>
 
                 <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -476,7 +473,7 @@
                 <div class="bg-white border border-brand-pink shadow-sm flex flex-col h-full overflow-hidden">
                     <!-- Header -->
                     <div class="p-8 border-b border-brand-pink/30 bg-brand-beige/30">
-                        <h2 class="text-2xl font-serif font-bold text-brand-dark mb-6">Asignación</h2>
+                        <h2 class="text-2xl font-serif font-bold text-brand-dark mb-6">{{ t('asignacion') }}</h2>
 
                         <!-- Droppable zone to catch guests being unassigned -->
                         <div class="bg-white/50 border border-brand-pink rounded p-3 text-center mb-6 border-dashed transition-all"
@@ -484,30 +481,30 @@
                              @drop="onDropPending"
                              :class="isDraggingOverPending ? 'bg-brand-pink/20 border-brand-crimson scale-[1.02]' : ''">
                             <span class="text-[10px] font-bold uppercase tracking-widest text-brand-dark/50" v-if="!isDraggingOverPending">
-                                Arrastrá acá para desasignar
+                                {{ t('arrastraDesasignar') }}
                             </span>
                             <span class="text-[10px] font-bold uppercase tracking-widest text-brand-crimson" v-else>
-                                Soltá para devolver a la lista
+                                {{ t('soltaDevolver') }}
                             </span>
                         </div>
 
                         <div class="relative mb-6">
                             <i
                                 class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                            <input type="text" v-model="searchQuery" placeholder="BUSCAR INVITADO..."
+                            <input type="text" v-model="searchQuery" :placeholder="t('buscarInvitado')"
                                 class="w-full pl-12 pr-4 py-3 bg-white border border-brand-pink outline-none transition-all placeholder:text-[9px] placeholder:font-bold placeholder:uppercase placeholder:tracking-widest text-brand-dark">
                         </div>
 
                         <div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
                             <button @click="filter = 'all'"
                                 :class="filter === 'all' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
-                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Todos</button>
+                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">{{ t('todos') }}</button>
                             <button @click="filter = 'pending'"
                                 :class="filter === 'pending' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
-                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Sin Mesa</button>
+                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">{{ t('sinMesaFilter') }}</button>
                             <button @click="filter = 'assigned'"
                                 :class="filter === 'assigned' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
-                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">Con Mesa</button>
+                                class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition-all">{{ t('conMesaFilter') }}</button>
                         </div>
                     </div>
 
@@ -536,26 +533,26 @@
                                             <div class="font-bold text-brand-dark text-sm">{{ item.lastName }}, {{
                                                 item.firstName }}</div>
                                             <div v-if="item.mainGuestName" class="text-[9px] text-slate-400 font-bold italic mt-0.5 tracking-wider">
-                                                Grupo: {{ item.mainGuestName }}
+                                                {{ t('grupo') }} {{ item.mainGuestName }}
                                             </div>
                                             <div class="flex items-center gap-2 mt-2">
                                                 <span v-if="item.assignment"
-                                                    class="text-[10px] text-brand-crimson font-bold bg-brand-pink/50 px-2 py-0.5 border border-brand-crimson/20 tracking-widest">CON MESA</span>
+                                                    class="text-[10px] text-brand-crimson font-bold bg-brand-pink/50 px-2 py-0.5 border border-brand-crimson/20 tracking-widest">{{ t('conMesaBadge') }}</span>
                                                 <span v-else
-                                                    class="text-[10px] text-brand-magenta font-bold bg-brand-magenta/5 px-2 py-0.5 border border-brand-magenta/20 tracking-widest">SIN MESA</span>
-                                                
+                                                    class="text-[10px] text-brand-magenta font-bold bg-brand-magenta/5 px-2 py-0.5 border border-brand-magenta/20 tracking-widest">{{ t('sinMesaBadge') }}</span>
+
                                                 <span v-if="item.assignment && item.status === 'Declined'"
                                                     class="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 flex items-center gap-1 animate-pulse"
-                                                    title="Asignado a mesa pero rechazó la invitación">
-                                                    <i class="ph-fill ph-warning"></i> RECHAZÓ RSVP
+                                                    :title="t('asignadoPeroRechazoTitle')">
+                                                    <i class="ph-fill ph-warning"></i> {{ t('rechazoRsvp') }}
                                                 </span>
 
                                                 <span v-if="item.status === 'Confirmed'"
                                                     class="text-[10px] font-bold text-green-600 flex items-center gap-1"><i
-                                                        class="ph-bold ph-check"></i> Si</span>
+                                                        class="ph-bold ph-check"></i> {{ t('si') }}</span>
                                                 <span v-else-if="item.status === 'Declined'"
                                                     class="text-[10px] font-bold text-red-400 flex items-center gap-1"><i
-                                                        class="ph-bold ph-x"></i> No</span>
+                                                        class="ph-bold ph-x"></i> {{ t('no') }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -565,13 +562,13 @@
                                     @change="assignGuest(item.guestId, item.subGuestIdx, $event.target.value)"
                                     class="w-full text-xs font-bold uppercase tracking-widest py-3 px-4 border cursor-pointer transition-all appearance-none"
                                     :class="item.assignment ? 'bg-brand-crimson text-white border-brand-crimson' : 'bg-white border-brand-pink text-brand-dark hover:border-brand-crimson placeholder:text-brand-dark/30'">
-                                    <option value="">Asignar Mesa...</option>
+                                    <option value="">{{ t('asignarMesaOption') }}</option>
                                     <template v-for="table in tablesWithStats" :key="table.id">
                                         <option :value="table.id"
                                             :disabled="table.is_full && table.id !== item.assignment?.table_id"
                                             class="bg-white text-brand-dark">
                                             {{ table.name }} ({{ table.guests_assigned }}/{{ table.capacity }}) {{
-                                            table.is_full ? '- LLENA' : '' }}
+                                            table.is_full ? t('llena') : '' }}
                                         </option>
                                     </template>
                                 </select>
@@ -589,38 +586,37 @@
             <!-- Toolbar -->
             <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h2 class="text-2xl font-serif font-bold text-brand-dark">Gestionar Invitados</h2>
-                    <p class="text-xs font-bold text-brand-dark/40 uppercase tracking-widest mt-1">Agrega, edita o
-                        importa tu lista de invitados.</p>
+                    <h2 class="text-2xl font-serif font-bold text-brand-dark">{{ t('gestionarInvitados') }}</h2>
+                    <p class="text-xs font-bold text-brand-dark/40 uppercase tracking-widest mt-1">{{ t('agregaEditaImporta') }}</p>
                 </div>
 
                 <!-- Guest Filters -->
                 <div class="flex gap-1 bg-brand-beige/30 p-1 rounded-lg flex-nowrap">
                     <button @click="guestFilter = 'all'"
                         :class="guestFilter === 'all' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
-                        class="px-2 py-1.5 text-[9px] font-bold uppercase tracking-tight transition-all whitespace-nowrap">Todos</button>
+                        class="px-2 py-1.5 text-[9px] font-bold uppercase tracking-tight transition-all whitespace-nowrap">{{ t('todos') }}</button>
                     <button @click="guestFilter = 'confirmed'"
                         :class="guestFilter === 'confirmed' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
-                        class="px-2 py-1.5 text-[9px] font-bold uppercase tracking-tight transition-all whitespace-nowrap">Confirmados</button>
+                        class="px-2 py-1.5 text-[9px] font-bold uppercase tracking-tight transition-all whitespace-nowrap">{{ t('confirmados') }}</button>
                     <button @click="guestFilter = 'pending'"
                         :class="guestFilter === 'pending' ? 'text-brand-crimson border-b-2 border-brand-crimson' : 'text-brand-dark/40'"
-                        class="px-2 py-1.5 text-[9px] font-bold uppercase tracking-tight transition-all whitespace-nowrap">Pendientes</button>
+                        class="px-2 py-1.5 text-[9px] font-bold uppercase tracking-tight transition-all whitespace-nowrap">{{ t('pendientes') }}</button>
                     <button @click="guestFilter = 'declined'"
                         :class="guestFilter === 'declined' ? 'text-red-600 border-b-2 border-red-500' : 'text-brand-dark/40'"
-                        class="px-2 py-1.5 text-[9px] font-bold uppercase tracking-tight transition-all whitespace-nowrap">Rechazaron</button>
+                        class="px-2 py-1.5 text-[9px] font-bold uppercase tracking-tight transition-all whitespace-nowrap">{{ t('rechazaron') }}</button>
                 </div>
 
                 <div class="flex flex-wrap gap-3">
                     <!-- Excel Export -->
                     <button @click="handleExport"
                         class="bg-brand-dark hover:bg-brand-crimson text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-md flex items-center gap-2">
-                        <i class="ph-bold ph-download-simple"></i> Exportar Excel
+                        <i class="ph-bold ph-download-simple"></i> {{ t('exportarExcel') }}
                     </button>
 
                     <!-- Lista Definitiva (Solo Admin) -->
                     <button v-if="!isCouple" @click="handleFinalListExport"
                         class="bg-green-700 hover:bg-green-900 text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-md flex items-center gap-2 border border-green-800">
-                        <i class="ph-bold ph-check-square-offset"></i> Lista Definitiva
+                        <i class="ph-bold ph-check-square-offset"></i> {{ t('listaDefinitiva') }}
                     </button>
 
                     <!-- Excel Upload -->
@@ -629,21 +625,21 @@
                             class="hidden" />
                         <button @click="$refs.fileInput.click()"
                             class="bg-white border border-brand-pink hover:border-brand-crimson text-brand-dark px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-md flex items-center gap-2">
-                            <i class="ph-bold ph-microsoft-excel-logo text-green-600"></i> Importar Excel
+                            <i class="ph-bold ph-microsoft-excel-logo text-green-600"></i> {{ t('importarExcel') }}
                         </button>
                     </div>
 
                     <!-- Eliminar Todos -->
                     <button v-if="!isCouple" @click="deleteAllGuests()"
                         class="bg-red-600 hover:bg-red-800 text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg flex items-center gap-2">
-                        <i class="ph-bold ph-trash"></i> Eliminar Lista Completa
+                        <i class="ph-bold ph-trash"></i> {{ t('eliminarListaCompleta') }}
                     </button>
 
 
                     <!-- Add Manually -->
                     <button @click="openGuestModal()"
                         class="bg-brand-crimson hover:bg-brand-dark text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg flex items-center gap-2">
-                        <i class="ph-bold ph-plus"></i> Nuevo Invitado
+                        <i class="ph-bold ph-plus"></i> {{ t('nuevoInvitado') }}
                     </button>
 
 
@@ -654,7 +650,7 @@
             <div class="px-6 py-4 bg-slate-50 border-b border-slate-100">
                 <div class="relative w-full max-w-md">
                     <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    <input type="text" v-model="guestSearchQuery" placeholder="Buscar invitado o integrante..."
+                    <input type="text" v-model="guestSearchQuery" :placeholder="t('buscarInvitadoIntegrante')"
                         class="w-full pl-12 pr-4 py-2 bg-white border border-brand-pink focus:border-brand-crimson outline-none transition-all placeholder:text-[10px] placeholder:uppercase placeholder:tracking-widest text-sm">
                 </div>
             </div>
@@ -663,7 +659,7 @@
             <div v-if="duplicateNames.size > 0" class="px-6 py-2 bg-yellow-50 border-b border-yellow-100 flex items-center gap-2">
                 <i class="ph-fill ph-warning text-yellow-500 text-sm flex-shrink-0"></i>
                 <p class="text-[9px] text-yellow-700 font-bold uppercase tracking-widest">
-                    Se detectaron <span class="text-yellow-800">{{ duplicateNames.size }}</span> nombre(s) duplicado(s) en la lista. Revisalos antes de continuar.
+                    {{ t('nombresDuplicadosParte1') }} <span class="text-yellow-800">{{ duplicateNames.size }}</span> {{ t('nombresDuplicadosParte2') }}
                 </p>
             </div>
 
@@ -674,22 +670,22 @@
                         <tr>
                             <th
                                 class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans bg-brand-beige/50">
-                                Invitado</th>
+                                {{ t('colInvitado') }}</th>
                             <th
                                 class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans bg-brand-beige/50">
-                                Contacto</th>
+                                {{ t('colContacto') }}</th>
                             <th
                                 class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans bg-brand-beige/50">
-                                Dieta</th>
+                                {{ t('colDieta') }}</th>
                             <th
                                 class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans bg-brand-beige/50">
-                                Confirmados</th>
+                                {{ t('colConfirmados') }}</th>
                             <th
                                 class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans bg-brand-beige/50">
-                                Estado Mesa</th>
+                                {{ t('colEstadoMesa') }}</th>
                             <th
                                 class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans text-right bg-brand-beige/50">
-                                Acciones</th>
+                                {{ t('colAcciones') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-brand-pink/30">
@@ -700,7 +696,7 @@
                                     {{ guest.lastName }}, {{ guest.firstName }}
                                     <i v-if="duplicateNames.has(getFullName(guest).toLowerCase().trim())" 
                                        class="ph-fill ph-warning text-yellow-500" 
-                                       title="Este nombre está duplicado en la lista"></i>
+                                       :title="t('nombreEstaDuplicado')"></i>
                                 </div>
                                 <!-- Show sub-guest names if they exist -->
                                 <div v-if="guest.sub_guests && guest.sub_guests.length > 0" class="mt-1 space-y-1">
@@ -712,15 +708,15 @@
                                             :class="sg.status === 'Confirmed' ? 'text-green-600' : (sg.status === 'Declined' ? 'text-red-400 line-through' : 'text-slate-400')">
                                             <i class="ph-fill"
                                                 :class="sg.status === 'Confirmed' ? 'ph-check-circle' : (sg.status === 'Declined' ? 'ph-x-circle' : 'ph-circle')"></i>
-                                            {{ getFullName(sg) || '(Sin nombre)' }}
-                                            <i v-if="duplicateNames.has(getFullName(sg).toLowerCase().trim())" 
-                                               class="ph-fill ph-warning text-yellow-500" 
-                                               title="Este nombre está duplicado en la lista"></i>
+                                            {{ getFullName(sg) || t('sinNombre') }}
+                                            <i v-if="duplicateNames.has(getFullName(sg).toLowerCase().trim())"
+                                               class="ph-fill ph-warning text-yellow-500"
+                                               :title="t('nombreEstaDuplicado')"></i>
 
                                             <span v-if="sg.status === 'Declined' && isSubGuestAssigned(guest, idx)"
                                                 class="text-[7px] font-bold text-red-600 bg-red-50 border border-red-200 px-1 py-0.5 ml-2 rounded tracking-wider flex items-center gap-0.5 inline-flex"
-                                                title="Asignado a mesa pero rechazó la invitación">
-                                                <i class="ph-fill ph-warning"></i> RECHAZÓ MESA
+                                                :title="t('asignadoPeroRechazoTitle')">
+                                                <i class="ph-fill ph-warning"></i> {{ t('rechazoMesa') }}
                                             </span>
 
                                             <span v-if="sg.ageCategory && sg.ageCategory !== 'Adulto'"
@@ -780,7 +776,7 @@
                                         class="ph-bold ph-envelope-simple text-slate-400"></i> {{ guest.email }}</div>
                                 <div v-if="guest.phone && guest.phone !== '-'" class="flex items-center gap-2"><i
                                         class="ph-bold ph-phone text-slate-400"></i> {{ guest.phone }}</div>
-                                <div v-if="(!guest.email || guest.email === '-') && (!guest.phone || guest.phone === '-')" class="text-slate-400 italic">No contact info
+                                <div v-if="(!guest.email || guest.email === '-') && (!guest.phone || guest.phone === '-')" class="text-slate-400 italic">{{ t('sinInfoContacto') }}
                                 </div>
                             </td>
                             <td class="px-6 py-4">
@@ -802,35 +798,35 @@
                             <td class="px-6 py-4 text-sm font-sans">
                                 <div v-if="getGroupTablesText(guest)" class="flex flex-col gap-1 items-start">
                                     <span class="bg-brand-crimson/5 text-brand-crimson px-2 py-1 rounded-sm font-bold text-[10px] uppercase tracking-wider border border-brand-crimson/10">
-                                        MESA: {{ getGroupTablesText(guest) }}
+                                        {{ t('mesaLabel') }} {{ getGroupTablesText(guest) }}
                                     </span>
                                     <span v-if="groupHasDeclinedAssignment(guest)"
                                         class="bg-red-50 text-red-600 px-2 py-0.5 rounded-sm font-bold text-[9px] uppercase tracking-wider border border-red-200 flex items-center gap-1 animate-pulse"
-                                        title="Asignado a mesa pero rechazó la invitación">
-                                        <i class="ph-bold ph-warning"></i> RECHAZÓ RSVP
+                                        :title="t('asignadoPeroRechazoTitle')">
+                                        <i class="ph-bold ph-warning"></i> {{ t('rechazoRsvp') }}
                                     </span>
                                 </div>
                                 <span v-else
                                     class="bg-brand-beige text-brand-dark px-2 py-1 rounded-sm font-bold text-[10px] uppercase tracking-wider border border-brand-pink">
-                                    SIN MESA
+                                    {{ t('sinMesaBadge') }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-right space-x-2">
                                 <button @click="editGuest(guest)"
                                     class="text-brand-dark/40 hover:text-brand-crimson p-2 hover:bg-brand-pink/20 transition-all"
-                                    title="Editar">
+                                    :title="t('editar')">
                                     <i class="ph-bold ph-pencil-simple text-xl"></i>
                                 </button>
                                 <button @click="deleteGuest(guest.id)"
                                     class="text-brand-dark/40 hover:text-brand-crimson p-2 hover:bg-brand-pink/20 transition-all"
-                                    title="Eliminar">
+                                    :title="t('eliminar')">
                                     <i class="ph-bold ph-trash text-xl"></i>
                                 </button>
                             </td>
                         </tr>
                         <tr v-if="guests.length === 0">
                             <td colspan="4" class="px-6 py-12 text-center text-slate-400">
-                                No guests found. Import an Excel file or add guests manually.
+                                {{ t('noGuestsFound') }}
                             </td>
                         </tr>
                     </tbody>
@@ -839,7 +835,7 @@
 
             <div
                 class="p-4 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 flex justify-between items-center">
-                <span>Total Guests: {{ totalGuestsInvited }}</span>
+                <span>{{ t('totalGuests') }} {{ totalGuestsInvited }}</span>
             </div>
         </div>
 
@@ -851,14 +847,14 @@
             <!-- Mural Header Toolbar -->
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h2 class="text-2xl font-serif font-bold text-brand-dark">Mural de Mensajes</h2>
+                    <h2 class="text-2xl font-serif font-bold text-brand-dark">{{ t('muralDeMensajes') }}</h2>
                     <p class="text-xs font-bold text-brand-dark/40 uppercase tracking-widest mt-1">
-                        {{ muralMessages.length }} mensaje{{ muralMessages.length !== 1 ? 's' : '' }} de los invitados
+                        {{ muralMessages.length }} {{ muralMessages.length !== 1 ? t('mensajePlural') : t('mensajeSingular') }} {{ t('mensajeDeLosInvitados') }}
                     </p>
                 </div>
                 <button @click="downloadMural"
                     class="bg-brand-dark hover:bg-brand-crimson text-white px-8 py-4 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg flex items-center gap-2">
-                    <i class="ph-bold ph-download-simple text-lg"></i> Descargar Mural
+                    <i class="ph-bold ph-download-simple text-lg"></i> {{ t('descargarMural') }}
                 </button>
             </div>
 
@@ -873,8 +869,8 @@
                 <!-- Empty State -->
                 <div v-if="muralMessages.length === 0" class="mural-empty">
                     <span class="mural-empty-icon">💌</span>
-                    <div class="mural-empty-title">Todavía no hay mensajes</div>
-                    <div class="mural-empty-sub">Los invitados podrán dejar su mensaje luego de confirmar asistencia</div>
+                    <div class="mural-empty-title">{{ t('todaviaNoHayMensajes') }}</div>
+                    <div class="mural-empty-sub">{{ t('losInvitadosPodranDejarMensaje') }}</div>
                 </div>
 
                 <!-- Post-its Grid -->
@@ -888,7 +884,7 @@
                         <button @click="deleteMuralMessage(msg.id)"
                             data-html2canvas-ignore
                             class="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-black/20 hover:bg-red-500/80 text-white/60 hover:text-white transition-all z-20 text-xs"
-                            title="Eliminar mensaje">
+                            :title="t('eliminarMensajeTitle')">
                             <i class="ph-bold ph-x"></i>
                         </button>
                         <!-- Message -->
@@ -906,24 +902,24 @@
 
             <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
                 <div>
-                    <h2 class="text-2xl font-serif font-bold text-brand-dark">Solicitud de Presupuestos</h2>
+                    <h2 class="text-2xl font-serif font-bold text-brand-dark">{{ t('solicitudPresupuestos') }}</h2>
                     <p class="text-xs font-bold text-brand-dark/40 uppercase tracking-widest mt-1">
-                        Elegí una categoría y seleccioná los proveedores a contactar
+                        {{ t('elegiCategoriaSeleccionaProveedores') }}
                     </p>
                 </div>
                 <!-- Action bar (arriba, siempre visible) -->
                 <div class="flex items-center gap-4 shrink-0">
                     <button @click="openProvidersModal"
                         class="bg-white border border-brand-pink hover:border-brand-crimson text-brand-dark px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all shadow-md flex items-center gap-2 whitespace-nowrap">
-                        <i class="ph-bold ph-address-book"></i> Gestionar Proveedores
+                        <i class="ph-bold ph-address-book"></i> {{ t('gestionarProveedores') }}
                     </button>
                     <template v-if="selectedProviderCategories.length > 0">
                         <span class="text-xs font-bold text-brand-dark/50 uppercase tracking-widest whitespace-nowrap">
-                            {{ selectedProviderIds.length }} seleccionado{{ selectedProviderIds.length !== 1 ? 's' : '' }}
+                            {{ selectedProviderIds.length }} {{ selectedProviderIds.length !== 1 ? t('seleccionados') : t('seleccionado') }}
                         </span>
                         <button @click="openBudgetRequestModal" :disabled="selectedProviderIds.length === 0"
                             class="bg-brand-crimson hover:bg-brand-dark text-white px-8 py-4 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-brand-crimson flex items-center gap-2 whitespace-nowrap">
-                            <i class="ph-bold ph-paper-plane-tilt text-lg"></i> Generar Solicitud
+                            <i class="ph-bold ph-paper-plane-tilt text-lg"></i> {{ t('generarSolicitud') }}
                         </button>
                     </template>
                 </div>
@@ -947,45 +943,45 @@
             <div v-if="selectedProviderCategories.length > 0" class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
                 <div class="relative max-w-md flex-1">
                     <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    <input type="text" v-model="providerSearchQuery" placeholder="Buscar proveedor por nombre..."
+                    <input type="text" v-model="providerSearchQuery" :placeholder="t('buscarProveedorPorNombre')"
                         class="w-full pl-11 pr-4 py-3 border border-brand-pink bg-white focus:border-brand-crimson outline-none transition-all text-sm">
                 </div>
                 <label v-if="categoryHasAnyRequest" class="flex items-center gap-2 cursor-pointer shrink-0">
                     <button type="button" @click="providerShowAll = !providerShowAll"
                         class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
                         :class="providerShowAll ? 'bg-brand-crimson' : 'bg-slate-300'">
-                        <span class="sr-only">Ver todos</span>
+                        <span class="sr-only">{{ t('verTodos') }}</span>
                         <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                             :class="providerShowAll ? 'translate-x-6' : 'translate-x-1'"></span>
                     </button>
-                    <span class="text-xs font-bold text-brand-dark uppercase tracking-widest">Ver todos</span>
+                    <span class="text-xs font-bold text-brand-dark uppercase tracking-widest">{{ t('verTodos') }}</span>
                 </label>
             </div>
             <div v-if="selectedProviderCategories.length > 0 && categoryHasAnyRequest && !providerShowAll" class="mb-4 -mt-2">
-                <p class="text-[11px] text-slate-400">Mostrando solo los proveedores a los que ya se les pidió presupuesto en este casamiento.</p>
+                <p class="text-[11px] text-slate-400">{{ t('mostrandoSoloSolicitados') }}</p>
             </div>
 
             <!-- No category selected -->
             <div v-if="selectedProviderCategories.length === 0" class="text-center py-16 text-slate-400">
                 <i class="ph-bold ph-storefront text-5xl mb-4 block"></i>
-                <p class="text-xs font-bold uppercase tracking-widest">Elegí una categoría para ver los proveedores</p>
+                <p class="text-xs font-bold uppercase tracking-widest">{{ t('elegiCategoriaVerProveedores') }}</p>
             </div>
 
             <!-- Loading -->
             <div v-else-if="providersLoading" class="text-center py-16 text-slate-400 text-xs uppercase tracking-widest">
-                <i class="ph-bold ph-spinner animate-spin text-2xl block mb-3"></i> Cargando proveedores...
+                <i class="ph-bold ph-spinner animate-spin text-2xl block mb-3"></i> {{ t('cargandoProveedores') }}
             </div>
 
             <!-- Empty category / no search results -->
             <div v-else-if="categoryProviders.length === 0" class="text-center py-16 text-slate-400">
-                <p v-if="providerSearchQuery.trim()" class="text-xs font-bold uppercase tracking-widest">No se encontraron proveedores para "{{ providerSearchQuery }}"</p>
+                <p v-if="providerSearchQuery.trim()" class="text-xs font-bold uppercase tracking-widest">{{ t('noSeEncontraronProveedoresPara') }} "{{ providerSearchQuery }}"</p>
                 <template v-else-if="categoryHasAnyRequest && !providerShowAll">
-                    <p class="text-xs font-bold uppercase tracking-widest">No hay proveedores solicitados todavía en esta categoría</p>
-                    <p class="text-[11px] mt-2">Activá "Ver todos" para ver el resto de los proveedores</p>
+                    <p class="text-xs font-bold uppercase tracking-widest">{{ t('noHayProveedoresSolicitadosCategoria') }}</p>
+                    <p class="text-[11px] mt-2">{{ t('activaVerTodos') }}</p>
                 </template>
                 <template v-else>
-                    <p class="text-xs font-bold uppercase tracking-widest">No hay proveedores activos en esta categoría</p>
-                    <p class="text-[11px] mt-2">Podés dar de alta proveedores desde el panel de Proveedores en el Dashboard</p>
+                    <p class="text-xs font-bold uppercase tracking-widest">{{ t('noHayProveedoresActivosCategoria') }}</p>
+                    <p class="text-[11px] mt-2">{{ t('podesDarAltaDesdeDashboard') }}</p>
                 </template>
             </div>
 
@@ -1008,7 +1004,7 @@
                         <div v-if="providerLastRequestDate(provider.id)"
                             class="shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 whitespace-nowrap">
                             <i class="ph-fill ph-check-circle"></i>
-                            Presupuesto solicitado el {{ providerLastRequestDate(provider.id) }}
+                            {{ t('presupuestoSolicitadoEl') }} {{ providerLastRequestDate(provider.id) }}
                         </div>
                     </label>
                 </div>
@@ -1023,7 +1019,7 @@
                 style="max-height: 90vh; height: auto;">
                 <div
                     class="px-8 py-6 border-b border-brand-pink/30 flex justify-between items-center bg-brand-beige/50 shrink-0">
-                    <h3 class="font-serif font-bold text-2xl text-brand-dark">Proveedores</h3>
+                    <h3 class="font-serif font-bold text-2xl text-brand-dark">{{ t('proveedoresModalTitle') }}</h3>
                     <button @click="closeProvidersModal"
                         class="text-brand-dark hover:text-brand-crimson transition-colors"><i
                             class="ph-bold ph-x text-xl"></i></button>
@@ -1035,22 +1031,22 @@
                     <form @submit.prevent="saveProvider"
                         class="bg-brand-beige/20 border border-brand-pink/30 p-6 mb-8 space-y-4">
                         <h4 class="text-xs font-bold text-brand-dark uppercase tracking-widest">
-                            {{ editingProvider ? 'Editar Proveedor' : 'Nuevo Proveedor' }}
+                            {{ editingProvider ? t('editarProveedor') : t('nuevoProveedor') }}
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nombre</label>
-                                <input type="text" v-model="providerForm.name" placeholder="Nombre del proveedor"
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{{ t('nombre') }}</label>
+                                <input type="text" v-model="providerForm.name" :placeholder="t('nombreDelProveedor')"
                                     required
                                     class="w-full px-4 py-3 border border-brand-pink bg-white focus:border-brand-crimson outline-none transition-all placeholder-slate-300">
                             </div>
                             <div>
                                 <label
-                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Categoría</label>
+                                    class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{{ t('categoria') }}</label>
                                 <select v-model="providerForm.category" required
                                     class="w-full px-4 py-3 border border-brand-pink bg-white focus:border-brand-crimson outline-none transition-all">
-                                    <option value="" disabled>Seleccionar...</option>
+                                    <option value="" disabled>{{ t('seleccionarDots') }}</option>
                                     <optgroup v-for="group in providerFamilyGroups" :key="group.family" :label="group.family">
                                         <option v-for="cat in group.categories" :key="cat" :value="cat">{{ cat }}</option>
                                     </optgroup>
@@ -1059,7 +1055,7 @@
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                                Email(s) <span class="text-slate-300 normal-case font-normal">(separados por coma)</span>
+                                {{ t('emails') }} <span class="text-slate-300 normal-case font-normal">{{ t('separadosPorComa') }}</span>
                             </label>
                             <input type="text" v-model="providerForm.emailsText"
                                 placeholder="contacto@proveedor.com, ventas@proveedor.com" required
@@ -1070,20 +1066,20 @@
                                 <button type="button" @click="providerForm.is_active = !providerForm.is_active"
                                     class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
                                     :class="providerForm.is_active ? 'bg-brand-crimson' : 'bg-slate-300'">
-                                    <span class="sr-only">Activo</span>
+                                    <span class="sr-only">{{ t('activo') }}</span>
                                     <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                                         :class="providerForm.is_active ? 'translate-x-6' : 'translate-x-1'"></span>
                                 </button>
-                                <span class="text-xs font-bold text-brand-dark">{{ providerForm.is_active ? 'Activo' : 'Inactivo' }}</span>
+                                <span class="text-xs font-bold text-brand-dark">{{ providerForm.is_active ? t('activo') : t('inactivo') }}</span>
                             </label>
                             <div class="flex gap-3">
                                 <button v-if="editingProvider" type="button" @click="resetProviderForm"
                                     class="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-brand-crimson transition-colors">
-                                    Cancelar edición
+                                    {{ t('cancelarEdicion') }}
                                 </button>
                                 <button type="submit"
                                     class="bg-brand-crimson hover:bg-brand-dark text-white px-6 py-3 font-bold tracking-widest uppercase text-[10px] transition-all shadow-lg">
-                                    {{ editingProvider ? 'Guardar Cambios' : 'Agregar Proveedor' }}
+                                    {{ editingProvider ? t('guardarCambios') : t('agregarProveedor') }}
                                 </button>
                             </div>
                         </div>
@@ -1093,28 +1089,28 @@
                     <div class="flex flex-col md:flex-row gap-3 mb-4">
                         <div class="relative flex-1">
                             <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                            <input type="text" v-model="providerSearch" placeholder="Buscar proveedor..."
+                            <input type="text" v-model="providerSearch" :placeholder="t('buscarProveedor')"
                                 class="w-full pl-11 pr-4 py-3 border border-brand-pink bg-white focus:border-brand-crimson outline-none transition-all text-sm">
                         </div>
                         <select v-model="providerCategoryFilter"
                             class="px-4 py-3 border border-brand-pink bg-white focus:border-brand-crimson outline-none transition-all text-sm">
-                            <option value="">Todas las categorías</option>
+                            <option value="">{{ t('todasLasCategorias') }}</option>
                             <optgroup v-for="group in providerFamilyGroups" :key="group.family" :label="group.family">
                                 <option v-for="cat in group.categories" :key="cat" :value="cat">{{ cat }}</option>
                             </optgroup>
                         </select>
                         <label class="flex items-center gap-2 px-4 py-3 border border-brand-pink bg-white text-xs font-bold text-brand-dark cursor-pointer whitespace-nowrap">
                             <input type="checkbox" v-model="providerShowInactive" class="w-4 h-4 cursor-pointer">
-                            Ver inactivos
+                            {{ t('verInactivos') }}
                         </label>
                     </div>
 
                     <!-- Providers List -->
                     <div v-if="providersLoading" class="text-center py-10 text-slate-400 text-xs uppercase tracking-widest">
-                        <i class="ph-bold ph-spinner animate-spin text-xl block mb-2"></i> Cargando proveedores...
+                        <i class="ph-bold ph-spinner animate-spin text-xl block mb-2"></i> {{ t('cargandoProveedores') }}
                     </div>
                     <div v-else-if="filteredProviders.length === 0" class="text-center py-10 text-slate-400 text-xs uppercase tracking-widest">
-                        No se encontraron proveedores
+                        {{ t('noSeEncontraronProveedores') }}
                     </div>
                     <div v-else class="divide-y divide-brand-pink/20 border border-brand-pink/30">
                         <div v-for="provider in filteredProviders" :key="provider.id"
@@ -1131,7 +1127,7 @@
                                 <button type="button" @click="toggleProviderActive(provider)"
                                     class="text-[9px] font-bold uppercase tracking-widest px-3 py-1.5 border transition-all"
                                     :class="provider.is_active ? 'border-brand-crimson text-brand-crimson hover:bg-brand-crimson hover:text-white' : 'border-slate-300 text-slate-400 hover:border-brand-dark hover:text-brand-dark'">
-                                    {{ provider.is_active ? 'Desactivar' : 'Activar' }}
+                                    {{ provider.is_active ? t('desactivar') : t('activar') }}
                                 </button>
                                 <button type="button" @click="editProvider(provider)"
                                     class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-brand-crimson transition-colors">
@@ -1152,14 +1148,14 @@
         <div v-if="currentView === 'activity' && !isCouple"
             class="flex-1 flex flex-col min-h-0 bg-white border border-brand-pink shadow-sm overflow-hidden animate-fade-in">
             <div class="p-6 border-b border-slate-100">
-                <h2 class="text-2xl font-serif font-bold text-brand-dark">Actividad del Proyecto</h2>
+                <h2 class="text-2xl font-serif font-bold text-brand-dark">{{ t('actividadDelProyecto') }}</h2>
                 <p class="text-xs font-bold text-brand-dark/40 uppercase tracking-widest mt-1">
-                    Registro de acciones sensibles: borrado de invitados, reseteo de datos, etc.
+                    {{ t('registroAccionesSensibles') }}
                 </p>
             </div>
             <div class="overflow-y-auto p-6 space-y-3">
                 <p v-if="activityLog.length === 0" class="text-xs text-slate-400 text-center py-8">
-                    No hay acciones registradas todavía para este casamiento.
+                    {{ t('noHayAccionesRegistradas') }}
                 </p>
                 <div v-for="entry in activityLog" :key="entry.id"
                     class="flex items-start gap-3 border border-brand-pink/50 px-4 py-3">
@@ -1171,7 +1167,7 @@
                         </div>
                         <div class="text-xs text-slate-500">{{ activityDescription(entry) }}</div>
                         <div class="text-[10px] text-slate-400 uppercase tracking-widest mt-1">
-                            Hecho desde: {{ activityActorLabel(entry.actor_role) }}
+                            {{ t('hechoDesde') }} {{ activityActorLabel(entry.actor_role) }}
                         </div>
                     </div>
                 </div>
@@ -1186,8 +1182,8 @@
                 style="max-height: 90vh;">
                 <div class="px-8 py-6 border-b border-brand-pink/30 flex justify-between items-center bg-brand-beige/50 shrink-0">
                     <div>
-                        <h3 class="font-serif font-bold text-2xl text-brand-dark">Solicitud de Presupuesto</h3>
-                        <p class="text-xs text-slate-400 mt-1">{{ selectedProviderIds.length }} proveedor{{ selectedProviderIds.length !== 1 ? 'es' : '' }} de {{ selectedProviderCategories.join(', ') }}</p>
+                        <h3 class="font-serif font-bold text-2xl text-brand-dark">{{ t('solicitudPresupuestoModalTitle') }}</h3>
+                        <p class="text-xs text-slate-400 mt-1">{{ selectedProviderIds.length }} {{ selectedProviderIds.length !== 1 ? t('proveedorPlural') : t('proveedorSingular') }} {{ t('deCategoria') }} {{ selectedProviderCategories.join(', ') }}</p>
                     </div>
                     <button @click="closeBudgetRequestModal"
                         class="text-brand-dark hover:text-brand-crimson transition-colors"><i
@@ -1196,37 +1192,37 @@
 
                 <div class="p-8 overflow-y-auto flex-1 space-y-6" style="min-height: 0;">
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Enviado por</label>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{{ t('enviadoPor') }}</label>
                         <select v-model="budgetRequestForm.senderKey"
                             class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all text-sm">
                             <option v-for="sender in emailSenders" :key="sender.key" :value="sender.key">{{ sender.email }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Asunto</label>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{{ t('asunto') }}</label>
                         <input type="text" v-model="budgetRequestForm.subject"
                             class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all text-sm">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Mensaje</label>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{{ t('mensaje') }}</label>
                         <textarea v-model="budgetRequestForm.body" rows="16"
                             class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all text-sm font-sans leading-relaxed"></textarea>
                     </div>
                     <div class="bg-blue-50 border border-blue-200 px-4 py-3 text-[11px] text-blue-700">
                         <i class="ph-bold ph-info"></i>
-                        Se creará un borrador independiente en Gmail para cada uno de los {{ selectedProviderIds.length }} proveedores seleccionados. No se envía nada automáticamente.
+                        {{ t('seCrearaDraftInfo1') }} {{ selectedProviderIds.length }} {{ t('seCrearaDraftInfo2') }}
                     </div>
                 </div>
 
                 <div class="px-8 py-5 border-t border-brand-pink/30 bg-white flex gap-4 shrink-0">
                     <button type="button" @click="closeBudgetRequestModal"
                         class="flex-1 py-4 border border-brand-pink text-brand-dark font-bold uppercase tracking-widest text-[10px] hover:bg-brand-beige transition-all">
-                        Cancelar
+                        {{ t('cancelar') }}
                     </button>
                     <button type="button" @click="generateBudgetDrafts" :disabled="generatingDrafts"
                         class="flex-1 py-4 bg-brand-dark text-white font-bold uppercase tracking-widest text-[10px] hover:bg-brand-crimson transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2">
                         <i v-if="generatingDrafts" class="ph-bold ph-spinner animate-spin"></i>
-                        {{ generatingDrafts ? 'Generando...' : 'Generar Borradores en Gmail' }}
+                        {{ generatingDrafts ? t('generando') : t('generarBorradoresGmail') }}
                     </button>
                 </div>
             </div>
@@ -1245,14 +1241,13 @@
                 <form @submit.prevent="saveTable" class="p-8 space-y-6">
                     <div>
                         <label
-                            class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Número
-                            de Mesa</label>
+                            class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">{{ t('numeroDeMesa') }}</label>
                         <input type="text" v-model="tableForm.name" placeholder="" required
                             class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all font-sans text-sm">
                     </div>
                     <div>
                         <label
-                            class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Capacidad</label>
+                            class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">{{ t('capacidad') }}</label>
                         <div class="flex items-center gap-4">
                             <button type="button" @click="tableForm.capacity = Math.max(1, tableForm.capacity - 1)"
                                 class="w-12 h-12 rounded-none border border-brand-pink hover:bg-brand-crimson hover:text-white flex items-center justify-center text-brand-dark transition-colors"><i
@@ -1266,9 +1261,9 @@
                     </div>
                     <div class="pt-4 flex gap-4">
                         <button type="button" @click="closeModal"
-                            class="flex-1 py-4 bg-white border border-brand-pink text-brand-dark font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-beige transition-colors">Cancelar</button>
+                            class="flex-1 py-4 bg-white border border-brand-pink text-brand-dark font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-beige transition-colors">{{ t('cancelar') }}</button>
                         <button type="submit"
-                            class="flex-1 py-4 bg-brand-crimson text-white font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-crimson/90 transition-colors shadow-lg shadow-brand-crimson/20">Guardar</button>
+                            class="flex-1 py-4 bg-brand-crimson text-white font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-crimson/90 transition-colors shadow-lg shadow-brand-crimson/20">{{ t('guardar') }}</button>
                     </div>
                 </form>
             </div>
@@ -1291,7 +1286,7 @@
                         class="max-w-full h-auto object-contain block mx-auto">
                 </div>
                 <div v-else class="p-12 text-center bg-white text-brand-dark">
-                    <p class="font-bold uppercase tracking-widest text-xs">No hay imagen disponible</p>
+                    <p class="font-bold uppercase tracking-widest text-xs">{{ t('noHayImagenDisponible') }}</p>
                 </div>
             </div>
         </div>
@@ -1312,13 +1307,13 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Apellido</label>
+                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">{{ t('apellido') }}</label>
                             <input type="text" v-model="guestForm.lastName" placeholder="Doe" required
                                 class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all font-sans text-sm">
                         </div>
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Nombre</label>
+                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">{{ t('nombreLabel') }}</label>
                             <input type="text" v-model="guestForm.firstName" placeholder="John" required
                                 class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all font-sans text-sm">
                         </div>
@@ -1327,13 +1322,13 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Email</label>
+                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">{{ t('email') }}</label>
                             <input type="email" v-model="guestForm.email" placeholder="john@example.com"
                                 class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all font-sans text-sm">
                         </div>
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Teléfono</label>
+                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">{{ t('telefono') }}</label>
                             <input type="tel" v-model="guestForm.phone" placeholder="+1 234..."
                                 class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all font-sans text-sm">
                         </div>
@@ -1341,32 +1336,29 @@
 
                     <div>
                         <label
-                            class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">Restricciones
-                            Alimentarias</label>
+                            class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] mb-2">{{ t('restriccionesAlimentarias') }}</label>
                         <select v-model="guestForm.dietary" @change="syncMainGuestDietary"
                             class="w-full px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson focus:ring-1 focus:ring-brand-crimson outline-none transition-all bg-white font-sans text-sm">
-                            <option value="None">Sin Restricción</option>
-                            <option value="Celiaco">Celiaquía</option>
-                            <option value="Vegano">Vegano</option>
-                            <option value="Vegetariano">Vegetariano</option>
-                            <option value="Kosher">Kosher</option>
-                            <option value="Otro">Otro</option>
+                            <option value="None">{{ t('sinRestriccion') }}</option>
+                            <option value="Celiaco">{{ t('celiaquia') }}</option>
+                            <option value="Vegano">{{ t('vegano') }}</option>
+                            <option value="Vegetariano">{{ t('vegetariano') }}</option>
+                            <option value="Kosher">{{ t('kosher') }}</option>
+                            <option value="Otro">{{ t('otro') }}</option>
                         </select>
-                        <input v-if="guestForm.dietary === 'Otro'" 
-                               type="text" 
-                               v-model="guestForm.dietary_detail" 
-                               placeholder="Especifique la restricción..."
+                        <input v-if="guestForm.dietary === 'Otro'"
+                               type="text"
+                               v-model="guestForm.dietary_detail"
+                               :placeholder="t('especifiqueRestriccion')"
                                class="w-full mt-2 px-4 py-3 rounded-none border border-brand-pink focus:border-brand-crimson outline-none transition-all bg-white font-sans text-sm">
                     </div>
                     <!-- GROUP MEMBERS (Sub-guests) -->
                     <div class="border-t border-brand-pink pt-6">
                         <div class="flex justify-between items-center mb-4">
                             <label
-                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em]">Integrantes
-                                de la Invitación</label>
+                                class="block text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em]">{{ t('integrantesDeLaInvitacion') }}</label>
                             <button type="button" @click="addSubGuest"
-                                class="text-brand-crimson text-[10px] font-bold uppercase tracking-widest hover:underline">+
-                                Agregar</button>
+                                class="text-brand-crimson text-[10px] font-bold uppercase tracking-widest hover:underline">{{ t('agregar') }}</button>
                         </div>
 
                         <div class="space-y-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
@@ -1383,103 +1375,103 @@
                                             class="bg-brand-crimson/5 border border-brand-crimson/10 px-3 py-2 rounded">
                                             <p
                                                 class="text-[8px] font-bold text-brand-crimson uppercase tracking-widest mb-1">
-                                                Integrante #1 (Invitado)</p>
+                                                {{ t('integranteNum1') }}</p>
                                             <p class="text-xs font-bold text-brand-dark italic">{{
                                                 getFullName(guestForm) ||
-                                                'Completar nombres arriba...' }}</p>
+                                                t('completarNombresArriba') }}</p>
                                         </div>
                                     </div>
                                     <div v-else>
                                         <label
-                                            class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Acompañante
+                                            class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">{{ t('acompanante') }}
                                             #{{ idx }}</label>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <input type="text" v-model="sg.lastName" placeholder="Apellido..."
+                                            <input type="text" v-model="sg.lastName" :placeholder="t('apellido') + '...'"
                                                 class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
-                                            <input type="text" v-model="sg.firstName" placeholder="Nombre..."
+                                            <input type="text" v-model="sg.firstName" :placeholder="t('nombreLabel') + '...'"
                                                 class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-2 gap-3">
                                         <div>
                                             <label
-                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Estado</label>
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">{{ t('estado') }}</label>
                                             <select v-model="sg.status"
                                                 class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson">
-                                                <option value="Pending">Por confirmar</option>
-                                                <option value="Confirmed">Confirmado</option>
-                                                <option value="Declined">Cancelado</option>
+                                                <option value="Pending">{{ t('porConfirmar') }}</option>
+                                                <option value="Confirmed">{{ t('confirmado') }}</option>
+                                                <option value="Declined">{{ t('cancelado') }}</option>
                                             </select>
                                         </div>
                                         <div>
                                             <label
-                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Dieta</label>
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">{{ t('dieta') }}</label>
                                             <select v-model="sg.dietary"
                                                 class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson">
-                                                <option value="None">Sin Restricción</option>
-                                                <option value="Celiaco">Celíaco</option>
-                                                <option value="Vegano">Vegano</option>
-                                                <option value="Vegetariano">Vegetariano</option>
-                                                <option value="Kosher">Kosher</option>
-                                                <option value="Otro">Otro</option>
+                                                <option value="None">{{ t('sinRestriccion') }}</option>
+                                                <option value="Celiaco">{{ t('celiaco') }}</option>
+                                                <option value="Vegano">{{ t('vegano') }}</option>
+                                                <option value="Vegetariano">{{ t('vegetariano') }}</option>
+                                                <option value="Kosher">{{ t('kosher') }}</option>
+                                                <option value="Otro">{{ t('otro') }}</option>
                                             </select>
-                                            <input v-if="sg.dietary === 'Otro'" 
-                                                   type="text" 
-                                                   v-model="sg.dietary_detail" 
-                                                   placeholder="Especifique..."
+                                            <input v-if="sg.dietary === 'Otro'"
+                                                   type="text"
+                                                   v-model="sg.dietary_detail"
+                                                   :placeholder="t('especifique')"
                                                    class="w-full mt-2 px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
                                         </div>
                                         <div class="col-span-2">
                                             <label
-                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Edad</label>
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">{{ t('edad') }}</label>
                                             <select v-model="sg.ageCategory"
                                                 class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson">
-                                                <option value="">Seleccionar...</option>
-                                                <option value="Adulto">Adulto</option>
-                                                <option value="Teen">Teen (13-17)</option>
-                                                <option value="Niño">Niño (3-12)</option>
-                                                <option value="Bebé">Bebé (0-2)</option>
+                                                <option value="">{{ t('seleccionarDots') }}</option>
+                                                <option value="Adulto">{{ t('adulto') }}</option>
+                                                <option value="Teen">{{ t('teen') }}</option>
+                                                <option value="Niño">{{ t('nino') }}</option>
+                                                <option value="Bebé">{{ t('bebe') }}</option>
                                             </select>
                                         </div>
                                         <div v-if="isMarcelloGonzaWedding" class="col-span-2">
                                             <label
-                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Talle de Calzado</label>
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">{{ t('talleCalzado') }}</label>
                                             <input type="text"
                                                    v-model="sg.shoe_size"
-                                                   placeholder="Ej: 38, 42, 45.5"
+                                                   :placeholder="t('talleEj')"
                                                    class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
                                         </div>
                                         <div v-if="isMarcelloGonzaWedding" class="col-span-2">
                                             <label
-                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Día de Llegada a Mendoza</label>
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">{{ t('diaLlegadaMendoza') }}</label>
                                             <input type="text"
                                                    v-model="sg.arrival_day"
                                                    maxlength="40"
-                                                   placeholder="Ej: Viernes 26 de marzo"
+                                                   :placeholder="t('diaLlegadaEj')"
                                                    class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
                                         </div>
                                         <div v-if="isMarcelloGonzaWedding" class="col-span-2">
                                             <label
-                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">Tema Musical Sugerido</label>
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">{{ t('temaMusicalSugerido') }}</label>
                                             <input type="text"
                                                    v-model="sg.song_request"
                                                    maxlength="40"
-                                                   placeholder="Ej: Bailando - Enrique Iglesias"
+                                                   :placeholder="t('temaMusicalEj')"
                                                    class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
                                         </div>
                                         <div v-if="currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers" class="col-span-2">
                                             <label
-                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">¿Necesita Traslado?</label>
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">{{ t('necesitaTraslado') }}</label>
                                             <div class="space-y-2">
                                                 <label class="flex items-center gap-2 cursor-pointer">
                                                     <input type="radio" :value="true" v-model="sg.needs_transfer"
                                                         class="w-3 h-3 cursor-pointer">
-                                                    <span class="text-xs font-bold text-brand-dark">Sí</span>
+                                                    <span class="text-xs font-bold text-brand-dark">{{ t('si') }}</span>
                                                 </label>
                                                 <label class="flex items-center gap-2 cursor-pointer">
                                                     <input type="radio" :value="false" v-model="sg.needs_transfer"
                                                         class="w-3 h-3 cursor-pointer">
-                                                    <span class="text-xs font-bold text-brand-dark">No</span>
+                                                    <span class="text-xs font-bold text-brand-dark">{{ t('no') }}</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -1491,9 +1483,9 @@
                     </div> <!-- end scrollable area -->
                     <div class="px-8 py-4 border-t border-brand-pink flex gap-4 bg-white flex-shrink-0">
                         <button type="button" @click="closeGuestModal"
-                            class="flex-1 py-4 bg-white border border-brand-pink text-brand-dark font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-beige transition-colors">Cancelar</button>
+                            class="flex-1 py-4 bg-white border border-brand-pink text-brand-dark font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-beige transition-colors">{{ t('cancelar') }}</button>
                         <button type="submit"
-                            class="flex-1 py-4 bg-brand-crimson text-white font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-crimson/90 transition-colors shadow-lg shadow-brand-crimson/20">Guardar</button>
+                            class="flex-1 py-4 bg-brand-crimson text-white font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-brand-crimson/90 transition-colors shadow-lg shadow-brand-crimson/20">{{ t('guardar') }}</button>
                     </div>
                 </form>
             </div>
@@ -1520,6 +1512,9 @@
                 const currentProjectId = ref(null);
                 const currentProject = ref(null);
                 const isCouple = ref(false);
+
+                // LANGUAGE STATE — por defecto español para todas las bodas excepto Sven & Yamila
+                const currentLanguage = ref('es');
 
                 // DATA STORES
                 const tables = ref([]);
@@ -1601,7 +1596,7 @@
                         allProviders.value = data || [];
                     } catch (e) {
                         console.error('Error loading providers:', e);
-                        showToast('Error cargando proveedores: ' + e.message, 'error');
+                        showToast(t('toastErrorCargandoProveedores') + e.message, 'error');
                     } finally {
                         providersLoading.value = false;
                     }
@@ -1614,7 +1609,7 @@
                         .filter(Boolean);
 
                     if (emails.length === 0) {
-                        showToast('Ingresá al menos un email', 'error');
+                        showToast(t('toastIngresaAlMenosUnEmail'), 'error');
                         return;
                     }
 
@@ -1632,13 +1627,13 @@
                                 .update(payload)
                                 .eq('id', editingProvider.value.id);
                             if (error) throw error;
-                            showToast('Proveedor actualizado');
+                            showToast(t('toastProveedorActualizado'));
                         } else {
                             const { error } = await supabase
                                 .from('providers')
                                 .insert({ id: crypto.randomUUID(), ...payload });
                             if (error) throw error;
-                            showToast('Proveedor agregado');
+                            showToast(t('toastProveedorAgregado'));
                         }
 
                         resetProviderForm();
@@ -1646,7 +1641,7 @@
                         await loadProviders(); // refresca también la lista de activos usada al solicitar presupuestos
                     } catch (e) {
                         console.error('Error saving provider:', e);
-                        showToast('Error al guardar proveedor: ' + e.message, 'error');
+                        showToast(t('toastErrorGuardarProveedor') + e.message, 'error');
                     }
                 };
 
@@ -1673,7 +1668,7 @@
                         await loadProviders();
                     } catch (e) {
                         console.error('Error toggling provider:', e);
-                        showToast('Error al cambiar estado: ' + e.message, 'error');
+                        showToast(t('toastErrorCambiarEstado') + e.message, 'error');
                     }
                 };
 
@@ -1687,10 +1682,10 @@
                         if (error) throw error;
                         allProviders.value = allProviders.value.filter(p => p.id !== id);
                         await loadProviders();
-                        showToast('Proveedor eliminado');
+                        showToast(t('toastProveedorEliminado'));
                     } catch (e) {
                         console.error('Error deleting provider:', e);
-                        showToast('Error al eliminar proveedor: ' + e.message, 'error');
+                        showToast(t('toastErrorEliminarProveedor') + e.message, 'error');
                     }
                 };
 
@@ -2027,6 +2022,10 @@ Events Boutique`
                     };
                     currentProjectId.value = projectId;
 
+                    if (isSvenYamiWedding.value) {
+                        currentLanguage.value = 'en';
+                    }
+
                     // 2. Tables
                     const { data: tbs } = await supabase.from('tables').select('*').eq('project_id', projectId);
                     tables.value = tbs || [];
@@ -2110,8 +2109,486 @@ Events Boutique`
                     }
                 }, { deep: true });
 
-                const tableModalTitle = computed(() => editingTable.value ? 'Editar Mesa' : 'Nueva Mesa');
-                const guestModalTitle = computed(() => editingGuest.value ? 'Editar Invitado' : 'Nuevo Invitado');
+                // TRANSLATIONS (solo es/en — esta vista de novios no usa portugués)
+                const translations = {
+                    es: {
+                        // Tabs & header
+                        linkInvitados: 'Link para Invitados',
+                        cerrarSesion: 'Cerrar Sesión',
+                        copiar: 'Copiar',
+                        tabMesas: 'Plan de Mesas',
+                        tabInvitados: 'Lista de Invitados',
+                        tabMural: 'Mural',
+                        tabProveedores: 'Proveedores',
+                        tabActividad: 'Actividad',
+                        exportarExcel: 'Exportar Excel',
+                        // Stats bar
+                        capacidadMesas: 'Capacidad Mesas',
+                        asignadosAMesa: 'Asignados a Mesa',
+                        sinRespuesta: 'Sin Respuesta',
+                        confirmadosTotales: 'Confirmados / Totales',
+                        // Seating view
+                        distribucionMesas: 'Distribución de Mesas',
+                        verPlano: 'Ver Plano',
+                        cambiarPlano: 'Cambiar Plano',
+                        adjuntarPlano: 'Adjuntar Plano',
+                        nuevaMesa: 'Nueva Mesa',
+                        editarInvitado: 'Editar Invitado',
+                        capacidadTotal: 'Capacidad Total:',
+                        noHayMesasCreadas: 'No hay mesas creadas',
+                        comienzaCreandoMesa: 'Comienza creando tu primera mesa para organizar a los invitados.',
+                        crearMesa: 'Crear Mesa',
+                        asignacion: 'Asignación',
+                        arrastraDesasignar: 'Arrastrá acá para desasignar',
+                        soltaDevolver: 'Soltá para devolver a la lista',
+                        buscarInvitado: 'BUSCAR INVITADO...',
+                        todos: 'Todos',
+                        sinMesaFilter: 'Sin Mesa',
+                        conMesaFilter: 'Con Mesa',
+                        grupo: 'Grupo:',
+                        conMesaBadge: 'CON MESA',
+                        sinMesaBadge: 'SIN MESA',
+                        rechazoRsvp: 'RECHAZÓ RSVP',
+                        asignadoPeroRechazoTitle: 'Asignado a mesa pero rechazó la invitación',
+                        si: 'Si',
+                        no: 'No',
+                        asignarMesaOption: 'Asignar Mesa...',
+                        llena: '- LLENA',
+                        // Guests view
+                        gestionarInvitados: 'Gestionar Invitados',
+                        agregaEditaImporta: 'Agrega, edita o importa tu lista de invitados.',
+                        confirmados: 'Confirmados',
+                        pendientes: 'Pendientes',
+                        rechazaron: 'Rechazaron',
+                        listaDefinitiva: 'Lista Definitiva',
+                        importarExcel: 'Importar Excel',
+                        eliminarListaCompleta: 'Eliminar Lista Completa',
+                        nuevoInvitado: 'Nuevo Invitado',
+                        buscarInvitadoIntegrante: 'Buscar invitado o integrante...',
+                        nombresDuplicadosParte1: 'Se detectaron',
+                        nombresDuplicadosParte2: 'nombre(s) duplicado(s) en la lista. Revisalos antes de continuar.',
+                        colInvitado: 'Invitado',
+                        colContacto: 'Contacto',
+                        colDieta: 'Dieta',
+                        colConfirmados: 'Confirmados',
+                        colEstadoMesa: 'Estado Mesa',
+                        colAcciones: 'Acciones',
+                        sinInfoContacto: 'No contact info',
+                        rechazoMesa: 'RECHAZÓ MESA',
+                        sinNombre: '(Sin nombre)',
+                        nombreEstaDuplicado: 'Este nombre está duplicado en la lista',
+                        mesaLabel: 'MESA:',
+                        editar: 'Editar',
+                        eliminar: 'Eliminar',
+                        noGuestsFound: 'No guests found. Import an Excel file or add guests manually.',
+                        totalGuests: 'Total Guests:',
+                        // Mural
+                        muralDeMensajes: 'Mural de Mensajes',
+                        mensajeDeLosInvitados: 'de los invitados',
+                        mensajeSingular: 'mensaje',
+                        mensajePlural: 'mensajes',
+                        descargarMural: 'Descargar Mural',
+                        todaviaNoHayMensajes: 'Todavía no hay mensajes',
+                        losInvitadosPodranDejarMensaje: 'Los invitados podrán dejar su mensaje luego de confirmar asistencia',
+                        eliminarMensajeTitle: 'Eliminar mensaje',
+                        // Providers view
+                        solicitudPresupuestos: 'Solicitud de Presupuestos',
+                        elegiCategoriaSeleccionaProveedores: 'Elegí una categoría y seleccioná los proveedores a contactar',
+                        gestionarProveedores: 'Gestionar Proveedores',
+                        seleccionado: 'seleccionado',
+                        seleccionados: 'seleccionados',
+                        generarSolicitud: 'Generar Solicitud',
+                        buscarProveedorPorNombre: 'Buscar proveedor por nombre...',
+                        verTodos: 'Ver todos',
+                        mostrandoSoloSolicitados: 'Mostrando solo los proveedores a los que ya se les pidió presupuesto en este casamiento.',
+                        elegiCategoriaVerProveedores: 'Elegí una categoría para ver los proveedores',
+                        cargandoProveedores: 'Cargando proveedores...',
+                        noSeEncontraronProveedoresPara: 'No se encontraron proveedores para',
+                        noHayProveedoresSolicitadosCategoria: 'No hay proveedores solicitados todavía en esta categoría',
+                        activaVerTodos: 'Activá "Ver todos" para ver el resto de los proveedores',
+                        noHayProveedoresActivosCategoria: 'No hay proveedores activos en esta categoría',
+                        podesDarAltaDesdeDashboard: 'Podés dar de alta proveedores desde el panel de Proveedores en el Dashboard',
+                        presupuestoSolicitadoEl: 'Presupuesto solicitado el',
+                        // Providers modal
+                        proveedoresModalTitle: 'Proveedores',
+                        editarProveedor: 'Editar Proveedor',
+                        nuevoProveedor: 'Nuevo Proveedor',
+                        nombre: 'Nombre',
+                        nombreDelProveedor: 'Nombre del proveedor',
+                        categoria: 'Categoría',
+                        seleccionarDots: 'Seleccionar...',
+                        emails: 'Email(s)',
+                        separadosPorComa: '(separados por coma)',
+                        activo: 'Activo',
+                        inactivo: 'Inactivo',
+                        cancelarEdicion: 'Cancelar edición',
+                        guardarCambios: 'Guardar Cambios',
+                        agregarProveedor: 'Agregar Proveedor',
+                        buscarProveedor: 'Buscar proveedor...',
+                        todasLasCategorias: 'Todas las categorías',
+                        verInactivos: 'Ver inactivos',
+                        noSeEncontraronProveedores: 'No se encontraron proveedores',
+                        desactivar: 'Desactivar',
+                        activar: 'Activar',
+                        // Activity view
+                        actividadDelProyecto: 'Actividad del Proyecto',
+                        registroAccionesSensibles: 'Registro de acciones sensibles: borrado de invitados, reseteo de datos, etc.',
+                        noHayAccionesRegistradas: 'No hay acciones registradas todavía para este casamiento.',
+                        hechoDesde: 'Hecho desde:',
+                        // Budget request modal
+                        solicitudPresupuestoModalTitle: 'Solicitud de Presupuesto',
+                        proveedorSingular: 'proveedor',
+                        proveedorPlural: 'proveedores',
+                        deCategoria: 'de',
+                        enviadoPor: 'Enviado por',
+                        asunto: 'Asunto',
+                        mensaje: 'Mensaje',
+                        seCrearaDraftInfo1: 'Se creará un borrador independiente en Gmail para cada uno de los',
+                        seCrearaDraftInfo2: 'proveedores seleccionados. No se envía nada automáticamente.',
+                        cancelar: 'Cancelar',
+                        generando: 'Generando...',
+                        generarBorradoresGmail: 'Generar Borradores en Gmail',
+                        // Table modal
+                        numeroDeMesa: 'Número de Mesa',
+                        capacidad: 'Capacidad',
+                        guardar: 'Guardar',
+                        editarMesa: 'Editar Mesa',
+                        // Floor plan modal
+                        noHayImagenDisponible: 'No hay imagen disponible',
+                        // Guest modal
+                        apellido: 'Apellido',
+                        nombreLabel: 'Nombre',
+                        email: 'Email',
+                        telefono: 'Teléfono',
+                        restriccionesAlimentarias: 'Restricciones Alimentarias',
+                        sinRestriccion: 'Sin Restricción',
+                        celiaquia: 'Celiaquía',
+                        vegano: 'Vegano',
+                        vegetariano: 'Vegetariano',
+                        kosher: 'Kosher',
+                        otro: 'Otro',
+                        especifiqueRestriccion: 'Especifique la restricción...',
+                        integrantesDeLaInvitacion: 'Integrantes de la Invitación',
+                        agregar: '+ Agregar',
+                        integranteNum1: 'Integrante #1 (Invitado)',
+                        completarNombresArriba: 'Completar nombres arriba...',
+                        acompanante: 'Acompañante',
+                        estado: 'Estado',
+                        porConfirmar: 'Por confirmar',
+                        confirmado: 'Confirmado',
+                        cancelado: 'Cancelado',
+                        dieta: 'Dieta',
+                        celiaco: 'Celíaco',
+                        especifique: 'Especifique...',
+                        edad: 'Edad',
+                        adulto: 'Adulto',
+                        teen: 'Teen (13-17)',
+                        nino: 'Niño (3-12)',
+                        bebe: 'Bebé (0-2)',
+                        talleCalzado: 'Talle de Calzado',
+                        talleEj: 'Ej: 38, 42, 45.5',
+                        diaLlegadaMendoza: 'Día de Llegada a Mendoza',
+                        diaLlegadaEj: 'Ej: Viernes 26 de marzo',
+                        temaMusicalSugerido: 'Tema Musical Sugerido',
+                        temaMusicalEj: 'Ej: Bailando - Enrique Iglesias',
+                        necesitaTraslado: '¿Necesita Traslado?',
+                        // Toasts
+                        toastErrorCargandoProveedores: 'Error cargando proveedores: ',
+                        toastIngresaAlMenosUnEmail: 'Ingresá al menos un email',
+                        toastProveedorActualizado: 'Proveedor actualizado',
+                        toastProveedorAgregado: 'Proveedor agregado',
+                        toastErrorGuardarProveedor: 'Error al guardar proveedor: ',
+                        toastErrorCambiarEstado: 'Error al cambiar estado: ',
+                        toastProveedorEliminado: 'Proveedor eliminado',
+                        toastErrorEliminarProveedor: 'Error al eliminar proveedor: ',
+                        toastNoPuedeReducirCapacidad1: 'No se puede reducir la capacidad a',
+                        toastNoPuedeReducirCapacidad2: '. Hay',
+                        toastNoPuedeReducirCapacidad3: 'invitados asignados. Primero reasigna invitados.',
+                        toastMesaActualizada: 'Mesa actualizada',
+                        toastMesaCreada: 'Mesa creada',
+                        toastErrorPrefix: 'Error: ',
+                        toastMesaEliminada: 'Mesa eliminada',
+                        toastErrorAlBorrar: 'Error al borrar',
+                        toastMaximo10Integrantes: 'Máximo 10 integrantes',
+                        toastEspecificaTalleCalzadoDe: 'Por favor especificá el talle de calzado de:',
+                        toastInvitadoActualizado: 'Invitado actualizado',
+                        toastInvitadoAgregado: 'Invitado agregado',
+                        toastErrorSavingGuest: 'Error saving guest: ',
+                        toastErrorCargarActividad: 'Error al cargar la actividad',
+                        toastInvitadoEliminado: 'Invitado eliminado',
+                        toastErrorAlEliminar: 'Error al eliminar',
+                        toastNoHayInvitadosParaEliminar: 'No hay invitados para eliminar',
+                        toastListaInvitadosEliminada: 'Lista de invitados eliminada completamente',
+                        toastErrorEliminarLista: 'Error al eliminar la lista de invitados',
+                        toastDesasignado: 'Desasignado',
+                        toastMesaLlenaPrefix: 'Mesa "',
+                        toastMesaLlenaSuffix: '" llena',
+                        toastAsignadoExitosamente: 'Asignado exitosamente',
+                        toastErrorDesconocido: 'Error desconocido',
+                        toastLista: 'Lista Definitiva exportada con éxito!',
+                        toastErrorExportarListaDefinitiva: 'Error al exportar la Lista Definitiva: ',
+                        toastErrorNoSePudoObtenerId: 'Error: No se pudo obtener el ID del proyecto. Recarga la página.',
+                        toastImportadoExitosamente1: '¡Importado',
+                        toastImportadoExitosamente2: 'invitados exitosamente!',
+                        toastNoSeEncontraronFilasValidas: 'No se encontraron filas válidas. Formato: Apellido, Nombre, Cantidad...',
+                        toastErrorImportando: 'Error importando',
+                        toastSeCrearonBorradores1: 'Se crearon',
+                        toastSeCrearonBorradores2: 'borrador(es) en Gmail. Revisalos en la carpeta Borradores.',
+                        toastBorradoresCreadosParcial1: '',
+                        toastBorradoresCreadosParcial2: 'borrador(es) creados,',
+                        toastBorradoresCreadosParcial3: 'fallaron. Revisá la consola para más detalle.',
+                        toastErrorGenerarSolicitud: 'Error al generar la solicitud: ',
+                        toastDatosReseteados: 'Datos reseteados',
+                        toastLinkCopiado: 'Link copiado al portapapeles!',
+                        toastSoloImagenes: 'Solo se permiten imágenes',
+                        toastSubiendoPlano: 'Subiendo plano...',
+                        toastPlanoActualizado: 'Plano actualizado exitosamente',
+                        toastErrorSubirPlano: 'Error al subir plano: ',
+                        toastMesaYaLlena: 'La mesa ya está llena',
+                        toastErrorEliminarMensaje: 'Error al eliminar mensaje',
+                        toastMensajeEliminado: 'Mensaje eliminado',
+                        toastMuralDescargado: 'Mural descargado como imagen',
+                        toastErrorDescargarMural: 'Error al descargar el mural',
+                        toastExportSuccessful: '¡Exportación exitosa!',
+                        toastExportFailed: 'Error al exportar: ',
+                        nombreEstaDuplicado: 'Este nombre está duplicado en la lista'
+                    },
+                    en: {
+                        linkInvitados: 'Guest Link',
+                        cerrarSesion: 'Log Out',
+                        copiar: 'Copy',
+                        tabMesas: 'Seating Plan',
+                        tabInvitados: 'Guest List',
+                        tabMural: 'Wall',
+                        tabProveedores: 'Providers',
+                        tabActividad: 'Activity',
+                        exportarExcel: 'Export Excel',
+                        capacidadMesas: 'Table Capacity',
+                        asignadosAMesa: 'Assigned to Table',
+                        sinRespuesta: 'No Response',
+                        confirmadosTotales: 'Confirmed / Total',
+                        distribucionMesas: 'Table Layout',
+                        verPlano: 'View Floor Plan',
+                        cambiarPlano: 'Change Floor Plan',
+                        adjuntarPlano: 'Attach Floor Plan',
+                        nuevaMesa: 'New Table',
+                        editarInvitado: 'Edit Guest',
+                        capacidadTotal: 'Total Capacity:',
+                        noHayMesasCreadas: 'No tables created yet',
+                        comienzaCreandoMesa: 'Start by creating your first table to organize your guests.',
+                        crearMesa: 'Create Table',
+                        asignacion: 'Assignment',
+                        arrastraDesasignar: 'Drag here to unassign',
+                        soltaDevolver: 'Drop to return to the list',
+                        buscarInvitado: 'SEARCH GUEST...',
+                        todos: 'All',
+                        sinMesaFilter: 'No Table',
+                        conMesaFilter: 'With Table',
+                        grupo: 'Group:',
+                        conMesaBadge: 'HAS TABLE',
+                        sinMesaBadge: 'NO TABLE',
+                        rechazoRsvp: 'DECLINED RSVP',
+                        asignadoPeroRechazoTitle: 'Assigned to a table but declined the invitation',
+                        si: 'Yes',
+                        no: 'No',
+                        asignarMesaOption: 'Assign Table...',
+                        llena: '- FULL',
+                        gestionarInvitados: 'Manage Guests',
+                        agregaEditaImporta: 'Add, edit or import your guest list.',
+                        confirmados: 'Confirmed',
+                        pendientes: 'Pending',
+                        rechazaron: 'Declined',
+                        listaDefinitiva: 'Final List',
+                        importarExcel: 'Import Excel',
+                        eliminarListaCompleta: 'Delete Full List',
+                        nuevoInvitado: 'New Guest',
+                        buscarInvitadoIntegrante: 'Search guest or attendee...',
+                        nombresDuplicadosParte1: 'We detected',
+                        nombresDuplicadosParte2: 'duplicate name(s) in the list. Please review them before continuing.',
+                        colInvitado: 'Guest',
+                        colContacto: 'Contact',
+                        colDieta: 'Diet',
+                        colConfirmados: 'Confirmed',
+                        colEstadoMesa: 'Table Status',
+                        colAcciones: 'Actions',
+                        sinInfoContacto: 'No contact info',
+                        rechazoMesa: 'DECLINED TABLE',
+                        sinNombre: '(No name)',
+                        nombreEstaDuplicado: 'This name is duplicated in the list',
+                        mesaLabel: 'TABLE:',
+                        editar: 'Edit',
+                        eliminar: 'Delete',
+                        noGuestsFound: 'No guests found. Import an Excel file or add guests manually.',
+                        totalGuests: 'Total Guests:',
+                        muralDeMensajes: 'Message Wall',
+                        mensajeDeLosInvitados: 'from guests',
+                        mensajeSingular: 'message',
+                        mensajePlural: 'messages',
+                        descargarMural: 'Download Wall',
+                        todaviaNoHayMensajes: 'No messages yet',
+                        losInvitadosPodranDejarMensaje: 'Guests will be able to leave their message after confirming attendance',
+                        eliminarMensajeTitle: 'Delete message',
+                        solicitudPresupuestos: 'Budget Requests',
+                        elegiCategoriaSeleccionaProveedores: 'Choose a category and select the providers to contact',
+                        gestionarProveedores: 'Manage Providers',
+                        seleccionado: 'selected',
+                        seleccionados: 'selected',
+                        generarSolicitud: 'Generate Request',
+                        buscarProveedorPorNombre: 'Search provider by name...',
+                        verTodos: 'View all',
+                        mostrandoSoloSolicitados: 'Showing only the providers who have already been sent a budget request for this wedding.',
+                        elegiCategoriaVerProveedores: 'Choose a category to see the providers',
+                        cargandoProveedores: 'Loading providers...',
+                        noSeEncontraronProveedoresPara: 'No providers found for',
+                        noHayProveedoresSolicitadosCategoria: 'No providers have been requested yet in this category',
+                        activaVerTodos: 'Turn on "View all" to see the rest of the providers',
+                        noHayProveedoresActivosCategoria: 'No active providers in this category',
+                        podesDarAltaDesdeDashboard: 'You can add providers from the Providers panel in the Dashboard',
+                        presupuestoSolicitadoEl: 'Budget requested on',
+                        proveedoresModalTitle: 'Providers',
+                        editarProveedor: 'Edit Provider',
+                        nuevoProveedor: 'New Provider',
+                        nombre: 'Name',
+                        nombreDelProveedor: 'Provider name',
+                        categoria: 'Category',
+                        seleccionarDots: 'Select...',
+                        emails: 'Email(s)',
+                        separadosPorComa: '(comma separated)',
+                        activo: 'Active',
+                        inactivo: 'Inactive',
+                        cancelarEdicion: 'Cancel edit',
+                        guardarCambios: 'Save Changes',
+                        agregarProveedor: 'Add Provider',
+                        buscarProveedor: 'Search provider...',
+                        todasLasCategorias: 'All categories',
+                        verInactivos: 'Show inactive',
+                        noSeEncontraronProveedores: 'No providers found',
+                        desactivar: 'Deactivate',
+                        activar: 'Activate',
+                        actividadDelProyecto: 'Project Activity',
+                        registroAccionesSensibles: 'Log of sensitive actions: guest deletions, data resets, etc.',
+                        noHayAccionesRegistradas: 'No actions have been logged yet for this wedding.',
+                        hechoDesde: 'Done from:',
+                        solicitudPresupuestoModalTitle: 'Budget Request',
+                        proveedorSingular: 'provider',
+                        proveedorPlural: 'providers',
+                        deCategoria: 'from',
+                        enviadoPor: 'Sent from',
+                        asunto: 'Subject',
+                        mensaje: 'Message',
+                        seCrearaDraftInfo1: 'An independent Gmail draft will be created for each of the',
+                        seCrearaDraftInfo2: 'selected providers. Nothing is sent automatically.',
+                        cancelar: 'Cancel',
+                        generando: 'Generating...',
+                        generarBorradoresGmail: 'Generate Gmail Drafts',
+                        numeroDeMesa: 'Table Number',
+                        capacidad: 'Capacity',
+                        guardar: 'Save',
+                        editarMesa: 'Edit Table',
+                        noHayImagenDisponible: 'No image available',
+                        apellido: 'Last Name',
+                        nombreLabel: 'First Name',
+                        email: 'Email',
+                        telefono: 'Phone',
+                        restriccionesAlimentarias: 'Dietary Restrictions',
+                        sinRestriccion: 'No Restriction',
+                        celiaquia: 'Celiac',
+                        vegano: 'Vegan',
+                        vegetariano: 'Vegetarian',
+                        kosher: 'Kosher',
+                        otro: 'Other',
+                        especifiqueRestriccion: 'Specify the restriction...',
+                        integrantesDeLaInvitacion: 'Invitation Members',
+                        agregar: '+ Add',
+                        integranteNum1: 'Member #1 (Guest)',
+                        completarNombresArriba: 'Fill in names above...',
+                        acompanante: 'Companion',
+                        estado: 'Status',
+                        porConfirmar: 'Pending',
+                        confirmado: 'Confirmed',
+                        cancelado: 'Cancelled',
+                        dieta: 'Diet',
+                        celiaco: 'Celiac',
+                        especifique: 'Specify...',
+                        edad: 'Age',
+                        adulto: 'Adult',
+                        teen: 'Teen (13-17)',
+                        nino: 'Child (3-12)',
+                        bebe: 'Baby (0-2)',
+                        talleCalzado: 'Shoe Size',
+                        talleEj: 'E.g: 38, 42, 45.5',
+                        diaLlegadaMendoza: 'Arrival Day in Mendoza',
+                        diaLlegadaEj: 'E.g: Friday, March 26th',
+                        temaMusicalSugerido: 'Suggested Song',
+                        temaMusicalEj: 'E.g: Dancing - Enrique Iglesias',
+                        necesitaTraslado: 'Needs Transportation?',
+                        toastErrorCargandoProveedores: 'Error loading providers: ',
+                        toastIngresaAlMenosUnEmail: 'Enter at least one email',
+                        toastProveedorActualizado: 'Provider updated',
+                        toastProveedorAgregado: 'Provider added',
+                        toastErrorGuardarProveedor: 'Error saving provider: ',
+                        toastErrorCambiarEstado: 'Error changing status: ',
+                        toastProveedorEliminado: 'Provider deleted',
+                        toastErrorEliminarProveedor: 'Error deleting provider: ',
+                        toastNoPuedeReducirCapacidad1: 'Cannot reduce capacity to',
+                        toastNoPuedeReducirCapacidad2: '. There are',
+                        toastNoPuedeReducirCapacidad3: 'guests assigned. Please reassign guests first.',
+                        toastMesaActualizada: 'Table updated',
+                        toastMesaCreada: 'Table created',
+                        toastErrorPrefix: 'Error: ',
+                        toastMesaEliminada: 'Table deleted',
+                        toastErrorAlBorrar: 'Error deleting',
+                        toastMaximo10Integrantes: 'Maximum 10 members',
+                        toastEspecificaTalleCalzadoDe: 'Please specify the shoe size for:',
+                        toastInvitadoActualizado: 'Guest updated',
+                        toastInvitadoAgregado: 'Guest added',
+                        toastErrorSavingGuest: 'Error saving guest: ',
+                        toastErrorCargarActividad: 'Error loading activity',
+                        toastInvitadoEliminado: 'Guest deleted',
+                        toastErrorAlEliminar: 'Error deleting',
+                        toastNoHayInvitadosParaEliminar: 'No guests to delete',
+                        toastListaInvitadosEliminada: 'Guest list deleted completely',
+                        toastErrorEliminarLista: 'Error deleting the guest list',
+                        toastDesasignado: 'Unassigned',
+                        toastMesaLlenaPrefix: 'Table "',
+                        toastMesaLlenaSuffix: '" is full',
+                        toastAsignadoExitosamente: 'Assigned successfully',
+                        toastErrorDesconocido: 'Unknown error',
+                        toastLista: 'Final List exported successfully!',
+                        toastErrorExportarListaDefinitiva: 'Error exporting the Final List: ',
+                        toastErrorNoSePudoObtenerId: 'Error: Could not get the project ID. Please reload the page.',
+                        toastImportadoExitosamente1: 'Successfully imported',
+                        toastImportadoExitosamente2: 'guests!',
+                        toastNoSeEncontraronFilasValidas: 'No valid rows found. Format: Last Name, First Name, Quantity...',
+                        toastErrorImportando: 'Error importing',
+                        toastSeCrearonBorradores1: 'Created',
+                        toastSeCrearonBorradores2: 'draft(s) in Gmail. Check them in the Drafts folder.',
+                        toastBorradoresCreadosParcial1: '',
+                        toastBorradoresCreadosParcial2: 'draft(s) created,',
+                        toastBorradoresCreadosParcial3: 'failed. Check the console for more detail.',
+                        toastErrorGenerarSolicitud: 'Error generating the request: ',
+                        toastDatosReseteados: 'Data reset',
+                        toastLinkCopiado: 'Link copied to clipboard!',
+                        toastSoloImagenes: 'Only images are allowed',
+                        toastSubiendoPlano: 'Uploading floor plan...',
+                        toastPlanoActualizado: 'Floor plan updated successfully',
+                        toastErrorSubirPlano: 'Error uploading floor plan: ',
+                        toastMesaYaLlena: 'The table is already full',
+                        toastErrorEliminarMensaje: 'Error deleting message',
+                        toastMensajeEliminado: 'Message deleted',
+                        toastMuralDescargado: 'Wall downloaded as image',
+                        toastErrorDescargarMural: 'Error downloading the wall',
+                        toastExportSuccessful: 'Export Successful!',
+                        toastExportFailed: 'Export failed: ',
+                        nombreEstaDuplicado: 'This name is duplicated in the list'
+                    }
+                };
+
+                // Helper function to get translated text
+                const t = (key) => translations[currentLanguage.value][key] || translations.es[key];
+
+                const tableModalTitle = computed(() => editingTable.value ? t('editarMesa') : t('nuevaMesa'));
+                const guestModalTitle = computed(() => editingGuest.value ? t('editarInvitado') : t('nuevoInvitado'));
 
                 const isMarcelloGonzaWedding = computed(() => {
                     if (!currentProject.value) return false;
@@ -2123,6 +2600,19 @@ Events Boutique`
                     const hasDate = date.includes('2027-03-27') || date.includes('27/03/2027');
 
                     return hasCoupleNames && hasDate;
+                });
+
+                // Idioma por defecto en inglés solo para Sven & Yamila (20/02/2027),
+                // a pedido explícito — el resto de las bodas sigue arrancando en español.
+                // Los nombres de "novia"/"novio" en la DB quedaron invertidos para este
+                // proyecto (bride_name="Sven", groom_name="Yamila"), así que se busca
+                // "sven" y "yami" en cualquiera de los dos campos, sin asumir el orden.
+                const isSvenYamiWedding = computed(() => {
+                    if (!currentProject.value) return false;
+                    const brideLower = (currentProject.value.brideName || '').toLowerCase();
+                    const groomLower = (currentProject.value.groomName || '').toLowerCase();
+                    return (brideLower.includes('sven') || groomLower.includes('sven')) &&
+                           (brideLower.includes('yami') || groomLower.includes('yami'));
                 });
 
                 const assignmentsByTable = computed(() => {
@@ -2326,7 +2816,7 @@ Events Boutique`
                             // VALIDACIÓN: No permitir reducir capacidad si excede asignaciones actuales
                             const currentAssignments = getTableAssignments(editingTable.value.id).length;
                             if (tableForm.capacity < currentAssignments) {
-                                showToast(`No se puede reducir la capacidad a ${tableForm.capacity}. Hay ${currentAssignments} invitados asignados. Primero reasigna invitados.`, 'error');
+                                showToast(`${t('toastNoPuedeReducirCapacidad1')} ${tableForm.capacity}${t('toastNoPuedeReducirCapacidad2')} ${currentAssignments} ${t('toastNoPuedeReducirCapacidad3')}`, 'error');
                                 return;
                             }
 
@@ -2339,7 +2829,7 @@ Events Boutique`
                             // Update local
                             const idx = tables.value.findIndex(t => t.id === editingTable.value.id);
                             if (idx !== -1) { tables.value[idx] = { ...tables.value[idx], ...tableForm }; }
-                            showToast('Mesa actualizada');
+                            showToast(t('toastMesaActualizada'));
                         } else {
                             const newTable = {
                                 id: crypto.randomUUID(),
@@ -2351,12 +2841,12 @@ Events Boutique`
                             if (error) throw error;
 
                             tables.value.push(newTable);
-                            showToast('Mesa creada');
+                            showToast(t('toastMesaCreada'));
                         }
                         closeModal();
                     } catch (e) {
                         console.error(e);
-                        showToast('Error: ' + e.message, 'error');
+                        showToast(t('toastErrorPrefix') + e.message, 'error');
                     }
                 };
 
@@ -2369,8 +2859,8 @@ Events Boutique`
                             tables.value = tables.value.filter(t => t.id !== id);
                             // Remove assignments locally too (DB handles cascade but UI needs update)
                             assignments.value = assignments.value.filter(a => a.table_id !== id);
-                            showToast('Mesa eliminada');
-                        } catch (e) { console.error(e); showToast('Error al borrar', 'error'); }
+                            showToast(t('toastMesaEliminada'));
+                        } catch (e) { console.error(e); showToast(t('toastErrorAlBorrar'), 'error'); }
                     }
                 };
                 const closeModal = () => { showTableModal.value = false; };
@@ -2404,7 +2894,7 @@ Events Boutique`
                         guestForm.sub_guests[0].lastName = guestForm.lastName;
                     }
                     if (guestForm.sub_guests.length >= 10) {
-                        showToast('Máximo 10 integrantes', 'error');
+                        showToast(t('toastMaximo10Integrantes'), 'error');
                         return;
                     }
                     guestForm.sub_guests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '', shoe_size: '', arrival_day: '', song_request: '', needs_transfer: null });
@@ -2435,7 +2925,7 @@ Events Boutique`
                         );
                         if (missingShoeSize.length > 0) {
                             const nombres = missingShoeSize.map(sg => getFullName(sg) || 'Invitado').join(', ');
-                            showToast(`Por favor especificá el talle de calzado de: ${nombres}`, 'error');
+                            showToast(`${t('toastEspecificaTalleCalzadoDe')} ${nombres}`, 'error');
                             return;
                         }
                     }
@@ -2458,18 +2948,18 @@ Events Boutique`
                             if (error) throw error;
 
                             const idx = guests.value.findIndex(g => g.id === editingGuest.value.id);
-                            if (idx !== -1) { guests.value[idx] = { ...guests.value[idx], ...guestForm }; showToast('Invitado actualizado'); }
+                            if (idx !== -1) { guests.value[idx] = { ...guests.value[idx], ...guestForm }; showToast(t('toastInvitadoActualizado')); }
                         } else {
                             const newId = crypto.randomUUID();
                             const { error } = await supabase.from('guests').insert({ id: newId, ...guestData });
                             if (error) throw error;
 
-                            guests.value.push({ id: newId, ...guestForm }); showToast('Invitado agregado');
+                            guests.value.push({ id: newId, ...guestForm }); showToast(t('toastInvitadoAgregado'));
                         }
                         closeGuestModal();
                     } catch (e) {
                         console.error(e);
-                        showToast('Error saving guest: ' + e.message, 'error');
+                        showToast(t('toastErrorSavingGuest') + e.message, 'error');
                     }
                 };
 
@@ -2587,7 +3077,7 @@ Events Boutique`
                         activityLog.value = data || [];
                     } catch (e) {
                         console.error('Error loading activity log:', e);
-                        showToast('Error al cargar la actividad', 'error');
+                        showToast(t('toastErrorCargarActividad'), 'error');
                     }
                 };
 
@@ -2600,11 +3090,11 @@ Events Boutique`
 
                             guests.value = guests.value.filter(g => g.id !== id);
                             assignments.value = assignments.value.filter(a => a.guest_id !== id);
-                            showToast('Invitado eliminado');
+                            showToast(t('toastInvitadoEliminado'));
                             logActivity('delete_guest', { guest_id: id, guest_name: guestBeingDeleted ? guestBeingDeleted.name : null });
                         } catch (e) {
                             console.error(e);
-                            showToast('Error al eliminar', 'error');
+                            showToast(t('toastErrorAlEliminar'), 'error');
                         }
                     }
                 };
@@ -2612,7 +3102,7 @@ Events Boutique`
 
                 const deleteAllGuests = async () => {
                     if (guests.value.length === 0) {
-                        showToast('No hay invitados para eliminar', 'error');
+                        showToast(t('toastNoHayInvitadosParaEliminar'), 'error');
                         return;
                     }
                     if (confirm('¿Estás seguro que querés eliminar LA LISTA COMPLETA de invitados? Esta acción no se puede deshacer.')) {
@@ -2623,11 +3113,11 @@ Events Boutique`
 
                             guests.value = [];
                             assignments.value = [];
-                            showToast('Lista de invitados eliminada completamente');
+                            showToast(t('toastListaInvitadosEliminada'));
                             logActivity('delete_all_guests', { guests_deleted: countBeforeDelete });
                         } catch (e) {
                             console.error(e);
-                            showToast('Error al eliminar la lista de invitados', 'error');
+                            showToast(t('toastErrorEliminarLista'), 'error');
                         }
                     }
                 };
@@ -2678,7 +3168,7 @@ Events Boutique`
                         await deleteQuery;
 
                         if (!tableId) {
-                            showToast('Desasignado', 'success');
+                            showToast(t('toastDesasignado'), 'success');
                             return;
                         }
 
@@ -2691,7 +3181,7 @@ Events Boutique`
                             if (currentAsgsCount > table.capacity) {
                                 // Revert if full (simplified revert: reload)
                                 await loadData();
-                                showToast(`Mesa "${table.name}" llena`, 'error');
+                                showToast(`${t('toastMesaLlenaPrefix')}${table.name}${t('toastMesaLlenaSuffix')}`, 'error');
                                 return;
                             }
                         }
@@ -2713,10 +3203,10 @@ Events Boutique`
                             if (tempIdx !== -1) assignments.value[tempIdx].id = data[0].id;
                         }
 
-                        showToast('Asignado exitosamente');
+                        showToast(t('toastAsignadoExitosamente'));
                     } catch (e) {
                         console.error('Error en assignGuest:', e);
-                        showToast('Error: ' + (e.message || 'Error desconocido'), 'error');
+                        showToast(t('toastErrorPrefix') + (e.message || t('toastErrorDesconocido')), 'error');
                         // Rollback on error
                         await loadData();
                     }
@@ -2830,11 +3320,11 @@ Events Boutique`
                         XLSX.utils.book_append_sheet(wb, ws2, "Por Mesa (Confirmados)");
 
                         XLSX.writeFile(wb, "RSVP_Guest_List_Export.xlsx");
-                        showToast('Export Successful!');
+                        showToast(t('toastExportSuccessful'));
 
                     } catch (e) {
                         console.error(e);
-                        showToast('Export failed: ' + e.message, 'error');
+                        showToast(t('toastExportFailed') + e.message, 'error');
                     }
                 };
 
@@ -3023,11 +3513,11 @@ Events Boutique`
 
                         const safeName = coupleName.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ ]/g, '').replace(/\s+/g, '_');
                         XLSX.writeFile(wb, `Lista_Definitiva_${safeName}.xlsx`);
-                        showToast('Lista Definitiva exportada con éxito!');
+                        showToast(t('toastLista'));
 
                     } catch (e) {
                         console.error(e);
-                        showToast('Error al exportar la Lista Definitiva: ' + e.message, 'error');
+                        showToast(t('toastErrorExportarListaDefinitiva') + e.message, 'error');
                     }
                 };
 
@@ -3040,7 +3530,7 @@ Events Boutique`
                         try {
                             // Validate projectId FIRST
                             if (!currentProjectId.value) {
-                                showToast('Error: No se pudo obtener el ID del proyecto. Recarga la página.', 'error');
+                                showToast(t('toastErrorNoSePudoObtenerId'), 'error');
                                 return;
                             }
                             console.log('📦 Import Excel - Project ID:', currentProjectId.value);
@@ -3236,14 +3726,14 @@ Events Boutique`
                                 // Reload data from DB
                                 await loadData();
                                 console.log('✅ Datos recargados');
-                                showToast(`¡Importado ${guestsToInsert.length} invitados exitosamente!`);
+                                showToast(`${t('toastImportadoExitosamente1')} ${guestsToInsert.length} ${t('toastImportadoExitosamente2')}`);
                             } else {
-                                showToast('No se encontraron filas válidas. Formato: Apellido, Nombre, Cantidad...', 'error');
+                                showToast(t('toastNoSeEncontraronFilasValidas'), 'error');
                             }
 
                         } catch (err) {
                             console.error('Error import Excel:', err);
-                            showToast('Error: ' + (err.message || 'Error importando'), 'error');
+                            showToast(t('toastErrorPrefix') + (err.message || t('toastErrorImportando')), 'error');
                         }
                     };
                     reader.readAsArrayBuffer(file);
@@ -3281,7 +3771,7 @@ Events Boutique`
                         providers.value = data || [];
                     } catch (e) {
                         console.error('Error loading providers:', e);
-                        showToast('Error cargando proveedores: ' + e.message, 'error');
+                        showToast(t('toastErrorCargandoProveedores') + e.message, 'error');
                     } finally {
                         providersLoading.value = false;
                     }
@@ -3421,9 +3911,9 @@ Events Boutique`
                         }
 
                         if (failed.length === 0) {
-                            showToast(`Se crearon ${succeeded.length} borrador(es) en Gmail. Revisalos en la carpeta Borradores.`);
+                            showToast(`${t('toastSeCrearonBorradores1')} ${succeeded.length} ${t('toastSeCrearonBorradores2')}`);
                         } else if (succeeded.length > 0) {
-                            showToast(`${succeeded.length} borrador(es) creados, ${failed.length} fallaron. Revisá la consola para más detalle.`, 'error');
+                            showToast(`${succeeded.length} ${t('toastBorradoresCreadosParcial2')} ${failed.length} ${t('toastBorradoresCreadosParcial3')}`, 'error');
                             console.error('Proveedores con error al crear el draft:', failed);
                         } else {
                             throw new Error('No se pudo crear ningún borrador. ' + (failed[0]?.error || ''));
@@ -3433,7 +3923,7 @@ Events Boutique`
                         closeBudgetRequestModal();
                     } catch (e) {
                         console.error('Error generating budget drafts:', e);
-                        showToast('Error al generar la solicitud: ' + e.message, 'error');
+                        showToast(t('toastErrorGenerarSolicitud') + e.message, 'error');
                     } finally {
                         generatingDrafts.value = false;
                     }
@@ -3573,7 +4063,7 @@ Events Boutique`
                             tables.value = [];
                             guests.value = [];
                             assignments.value = [];
-                            showToast('Datos reseteados');
+                            showToast(t('toastDatosReseteados'));
                             logActivity('reset_project_data', countBeforeReset);
                         } catch (e) { console.error(e); }
                     }
@@ -3587,7 +4077,7 @@ Events Boutique`
 
                 const copyLink = () => {
                     navigator.clipboard.writeText(getGuestPortalLink());
-                    showToast('Link copiado al portapapeles!');
+                    showToast(t('toastLinkCopiado'));
                 };
 
                 const handleFloorPlanUpload = async (event) => {
@@ -3596,12 +4086,12 @@ Events Boutique`
 
                     // Validar tipo
                     if (!file.type.startsWith('image/')) {
-                        showToast('Solo se permiten imágenes', 'error');
+                        showToast(t('toastSoloImagenes'), 'error');
                         return;
                     }
 
                     try {
-                        showToast('Subiendo plano...', 'info');
+                        showToast(t('toastSubiendoPlano'), 'info');
                         const fileExt = file.name.split('.').pop();
                         const fileName = `${currentProjectId.value}-floorplan.${fileExt}`;
                         const filePath = `${fileName}`; // Simple path in bucket
@@ -3637,11 +4127,11 @@ Events Boutique`
                             currentProject.value.floorPlanUrl = finalUrl;
                         }
 
-                        showToast('Plano actualizado exitosamente');
+                        showToast(t('toastPlanoActualizado'));
 
                     } catch (e) {
                         console.error(e);
-                        showToast('Error al subir plano: ' + e.message, 'error');
+                        showToast(t('toastErrorSubirPlano') + e.message, 'error');
                     }
                 };
 
@@ -3683,7 +4173,7 @@ Events Boutique`
                     const assigned = assignments.value.filter(a => a.table_id === table.id).length;
 
                     if (assigned >= capacity) {
-                        showToast('La mesa ya está llena', 'error');
+                        showToast(t('toastMesaYaLlena'), 'error');
                         return;
                     }
                     
@@ -3734,11 +4224,11 @@ Events Boutique`
                     if (!confirm('¿Eliminar este mensaje del mural?')) return;
                     const { error } = await supabase.from('mural_messages').delete().eq('id', id);
                     if (error) {
-                        showToast('Error al eliminar mensaje', 'error');
+                        showToast(t('toastErrorEliminarMensaje'), 'error');
                         return;
                     }
                     muralMessages.value = muralMessages.value.filter(m => m.id !== id);
-                    showToast('Mensaje eliminado', 'success');
+                    showToast(t('toastMensajeEliminado'), 'success');
                 };
 
                 const downloadMural = async () => {
@@ -3754,10 +4244,10 @@ Events Boutique`
                         link.download = `mural-${(currentProject.value?.coupleName || 'boda').replace(/\s+/g, '_').toLowerCase()}.png`;
                         link.href = canvas.toDataURL('image/png');
                         link.click();
-                        showToast('Mural descargado como imagen', 'success');
+                        showToast(t('toastMuralDescargado'), 'success');
                     } catch (e) {
                         console.error('Error descargando mural:', e);
-                        showToast('Error al descargar el mural', 'error');
+                        showToast(t('toastErrorDescargarMural'), 'error');
                     }
                 };
 
@@ -3770,6 +4260,7 @@ Events Boutique`
                     searchQuery, guestSearchQuery, filter, guestFilter, showTableModal, editingTable, tableForm, showFloorPlanModal,
                     showGuestModal, editingGuest, guestForm, toast,
                     tableModalTitle, guestModalTitle,
+                    currentLanguage, t, isSvenYamiWedding,
                     openTableModal, editTable, saveTable, deleteTable, closeModal,
                     openGuestModal, editGuest, saveGuest, deleteGuest, deleteAllGuests, closeGuestModal,
                     activityLog, activityLabel, activityIcon, activityDescription, activityActorLabel, openActivityLog,

@@ -891,6 +891,20 @@
                                     eventsConfig: proj.events_config // Load Multi-Event config
                                 };
                                 console.log('✅ Proyecto cargado:', currentProject.value);
+
+                                // Idioma por defecto en inglés solo para Sven & Yamila (20/02/2027),
+                                // a pedido explícito — el resto de las bodas sigue arrancando en español.
+                                // Los nombres de "novia"/"novio" en la DB quedaron invertidos para este
+                                // proyecto (bride_name="Sven", groom_name="Yamila"), así que se busca
+                                // "sven" y "yami" en cualquiera de los dos campos, sin asumir el orden.
+                                const brideLower = (proj.bride_name || '').toLowerCase();
+                                const groomLower = (proj.groom_name || '').toLowerCase();
+                                const isSvenYamiWedding =
+                                    (brideLower.includes('sven') || groomLower.includes('sven')) &&
+                                    (brideLower.includes('yami') || groomLower.includes('yami'));
+                                if (isSvenYamiWedding) {
+                                    currentLanguage.value = 'en';
+                                }
                             } else {
                                 console.error('❌ Proyecto no encontrado');
                                 alert('Proyecto inválido o no encontrado');
