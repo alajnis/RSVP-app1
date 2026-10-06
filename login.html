@@ -69,38 +69,38 @@
                 </button>
             </form>
         </div>
-    </div>
 
-    <!-- MODAL: CODIGOS DISPONIBLES (reemplaza el alert() nativo, que cortaba la lista con muchos casamientos) -->
-    <div v-if="showHelpModal"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm"
-        @click.self="showHelpModal = false">
-        <div class="bg-white w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl border border-brand-pink">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-brand-pink shrink-0">
-                <h3 class="font-serif text-xl font-bold text-brand-dark">Códigos disponibles</h3>
-                <button @click="showHelpModal = false"
-                    class="text-brand-dark/40 hover:text-brand-crimson transition-all text-2xl leading-none">
-                    &times;
-                </button>
-            </div>
-            <div class="px-6 py-4 border-b border-brand-pink shrink-0">
-                <input type="text" v-model="helpSearch" placeholder="Buscar por nombre..."
-                    class="w-full px-4 py-2 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all text-sm">
-            </div>
-            <div class="overflow-y-auto px-6 py-4 space-y-1">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Administración</p>
-                <div class="text-sm text-brand-dark mb-4">
-                    <div>• admin</div>
-                    <div>• usuario</div>
+        <!-- MODAL: CODIGOS DISPONIBLES (reemplaza el alert() nativo, que cortaba la lista con muchos casamientos) -->
+        <div v-if="showHelpModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm"
+            @click.self="showHelpModal = false">
+            <div class="bg-white w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl border border-brand-pink text-left">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-brand-pink shrink-0">
+                    <h3 class="font-serif text-xl font-bold text-brand-dark">Códigos disponibles</h3>
+                    <button @click="showHelpModal = false"
+                        class="text-brand-dark/40 hover:text-brand-crimson transition-all text-2xl leading-none">
+                        &times;
+                    </button>
                 </div>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                    Casamientos ({{ filteredHelpCodes.length }})
-                </p>
-                <div v-if="filteredHelpCodes.length === 0" class="text-xs text-slate-400 py-4 text-center">
-                    No se encontraron casamientos
+                <div class="px-6 py-4 border-b border-brand-pink shrink-0">
+                    <input type="text" v-model="helpSearch" placeholder="Buscar por nombre..."
+                        class="w-full px-4 py-2 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all text-sm">
                 </div>
-                <div v-for="entry in filteredHelpCodes" :key="entry.code" class="text-sm text-brand-dark py-0.5">
-                    • {{ entry.code }} <span class="text-slate-400">({{ entry.coupleName }})</span>
+                <div class="overflow-y-auto px-6 py-4 space-y-1">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Administración</p>
+                    <div class="text-sm text-brand-dark mb-4">
+                        <div>• admin</div>
+                        <div>• usuario</div>
+                    </div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                        Casamientos ({{ filteredHelpCodes.length }})
+                    </p>
+                    <div v-if="filteredHelpCodes.length === 0" class="text-xs text-slate-400 py-4 text-center">
+                        No se encontraron casamientos
+                    </div>
+                    <div v-for="entry in filteredHelpCodes" :key="entry.code" class="text-sm text-brand-dark py-0.5">
+                        • {{ entry.code }} <span class="text-slate-400">({{ entry.coupleName }})</span>
+                    </div>
                 </div>
             </div>
         </div>
