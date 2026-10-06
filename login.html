@@ -71,14 +71,51 @@
         </div>
     </div>
 
+    <!-- MODAL: CODIGOS DISPONIBLES (reemplaza el alert() nativo, que cortaba la lista con muchos casamientos) -->
+    <div v-if="showHelpModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm"
+        @click.self="showHelpModal = false">
+        <div class="bg-white w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl border border-brand-pink">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-brand-pink shrink-0">
+                <h3 class="font-serif text-xl font-bold text-brand-dark">Códigos disponibles</h3>
+                <button @click="showHelpModal = false"
+                    class="text-brand-dark/40 hover:text-brand-crimson transition-all text-2xl leading-none">
+                    &times;
+                </button>
+            </div>
+            <div class="px-6 py-4 border-b border-brand-pink shrink-0">
+                <input type="text" v-model="helpSearch" placeholder="Buscar por nombre..."
+                    class="w-full px-4 py-2 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all text-sm">
+            </div>
+            <div class="overflow-y-auto px-6 py-4 space-y-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Administración</p>
+                <div class="text-sm text-brand-dark mb-4">
+                    <div>• admin</div>
+                    <div>• usuario</div>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                    Casamientos ({{ filteredHelpCodes.length }})
+                </p>
+                <div v-if="filteredHelpCodes.length === 0" class="text-xs text-slate-400 py-4 text-center">
+                    No se encontraron casamientos
+                </div>
+                <div v-for="entry in filteredHelpCodes" :key="entry.code" class="text-sm text-brand-dark py-0.5">
+                    • {{ entry.code }} <span class="text-slate-400">({{ entry.coupleName }})</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const { createApp, ref, onMounted } = Vue;
+        const { createApp, ref, computed, onMounted } = Vue;
 
         createApp({
             setup() {
                 const password = ref('');
                 const error = ref('');
                 const projects = ref([]);
+                const showHelpModal = ref(false);
+                const helpSearch = ref('');
 
                 // Cargar proyectos de Supabase al iniciar
                 onMounted(async () => {
@@ -142,6 +179,24 @@
                     }
                 };
 
+                // Lista completa de códigos para el modal de "help", filtrable por nombre.
+                const allHelpCodes = computed(() => {
+                    return projects.value
+                        .map(p => {
+                            const codes = getProjectCodes(p);
+                            return codes.length > 0 ? { code: codes[0], coupleName: p.coupleName } : null;
+                        })
+                        .filter(Boolean);
+                });
+
+                const filteredHelpCodes = computed(() => {
+                    const q = helpSearch.value.trim().toLowerCase();
+                    if (!q) return allHelpCodes.value;
+                    return allHelpCodes.value.filter(entry =>
+                        entry.coupleName.toLowerCase().includes(q) || entry.code.toLowerCase().includes(q)
+                    );
+                });
+
                 const login = async () => {
                     try {
                         error.value = '';
@@ -154,14 +209,9 @@
 
                         // Help command
                         if (input === 'help') {
-                            const codes = ['• admin', '• usuario'];
-                            projects.value.forEach(p => {
-                                const projectCodes = getProjectCodes(p);
-                                if (projectCodes.length > 0) {
-                                    codes.push(`• ${projectCodes[0]} (${p.coupleName})`);
-                                }
-                            });
-                            alert(`Códigos disponibles:\n\n${codes.join('\n')}`);
+                            helpSearch.value = '';
+                            showHelpModal.value = true;
+                            password.value = '';
                             return;
                         }
 
@@ -211,7 +261,7 @@
                     }
                 };
 
-                return { password, error, login };
+                return { password, error, login, showHelpModal, helpSearch, filteredHelpCodes };
             }
         }).mount('#app');
     </script>
