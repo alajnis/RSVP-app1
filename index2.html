@@ -1330,6 +1330,17 @@
                             updated_at: new Date().toISOString()
                         };
 
+                        // Copiar el primer teléfono cargado por algún sub-invitado a la columna
+                        // "phone" del invitado principal: la ficha del panel admin (wedding.html)
+                        // muestra ese campo, no el JSON de sub_guests, así que sin esto el teléfono
+                        // que la persona completa acá nunca se veía del lado del admin.
+                        const firstPhone = guest.value.sub_guests
+                            .map(sg => (sg.phone || '').trim())
+                            .find(p => p.length > 0);
+                        if (firstPhone) {
+                            updatePayload.phone = firstPhone;
+                        }
+
                         // Update rsvp_answers en tabla guests solo para el main guest (merge de todos)
                         // Ojo: En este modelo simple, guardamos todo en sub_guests JSON.
                         // Pero también actualizamos la columna rsvp_answers del invitado principal como resumen
