@@ -3085,13 +3085,16 @@ Events Boutique`
                     if (confirm('¿Eliminar invitado?')) {
                         try {
                             const guestBeingDeleted = guests.value.find(g => g.id === id);
+                            const deletedGuestName = guestBeingDeleted
+                                ? `${guestBeingDeleted.lastName || ''}, ${guestBeingDeleted.firstName || ''}`.replace(/^, |, $/g, '').trim()
+                                : null;
                             const { error } = await supabase.from('guests').delete().eq('id', id);
                             if (error) throw error;
 
                             guests.value = guests.value.filter(g => g.id !== id);
                             assignments.value = assignments.value.filter(a => a.guest_id !== id);
                             showToast(t('toastInvitadoEliminado'));
-                            logActivity('delete_guest', { guest_id: id, guest_name: guestBeingDeleted ? guestBeingDeleted.name : null });
+                            logActivity('delete_guest', { guest_id: id, guest_name: deletedGuestName || null });
                         } catch (e) {
                             console.error(e);
                             showToast(t('toastErrorAlEliminar'), 'error');
