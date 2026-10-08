@@ -443,6 +443,16 @@
                                     <input type="tel" v-model="sg.phone" :placeholder="t('telefonoEj')"
                                         class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
                                 </div>
+
+                                <!-- Email (Only if attending, optional) -->
+                                <div v-if="isSubGuestAttending(sg)" class="mt-4">
+                                    <label
+                                        class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <i class="ph ph-envelope-simple"></i> {{ t('email') }}
+                                    </label>
+                                    <input type="email" v-model="sg.email" :placeholder="t('emailEj')"
+                                        class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -662,6 +672,8 @@
                         diciembre: 'Diciembre',
                         telefono: 'Teléfono',
                         telefonoEj: '+54 9 351 123 4567',
+                        email: 'Email',
+                        emailEj: 'nombre@ejemplo.com',
                         infoTransfersGuest: '⚠️ Recorda que los gastos de traslado correrán por cuenta tuya. Mas cercano al evento vamos a brindar información sobre costos y recorridos.',
                         infoTransfersCouple: '💙 Los gastos de traslado serán costeados por los novios. Mas cercano al evento vamos a brindar información sobre recorridos.',
                         desarrolladoPor: 'Desarrollado por',
@@ -741,6 +753,8 @@
                         diciembre: 'Dezembro',
                         telefono: 'Telefone',
                         telefonoEj: '+54 9 351 123 4567',
+                        email: 'Email',
+                        emailEj: 'nome@exemplo.com',
                         infoTransfersGuest: '⚠️ Lembre-se que as despesas de traslado ficarão por sua conta. Mais perto do evento vamos fornecer informações sobre custos e trajetos.',
                         infoTransfersCouple: '💙 As despesas de traslado serão custeadas pelos noivos. Mais perto do evento vamos fornecer informações sobre os trajetos.',
                         desarrolladoPor: 'Desenvolvido por',
@@ -820,6 +834,8 @@
                         diciembre: 'December',
                         telefono: 'Phone',
                         telefonoEj: '+54 9 351 123 4567',
+                        email: 'Email',
+                        emailEj: 'name@example.com',
                         infoTransfersGuest: '⚠️ Remember that transportation costs are your responsibility. Closer to the event we will provide information about costs and routes.',
                         infoTransfersCouple: '💙 The bride and groom will cover transportation costs. Closer to the event we will provide information about routes.',
                         desarrolladoPor: 'Developed by',
@@ -1107,6 +1123,8 @@
                             arrival_day: '',
                             song_request: '',
                             needs_transfer: null,
+                            phone: g.phone || '',
+                            email: g.email || '',
                             rsvp_answers: g.rsvp_answers || {} // Load existing answers if any
                         }];
 
@@ -1124,12 +1142,14 @@
                                 arrival_day: '',
                                 song_request: '',
                                 needs_transfer: null,
+                                phone: '',
+                                email: '',
                                 rsvp_answers: {}
                             });
                         }
                     } else {
                         // If sub_guests exist, ensure they have necessary fields
-                        g.sub_guests = g.sub_guests.map(sg => {
+                        g.sub_guests = g.sub_guests.map((sg, idx) => {
                             if (!sg.firstName && !sg.lastName) {
                                 sg.firstName = g.firstName;
                                 sg.lastName = g.lastName;
@@ -1139,6 +1159,10 @@
                             if (!sg.arrival_day) sg.arrival_day = '';
                             if (!sg.song_request) sg.song_request = '';
                             if (sg.needs_transfer === undefined) sg.needs_transfer = null;
+                            // El invitado principal (índice 0) hereda el email ya guardado
+                            // en la ficha si todavía no cargó uno propio en el RSVP.
+                            if (!sg.email && idx === 0) sg.email = g.email || '';
+                            if (!sg.email) sg.email = '';
                             return sg;
                         });
                     }
@@ -1339,6 +1363,15 @@
                             .find(p => p.length > 0);
                         if (firstPhone) {
                             updatePayload.phone = firstPhone;
+                        }
+
+                        // Mismo criterio para el email: se guarda por sub-invitado, pero la
+                        // columna "email" del invitado principal es la que ve el panel admin.
+                        const firstEmail = guest.value.sub_guests
+                            .map(sg => (sg.email || '').trim())
+                            .find(e => e.length > 0);
+                        if (firstEmail) {
+                            updatePayload.email = firstEmail;
                         }
 
                         // Update rsvp_answers en tabla guests solo para el main guest (merge de todos)
