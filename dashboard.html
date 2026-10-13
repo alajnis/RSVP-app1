@@ -258,6 +258,18 @@
                         </div>
                     </div>
 
+                    <!-- Corporate event links -->
+                    <div v-if="project.eventType === 'corporate'" class="grid grid-cols-2 gap-2 mb-3">
+                        <button @click="copyCorporateRsvpLink(project.id)"
+                            class="bg-white border border-slate-300 hover:border-slate-500 text-slate-600 py-3 font-bold tracking-widest uppercase text-[9px] transition-all flex items-center justify-center gap-1.5">
+                            <i class="ph-bold ph-link"></i> Link RSVP
+                        </button>
+                        <button @click="copyCorporateScanLink(project.id)"
+                            class="bg-white border border-slate-300 hover:border-slate-500 text-slate-600 py-3 font-bold tracking-widest uppercase text-[9px] transition-all flex items-center justify-center gap-1.5">
+                            <i class="ph-bold ph-qr-code"></i> Link Escaneo
+                        </button>
+                    </div>
+
                     <!-- Action Button -->
                     <button @click="openProject(project.id)"
                         class="w-full bg-brand-dark hover:bg-brand-crimson text-white py-4 font-bold tracking-[0.2em] uppercase text-[10px] transition-all flex items-center justify-center gap-3">
@@ -1329,6 +1341,20 @@
                     window.location.href = `wedding.html?project=${id}`;
                 };
 
+                const copyCorporateRsvpLink = (id) => {
+                    const url = new URL('corporate-rsvp.html', window.location.href);
+                    url.searchParams.set('project', id);
+                    navigator.clipboard.writeText(url.toString());
+                    showToast('Link de RSVP copiado');
+                };
+
+                const copyCorporateScanLink = (id) => {
+                    const url = new URL('scan-checkin.html', window.location.href);
+                    url.searchParams.set('project', id);
+                    navigator.clipboard.writeText(url.toString());
+                    showToast('Link de escaneo copiado');
+                };
+
                 // METHODS - Stats
                 const getProjectStats = async (projectId, supabaseClient) => {
                     try {
@@ -1630,7 +1656,7 @@
                     saveProject,
                     deleteProject,
                     closeProjectModal,
-                    openProject,
+                    openProject, copyCorporateRsvpLink, copyCorporateScanLink,
                     getDaysUntil,
                     formatDate,
                     isWeddingExpired,
