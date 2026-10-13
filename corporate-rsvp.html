@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de Asistencia</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- SUPABASE LOCAL (Vendorized) -->
+    <script src="vendor/supabase.js"></script>
+    <script src="supabase-client.js"></script>
+    <!-- Generación de QR en el cliente -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Bodoni Moda"', 'serif'],
+                        sans: ['"Work Sans"', 'sans-serif']
+                    },
+                    colors: {
+                        // Paleta neutra/corporativa para este flujo (NO usar los colores
+                        // "girly" de Events Boutique acá a pedido explícito del cliente).
+                        // Se mantienen los mismos nombres de clase (brand-*) que el resto
+                        // de la app para no tener que reescribir todo el markup, pero
+                        // resuelven a grises/negro. Reemplazar por el manual de marca real
+                        // del evento cuando esté disponible.
+                        brand: {
+                            crimson: '#3F3F46',  // acento principal (antes rojo vino)
+                            beige: '#F4F4F5',    // fondo general
+                            pink: '#D4D4D8',      // bordes suaves
+                            dark: '#18181B'       // texto / botones principales
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Work Sans', sans-serif; }
+    </style>
+</head>
+
+<body class="bg-brand-beige min-h-screen font-sans text-brand-dark">
+    <div id="app" class="min-h-screen flex flex-col items-center px-4 py-10">
+
+        <div class="w-full max-w-lg">
+
+            <!-- Loading -->
+            <div v-if="loadingProject" class="text-center py-20">
+                <p class="text-sm uppercase tracking-widest text-slate-400">Cargando evento…</p>
+            </div>
+
+            <!-- Project not found -->
+            <div v-else-if="!project" class="bg-white border border-brand-pink shadow-xl p-10 text-center">
+                <h1 class="font-serif text-2xl font-bold mb-2">Evento no encontrado</h1>
+                <p class="text-sm text-slate-500">Revisá el link que te compartieron e intentá de nuevo.</p>
+            </div>
+
+            <template v-else>
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <p class="text-[11px] font-bold uppercase tracking-[0.3em] text-brand-crimson mb-3">Confirmación de asistencia</p>
+                    <h1 class="font-serif text-3xl md:text-4xl font-bold text-brand-dark leading-tight">{{ project.eventName }}</h1>
+                    <p v-if="project.eventDateLabel" class="mt-2 text-sm text-slate-500 uppercase tracking-widest">{{ project.eventDateLabel }}</p>
+                </div>
+
+                <!-- Success / QR screen -->
+                <div v-if="submitted" class="bg-white border border-brand-pink shadow-2xl p-8 md:p-10 text-center relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-brand-crimson"></div>
+
+                    <h2 class="font-serif text-2xl font-bold mb-3 mt-2">¡Gracias por confirmar, {{ form.firstName }}!</h2>
+
+                    <p v-if="mailStatus === 'sent'" class="text-sm text-slate-600 mb-6">
+                        Te enviamos tu código de acceso por mail a <strong>{{ form.email }}</strong>.
+                    </p>
+                    <p v-else-if="mailStatus === 'failed'" class="text-sm text-brand-crimson mb-6">
+                        No pudimos enviarte el mail, pero podés guardar este código (hacé una captura de pantalla) — lo vas a necesitar para ingresar al evento.
+                    </p>
+                    <p v-else class="text-sm text-slate-600 mb-6">
+                        Enviando tu código de acceso por mail…
+                    </p>
+
+                    <div class="flex justify-center mb-4">
+                        <img v-if="qrDataUrl" :src="qrDataUrl" alt="Código QR de acceso" class="w-56 h-56 border border-brand-pink p-2 bg-white">
+                    </div>
+
+                    <p class="text-[11px] uppercase tracking-widest text-slate-400">Presentá este código al llegar al evento</p>
+                </div>
+
+                <!-- Form -->
+                <form v-else @submit.prevent="submitRsvp" class="bg-white border border-brand-pink shadow-2xl p-8 md:p-10 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-brand-crimson"></div>
+
+                    <div class="space-y-5 mt-2">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nombre *</label>
+                                <input type="text" v-model.trim="form.firstName" required
+                                    class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Apellido *</label>
+                                <input type="text" v-model.trim="form.lastName" required
+                                    class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Email *</label>
+                            <input type="email" v-model.trim="form.email" required
+                                class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Empresa</label>
+                            <input type="text" v-model.trim="form.company"
+                                class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Teléfono</label>
+                            <input type="tel" v-model.trim="form.phone"
+                                class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all">
+                        </div>
+
+                        <div v-if="error" class="text-xs font-bold text-brand-crimson uppercase tracking-widest text-center py-2">
+                            {{ error }}
+                        </div>
+
+                        <button type="submit" :disabled="submitting"
+                            class="w-full bg-brand-dark text-white py-4 font-bold tracking-[0.2em] uppercase text-xs hover:bg-brand-crimson transition-all shadow-xl disabled:opacity-50">
+                            {{ submitting ? 'Confirmando…' : 'Confirmar asistencia' }}
+                        </button>
+                    </div>
+                </form>
+            </template>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, onMounted } = Vue;
+
+        // Genera un QR como data:image/png;base64 usando qrcode-generator (librería
+        // liviana, sin dependencias, UMD real para <script> directo en el navegador —
+        // a diferencia del paquete "qrcode" en npm, cuyo build "browser" asume un
+        // entorno con require() y rompe en un <script> plano).
+        // Dibuja las celdas en un <canvas> oculto y exporta ese canvas como PNG.
+        function generateQrDataUrl(text, sizePx) {
+            const qr = qrcode(0, 'M'); // type 0 = auto-detecta la versión necesaria
+            qr.addData(text);
+            qr.make();
+
+            const moduleCount = qr.getModuleCount();
+            // Quiet zone obligatoria (margen blanco alrededor del código): sin esto
+            // casi ningún lector de QR lo detecta, aunque la imagen "se vea bien" —
+            // el estándar pide al menos 4 módulos de margen en cada lado.
+            const quietModules = 4;
+            const totalModules = moduleCount + quietModules * 2;
+            const canvas = document.createElement('canvas');
+            canvas.width = sizePx;
+            canvas.height = sizePx;
+            const ctx = canvas.getContext('2d');
+            const cellSize = sizePx / totalModules;
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, sizePx, sizePx);
+            ctx.fillStyle = '#000000';
+            for (let row = 0; row < moduleCount; row++) {
+                for (let col = 0; col < moduleCount; col++) {
+                    if (qr.isDark(row, col)) {
+                        ctx.fillRect((col + quietModules) * cellSize, (row + quietModules) * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+            return canvas.toDataURL('image/png');
+        }
+
+        createApp({
+            setup() {
+                const loadingProject = ref(true);
+                const project = ref(null);
+                const projectId = ref(null);
+
+                const form = reactive({
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                    company: '',
+                    phone: ''
+                });
+
+                const submitting = ref(false);
+                const submitted = ref(false);
+                const error = ref('');
+                const qrDataUrl = ref('');
+                const mailStatus = ref('pending'); // pending | sent | failed
+
+                const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                onMounted(async () => {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const pid = urlParams.get('project');
+                    if (!pid) {
+                        loadingProject.value = false;
+                        return;
+                    }
+                    projectId.value = pid;
+
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+                        const { data, error: err } = await supabase
+                            .from('projects')
+                            .select('*')
+                            .eq('id', pid)
+                            .single();
+
+                        if (err || !data) {
+                            project.value = null;
+                        } else {
+                            // Los eventos corporativos reutilizan `projects` tal cual: el
+                            // nombre del evento se guarda en couple_name y la fecha en
+                            // wedding_date (mismos campos que usa dashboard.html/login.html).
+                            project.value = {
+                                id: data.id,
+                                eventName: data.couple_name || 'Evento',
+                                eventDateLabel: data.wedding_date
+                                    ? new Date(data.wedding_date + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
+                                    : ''
+                            };
+                        }
+                    } catch (e) {
+                        console.error('Error cargando proyecto:', e);
+                        project.value = null;
+                    } finally {
+                        loadingProject.value = false;
+                    }
+                });
+
+                const submitRsvp = async () => {
+                    error.value = '';
+
+                    if (!form.firstName || !form.lastName || !form.email) {
+                        error.value = 'Completá nombre, apellido y email';
+                        return;
+                    }
+                    const normalizedEmail = form.email.trim().toLowerCase();
+                    if (!EMAIL_RE.test(normalizedEmail)) {
+                        error.value = 'Ingresá un email válido';
+                        return;
+                    }
+
+                    submitting.value = true;
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+
+                        // 1) Chequear que no exista ya un guest con ese email en este evento.
+                        // ilike (case-insensitive) + email normalizado, para que
+                        // "Juan@Mail.com" y "juan@mail.com" cuenten como el mismo.
+                        const { data: existing, error: checkErr } = await supabase
+                            .from('guests')
+                            .select('id')
+                            .eq('project_id', projectId.value)
+                            .ilike('email', normalizedEmail)
+                            .maybeSingle();
+
+                        if (checkErr) throw checkErr;
+                        if (existing) {
+                            error.value = 'Ya existe una confirmación con este email para este evento';
+                            submitting.value = false;
+                            return;
+                        }
+
+                        // 2) Insertar el nuevo guest. Sin sub_guests/grupos: cada persona es
+                        // un registro individual. Sin mesa asignada todavía.
+                        const newId = crypto.randomUUID();
+                        const { error: insertErr } = await supabase.from('guests').insert({
+                            id: newId,
+                            project_id: projectId.value,
+                            first_name: form.firstName.trim(),
+                            last_name: form.lastName.trim(),
+                            email: normalizedEmail,
+                            phone: form.phone ? form.phone.trim() : null,
+                            company: form.company ? form.company.trim() : null,
+                            guests_confirmed: 1,
+                            rsvp_status: 'Confirmed'
+                        });
+
+                        if (insertErr) throw insertErr;
+
+                        // 3) Generar el QR en el cliente, codificando el id del guest.
+                        qrDataUrl.value = generateQrDataUrl(newId, 440);
+                        submitted.value = true;
+
+                        // 4) Mandar el mail con el QR embebido (best-effort: si falla, el QR
+                        // ya se muestra en pantalla y no bloqueamos la confirmación).
+                        try {
+                            const functionsBase = SUPABASE_CONFIG.url.replace(/\/$/, '');
+                            const res = await fetch(`${functionsBase}/functions/v1/send-qr-email`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                                    'apikey': SUPABASE_CONFIG.anonKey
+                                },
+                                body: JSON.stringify({
+                                    senderKey: 'sofia',
+                                    to: form.email,
+                                    guestName: `${form.firstName} ${form.lastName}`.trim(),
+                                    eventName: project.value?.eventName || 'el evento',
+                                    qrDataUrl: qrDataUrl.value
+                                })
+                            });
+
+                            if (!res.ok) throw new Error(await res.text());
+                            mailStatus.value = 'sent';
+                        } catch (mailErr) {
+                            console.error('Error enviando mail de QR:', mailErr);
+                            mailStatus.value = 'failed';
+                        }
+                    } catch (e) {
+                        console.error('Error confirmando RSVP:', e);
+                        error.value = 'Ocurrió un error al confirmar. Intentá de nuevo.';
+                    } finally {
+                        submitting.value = false;
+                    }
+                };
+
+                return {
+                    loadingProject, project, form, submitting, submitted, error,
+                    qrDataUrl, mailStatus, submitRsvp
+                };
+            }
+        }).mount('#app');
+    </script>
+
+    <!-- Footer -->
+    <div class="fixed bottom-4 left-0 right-0 text-center text-[11px] text-slate-400 z-50 pointer-events-none">
+        <span class="pointer-events-auto">Desarrollado por <a href="https://impruvia.netlify.app/" target="_blank" class="text-brand-crimson hover:underline font-semibold">Impruvia</a> para <a href="https://www.sfeventsboutique.com/" target="_blank" class="text-brand-crimson hover:underline font-semibold">Events Boutique</a></span>
+    </div>
+</body>
+
+</html>

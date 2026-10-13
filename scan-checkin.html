@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escaneo de Acceso</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- SUPABASE LOCAL (Vendorized) -->
+    <script src="vendor/supabase.js"></script>
+    <script src="supabase-client.js"></script>
+    <!-- Lectura de QR por cámara -->
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Bodoni Moda"', 'serif'],
+                        sans: ['"Work Sans"', 'sans-serif']
+                    },
+                    colors: {
+                        brand: {
+                            crimson: '#C42745',
+                            beige: '#F4ECE8',
+                            pink: '#F6D8D9',
+                            dark: '#1A1A1A'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Work Sans', sans-serif; }
+        #qr-reader video { width: 100% !important; border-radius: 0 !important; }
+        #qr-reader { border: none !important; }
+    </style>
+</head>
+
+<body class="bg-brand-dark min-h-screen font-sans text-white">
+    <div id="app" class="min-h-screen flex flex-col">
+
+        <!-- Header -->
+        <div class="bg-brand-crimson px-4 py-3 flex items-center justify-between shrink-0">
+            <h1 class="font-serif text-lg font-bold">Control de acceso</h1>
+            <span v-if="project" class="text-[11px] uppercase tracking-widest opacity-90">{{ project.eventName }}</span>
+        </div>
+
+        <!-- No project -->
+        <div v-if="!projectId" class="flex-1 flex items-center justify-center p-6 text-center">
+            <p class="text-sm text-slate-300">Falta el parámetro <code>?project=</code> en la URL.</p>
+        </div>
+
+        <template v-else>
+            <!-- Scanner -->
+            <div v-show="!result" class="flex-1 flex flex-col">
+                <div id="qr-reader" class="w-full"></div>
+                <div class="p-4 text-center">
+                    <p class="text-xs uppercase tracking-widest text-slate-400">Apuntá la cámara al código QR del invitado</p>
+                </div>
+            </div>
+
+            <!-- Result -->
+            <div v-if="result" class="flex-1 flex items-center justify-center p-6">
+                <div class="w-full max-w-md text-center">
+
+                    <!-- Valid guest -->
+                    <div v-if="result.type === 'ok'" class="bg-white text-brand-dark border border-brand-pink shadow-2xl p-8 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-3 bg-green-600"></div>
+                        <p class="text-xs font-bold uppercase tracking-widest text-green-600 mb-4 mt-2">Acceso confirmado</p>
+                        <h2 class="font-serif text-3xl font-bold mb-3 leading-tight">{{ result.guest.fullName }}</h2>
+                        <p v-if="result.guest.company" class="text-base text-slate-500 mb-4">{{ result.guest.company }}</p>
+                        <div class="border-t border-brand-pink pt-4 mt-4">
+                            <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">Mesa asignada</p>
+                            <p class="text-2xl font-bold">{{ result.guest.tableName || 'Sin mesa asignada' }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Invalid -->
+                    <div v-else class="bg-white text-brand-dark border border-brand-pink shadow-2xl p-8 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-3 bg-brand-crimson"></div>
+                        <p class="text-xs font-bold uppercase tracking-widest text-brand-crimson mb-4 mt-2">Código no válido</p>
+                        <p class="text-lg">{{ result.message }}</p>
+                    </div>
+
+                    <button @click="scanNext"
+                        class="w-full mt-6 bg-brand-crimson text-white py-4 font-bold tracking-[0.2em] uppercase text-xs hover:bg-white hover:text-brand-crimson transition-all shadow-xl">
+                        Escanear otro
+                    </button>
+                    <p class="mt-3 text-[11px] text-slate-400">Volviendo a la cámara automáticamente en {{ countdown }}s…</p>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted, onBeforeUnmount } = Vue;
+
+        createApp({
+            setup() {
+                const projectId = ref(null);
+                const project = ref(null);
+                const result = ref(null);
+                const countdown = ref(5);
+
+                let html5QrCode = null;
+                let autoResumeTimer = null;
+                let countdownTimer = null;
+                let processing = false;
+
+                const QR_REGION_ID = 'qr-reader';
+                const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+                // --- Validación de sesión admin (mismo patrón que wedding.html) ---
+                const checkAdminSession = () => {
+                    try {
+                        const sessionData = localStorage.getItem('rsvp_session');
+                        if (!sessionData) return false;
+                        const sessionInfo = JSON.parse(sessionData);
+                        return sessionInfo && sessionInfo.role === 'admin';
+                    } catch (e) {
+                        return false;
+                    }
+                };
+
+                const startScanner = async () => {
+                    if (html5QrCode) return;
+                    try {
+                        html5QrCode = new Html5Qrcode(QR_REGION_ID);
+                        await html5QrCode.start(
+                            { facingMode: 'environment' },
+                            { fps: 10, qrbox: { width: 250, height: 250 } },
+                            onScanSuccess,
+                            () => {} // onScanFailure: se llama constantemente mientras no hay QR, ignorar
+                        );
+                    } catch (e) {
+                        console.error('No se pudo iniciar la cámara:', e);
+                    }
+                };
+
+                const stopScanner = async () => {
+                    if (html5QrCode) {
+                        try { await html5QrCode.stop(); } catch (e) {}
+                        try { html5QrCode.clear(); } catch (e) {}
+                        html5QrCode = null;
+                    }
+                };
+
+                const onScanSuccess = async (decodedText) => {
+                    if (processing) return;
+                    processing = true;
+                    await stopScanner();
+                    await resolveGuest(decodedText.trim());
+                    processing = false;
+                };
+
+                const resolveGuest = async (code) => {
+                    const supabase = window.supabase || window.supabaseClient;
+
+                    if (!UUID_RE.test(code)) {
+                        result.value = { type: 'error', message: 'Código no válido para este evento' };
+                        startAutoResume();
+                        return;
+                    }
+
+                    try {
+                        const { data: guest, error: err } = await supabase
+                            .from('guests')
+                            .select('*')
+                            .eq('id', code)
+                            .maybeSingle();
+
+                        if (err || !guest || guest.project_id !== projectId.value) {
+                            result.value = { type: 'error', message: 'Código no válido para este evento' };
+                            startAutoResume();
+                            return;
+                        }
+
+                        // Resolver mesa asignada vía assignments -> tables (mismo patrón que
+                        // wedding.html usa con getTableAssignments / assignments.value).
+                        let tableName = null;
+                        const { data: assignmentRows } = await supabase
+                            .from('assignments')
+                            .select('table_id')
+                            .eq('guest_id', guest.id)
+                            .limit(1);
+                        const assignment = (assignmentRows && assignmentRows[0]) || null;
+
+                        if (assignment && assignment.table_id) {
+                            const { data: table } = await supabase
+                                .from('tables')
+                                .select('name')
+                                .eq('id', assignment.table_id)
+                                .maybeSingle();
+                            tableName = table ? table.name : null;
+                        }
+
+                        const fullName = `${guest.first_name || ''} ${guest.last_name || ''}`.trim() || 'Invitado';
+
+                        result.value = {
+                            type: 'ok',
+                            guest: {
+                                fullName,
+                                company: guest.company || '',
+                                tableName
+                            }
+                        };
+                        startAutoResume();
+                    } catch (e) {
+                        console.error('Error resolviendo invitado:', e);
+                        result.value = { type: 'error', message: 'Código no válido para este evento' };
+                        startAutoResume();
+                    }
+                };
+
+                const startAutoResume = () => {
+                    countdown.value = 5;
+                    clearTimers();
+                    countdownTimer = setInterval(() => {
+                        countdown.value -= 1;
+                        if (countdown.value <= 0) scanNext();
+                    }, 1000);
+                };
+
+                const clearTimers = () => {
+                    if (autoResumeTimer) { clearTimeout(autoResumeTimer); autoResumeTimer = null; }
+                    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+                };
+
+                const scanNext = async () => {
+                    clearTimers();
+                    result.value = null;
+                    await startScanner();
+                };
+
+                onMounted(async () => {
+                    if (!checkAdminSession()) {
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const pid = urlParams.get('project');
+                    if (!pid) return;
+                    projectId.value = pid;
+
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+                        const { data } = await supabase.from('projects').select('*').eq('id', pid).single();
+                        if (data) {
+                            project.value = { eventName: data.couple_name || 'Evento' };
+                        }
+                    } catch (e) {
+                        console.error('Error cargando proyecto:', e);
+                    }
+
+                    await startScanner();
+                });
+
+                onBeforeUnmount(async () => {
+                    clearTimers();
+                    await stopScanner();
+                });
+
+                return { projectId, project, result, countdown, scanNext };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>

@@ -197,7 +197,7 @@
                 </div>
 
                 <!-- Decorative Header -->
-                <div class="h-4 w-full bg-brand-crimson shrink-0"></div>
+                <div class="h-4 w-full shrink-0" :class="project.eventType === 'corporate' ? 'bg-slate-500' : 'bg-brand-crimson'"></div>
 
                 <!-- Content -->
                 <div class="p-8 flex flex-col flex-1">
@@ -205,8 +205,16 @@
                         <div>
                             <h3 class="text-3xl font-serif font-bold text-brand-dark leading-tight">{{
                                 project.coupleName }}</h3>
-                            <p class="text-xs font-bold text-brand-crimson tracking-[0.2em] uppercase mt-1">{{
-                                formatDate(project.weddingDate) }}</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <p class="text-xs font-bold tracking-[0.2em] uppercase"
+                                    :class="project.eventType === 'corporate' ? 'text-slate-500' : 'text-brand-crimson'">
+                                    {{ formatDate(project.weddingDate) }}
+                                </p>
+                                <span v-if="project.eventType === 'corporate'"
+                                    class="text-[9px] font-bold uppercase tracking-widest text-slate-500 bg-slate-100 border border-slate-300 px-2 py-0.5">
+                                    Corporativo
+                                </span>
+                            </div>
                         </div>
                         <div class="flex gap-2">
                             <button @click="editProject(project)"
@@ -835,6 +843,7 @@
                             coupleName: p.couple_name || `${p.bride_name || ''} & ${p.groom_name || ''}`.trim(),
                             weddingDate: p.wedding_date,
                             venue: p.venue,
+                            eventType: p.event_type || 'wedding',
                             eventsConfig: p.events_config, // NEW: Load multi-event config
                             loginCode: p.login_code || null,
                             created_at: p.created_at,
