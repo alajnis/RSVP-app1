@@ -132,10 +132,13 @@ Equipo SF Events Boutique`
 
 serve(async (req: Request) => {
   try {
+    // Este recordatorio es específico de bodas (habla de "novios", "la boda", etc.);
+    // los eventos corporativos quedan explícitamente afuera.
     const { data: projects, error } = await supabase
       .from('projects')
-      .select('id, bride_name, groom_name, bride_email, groom_email, wedding_date')
+      .select('id, bride_name, groom_name, bride_email, groom_email, wedding_date, event_type')
       .is('rsvp_reminder_sent_at', null)
+      .or('event_type.is.null,event_type.eq.wedding')
 
     if (error) throw error
 

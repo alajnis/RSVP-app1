@@ -318,7 +318,14 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-6">
+                        <div v-if="projectForm.eventType === 'corporate'">
+                            <label
+                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nombre
+                                de la Empresa / Evento</label>
+                            <input type="text" v-model="projectForm.brideName" placeholder="Acme S.A." required
+                                class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300">
+                        </div>
+                        <div v-else class="grid grid-cols-2 gap-6">
                             <div>
                                 <label
                                     class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nombre
@@ -337,26 +344,30 @@
 
                         <div>
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                                Email de contacto <span class="text-slate-300 normal-case font-normal">(completá al menos uno)</span>
+                                Email de contacto
+                                <span v-if="projectForm.eventType !== 'corporate'" class="text-slate-300 normal-case font-normal">(completá al menos uno)</span>
+                                <span v-else class="text-slate-300 normal-case font-normal">(opcional)</span>
                             </p>
                             <div class="grid grid-cols-2 gap-6">
                                 <div>
-                                    <input type="email" v-model="projectForm.brideEmail" placeholder="Email de la novia"
+                                    <input type="email" v-model="projectForm.brideEmail"
+                                        :placeholder="projectForm.eventType === 'corporate' ? 'Email de contacto' : 'Email de la novia'"
                                         class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300">
                                 </div>
-                                <div>
+                                <div v-if="projectForm.eventType !== 'corporate'">
                                     <input type="email" v-model="projectForm.groomEmail" placeholder="Email del novio"
                                         class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all placeholder-slate-300">
                                 </div>
                             </div>
-                            <p class="text-[10px] text-slate-400 mt-2">
+                            <p v-if="projectForm.eventType !== 'corporate'" class="text-[10px] text-slate-400 mt-2">
                                 Lo usamos para avisarles automáticamente si faltando 45 días o menos para la boda queda más del 10% de invitados sin responder.
                             </p>
                         </div>
 
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Fecha
-                                del Casamiento</label>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                                {{ projectForm.eventType === 'corporate' ? 'Fecha del Evento' : 'Fecha del Casamiento' }}
+                            </label>
                             <input type="date" v-model="projectForm.weddingDate" :min="minDate" required
                                 class="w-full px-4 py-3 border border-brand-pink bg-brand-beige/20 focus:border-brand-crimson outline-none transition-all">
                         </div>
@@ -902,7 +913,11 @@
                 // saveProjects() removed - no longer needed, we save directly to Supabase
 
                 // COMPUTED
-                const modalTitle = computed(() => editingProject.value ? 'Editar Casamiento' : 'Nuevo Casamiento');
+                const modalTitle = computed(() => {
+                    const isCorporate = projectForm.eventType === 'corporate';
+                    if (editingProject.value) return isCorporate ? 'Editar Evento' : 'Editar Casamiento';
+                    return isCorporate ? 'Nuevo Evento' : 'Nuevo Casamiento';
+                });
                 const submitButtonText = computed(() => editingProject.value ? 'Guardar' : 'Crear');
                 const isAdmin = computed(() => session.value && session.value.role === 'admin');
 
@@ -1017,12 +1032,17 @@
                 };
 
                 const saveProject = async () => {
-                    if (!projectForm.brideName || !projectForm.groomName || !projectForm.weddingDate) {
+                    const isCorporate = projectForm.eventType === 'corporate';
+
+                    if (!projectForm.brideName || !projectForm.weddingDate || (!isCorporate && !projectForm.groomName)) {
                         showToast('Complete todos los campos requeridos', 'error');
                         return;
                     }
 
-                    if (!projectForm.brideEmail?.trim() && !projectForm.groomEmail?.trim()) {
+                    // El recordatorio automático de RSVP (45 días antes) es específico de
+                    // bodas: en eventos corporativos el email de contacto es opcional y no
+                    // dispara ningún aviso.
+                    if (!isCorporate && !projectForm.brideEmail?.trim() && !projectForm.groomEmail?.trim()) {
                         showToast('Completá al menos un email de contacto (novia o novio)', 'error');
                         return;
                     }
