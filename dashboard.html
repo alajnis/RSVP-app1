@@ -302,6 +302,22 @@
                 </div>
                 <form @submit.prevent="saveProject" class="flex flex-col flex-1 overflow-hidden" style="min-height: 0;">
                     <div class="p-8 space-y-6 overflow-y-auto flex-1" style="min-height: 0;">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Tipo de evento</label>
+                            <div class="flex border border-brand-pink overflow-hidden">
+                                <button type="button" @click="projectForm.eventType = 'wedding'"
+                                    class="flex-1 px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all"
+                                    :class="projectForm.eventType === 'wedding' ? 'bg-brand-crimson text-white' : 'bg-white text-brand-dark/50 hover:text-brand-dark'">
+                                    Casamiento
+                                </button>
+                                <button type="button" @click="projectForm.eventType = 'corporate'"
+                                    class="flex-1 px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all border-l border-brand-pink"
+                                    :class="projectForm.eventType === 'corporate' ? 'bg-slate-500 text-white' : 'bg-white text-brand-dark/50 hover:text-brand-dark'">
+                                    Corporativo
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-2 gap-6">
                             <div>
                                 <label
@@ -715,6 +731,7 @@
                 const editingProject = ref(null);
                 const projectStats = ref({}); // Store stats by project ID
                 const projectForm = reactive({
+                    eventType: 'wedding',
                     brideName: '',
                     groomName: '',
                     brideEmail: '',
@@ -955,6 +972,7 @@
                 const openProjectModal = () => {
                     editingProject.value = null;
                     projectForm.id = null;
+                    projectForm.eventType = 'wedding';
                     projectForm.brideName = '';
                     projectForm.groomName = '';
                     projectForm.brideEmail = '';
@@ -971,6 +989,7 @@
                 const editProject = (project) => {
                     editingProject.value = project;
                     projectForm.id = project.id;
+                    projectForm.eventType = project.eventType || 'wedding';
                     projectForm.brideName = project.brideName;
                     projectForm.groomName = project.groomName;
                     projectForm.brideEmail = project.brideEmail || '';
@@ -1075,6 +1094,7 @@
 
                         const projectData = {
                             id: editingProject.value?.id || crypto.randomUUID(),
+                            event_type: projectForm.eventType || 'wedding',
                             couple_name: coupleName,
                             wedding_date: projectForm.weddingDate,
                             bride_name: projectForm.brideName,
