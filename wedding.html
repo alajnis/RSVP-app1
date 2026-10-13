@@ -3918,7 +3918,8 @@ Events Boutique`
                                     id: crypto.randomUUID(),
                                     project_id: currentProjectId.value,
                                     provider_id: providerId,
-                                    category: provider ? provider.category : null
+                                    category: provider ? provider.category : null,
+                                    sender_key: budgetRequestForm.senderKey
                                 };
                             });
                             const { error } = await supabase.from('budget_requests_log').insert(logRows);

@@ -124,6 +124,10 @@
                                 class="text-brand-dark border-b-2 border-brand-crimson px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-brand-crimson transition-all">
                                 Proveedores
                             </button>
+                            <button v-if="isSuperAdmin" @click="openBudgetUsageLogModal()"
+                                class="text-brand-dark border-b-2 border-slate-400 px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-slate-600 transition-all">
+                                Uso Presupuestos
+                            </button>
                             <button @click="openProjectModal()"
                                 class="bg-brand-crimson hover:bg-brand-dark text-white px-4 md:px-8 py-2 md:py-3 rounded-none font-bold tracking-widest uppercase text-[10px] md:text-xs transition-all shadow-xl">
                                 Nuevo Casamiento
@@ -727,6 +731,75 @@
             </div>
         </div>
 
+        <!-- MODAL: LOG DE USO DEL MÓDULO DE PRESUPUESTOS (solo admin real, no "usuario") -->
+        <div v-if="budgetUsageLogModalOpen"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm">
+            <div
+                class="bg-white shadow-2xl w-full max-w-3xl overflow-hidden transform transition-all animate-fade-in border border-brand-pink flex flex-col"
+                style="max-height: 85vh;">
+                <div
+                    class="px-8 py-6 border-b border-brand-pink/30 flex justify-between items-center bg-brand-beige/50 shrink-0">
+                    <div>
+                        <h3 class="text-2xl font-serif font-bold text-brand-dark">Uso del Módulo de Presupuestos</h3>
+                        <p class="text-xs text-slate-500 mt-1">Quién y cuántas veces se generaron solicitudes a proveedores</p>
+                    </div>
+                    <button @click="closeBudgetUsageLogModal"
+                        class="text-brand-dark/40 hover:text-brand-crimson transition-colors">
+                        <i class="ph ph-x text-2xl"></i>
+                    </button>
+                </div>
+
+                <div class="p-8 overflow-y-auto flex-1" style="min-height: 0;">
+                    <div v-if="budgetUsageLogLoading" class="text-center py-12 text-slate-400">
+                        <i class="ph-fill ph-spinner animate-spin text-4xl mb-4 block"></i>
+                        <p class="text-sm font-bold uppercase tracking-widest">Cargando...</p>
+                    </div>
+
+                    <template v-else>
+                        <!-- Resumen por casilla -->
+                        <div class="grid grid-cols-3 gap-4 mb-8">
+                            <div v-for="sender in budgetUsageSenders" :key="sender.key"
+                                class="bg-brand-beige/30 border border-brand-pink/20 p-5 text-center">
+                                <p class="text-3xl font-serif font-bold text-brand-dark">{{ sender.count }}</p>
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">{{ sender.label }}</p>
+                            </div>
+                        </div>
+
+                        <div v-if="budgetUsageLogEntries.length === 0" class="text-center py-12 text-slate-400">
+                            <i class="ph-bold ph-receipt text-6xl mb-4 block"></i>
+                            <p class="text-sm font-bold uppercase tracking-widest">Todavía no se generó ninguna solicitud</p>
+                        </div>
+
+                        <div v-else class="space-y-3">
+                            <div v-for="entry in budgetUsageLogEntries" :key="entry.id"
+                                class="flex items-center justify-between p-4 bg-brand-beige/30 border border-brand-pink/20 hover:bg-brand-beige/50 transition-colors">
+                                <div class="flex items-center gap-4 min-w-0">
+                                    <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
+                                        <i class="ph-fill ph-paper-plane-tilt text-slate-500"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-bold text-brand-dark truncate">{{ entry.providerName || 'Proveedor eliminado' }}</p>
+                                        <p class="text-xs text-slate-500 truncate">{{ entry.projectName }} — {{ entry.category || 'Sin categoría' }}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right shrink-0 pl-4">
+                                    <p class="text-sm font-bold text-brand-dark">{{ budgetUsageSenderLabel(entry.sender_key) }}</p>
+                                    <p class="text-xs text-slate-400">{{ formatDateTime(entry.created_at) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="px-8 py-5 border-t border-brand-pink/30 bg-slate-50 flex justify-end shrink-0">
+                    <button @click="closeBudgetUsageLogModal"
+                        class="px-6 py-3 bg-brand-dark hover:bg-brand-crimson text-white font-bold text-xs uppercase tracking-widest transition-all">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- TOAST -->
         <transition name="slide">
             <div v-if="toast.show"
@@ -932,6 +1005,9 @@
                 });
                 const submitButtonText = computed(() => editingProject.value ? 'Guardar' : 'Crear');
                 const isAdmin = computed(() => session.value && session.value.role === 'admin');
+                // Solo true si se entró con la clave 'admin' (no 'usuario'), para ocultar
+                // cosas sensibles como el log de uso del módulo de Proveedores.
+                const isSuperAdmin = computed(() => isAdmin.value && session.value?.loginKey === 'admin');
 
                 const filteredProjects = computed(() => {
                     let result = projects.value;
@@ -1168,6 +1244,59 @@
                 const closeProvidersModal = () => {
                     showProvidersModal.value = false;
                     resetProviderForm();
+                };
+
+                // LOG DE USO DEL MÓDULO DE PRESUPUESTOS (solo admin real)
+                const budgetUsageLogModalOpen = ref(false);
+                const budgetUsageLogLoading = ref(false);
+                const budgetUsageLogEntries = ref([]);
+                const BUDGET_SENDER_LABELS = { sofia: 'Sofia', guadalupe: 'Guadalupe', luz: 'Luz' };
+                const budgetUsageSenderLabel = (key) => BUDGET_SENDER_LABELS[key] || 'Sin registrar';
+
+                const budgetUsageSenders = computed(() => {
+                    const counts = { sofia: 0, guadalupe: 0, luz: 0 };
+                    budgetUsageLogEntries.value.forEach(e => {
+                        if (counts[e.sender_key] !== undefined) counts[e.sender_key]++;
+                    });
+                    return Object.keys(BUDGET_SENDER_LABELS).map(key => ({
+                        key, label: BUDGET_SENDER_LABELS[key], count: counts[key]
+                    }));
+                });
+
+                const openBudgetUsageLogModal = async () => {
+                    budgetUsageLogModalOpen.value = true;
+                    budgetUsageLogLoading.value = true;
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+                        const { data, error } = await supabase
+                            .from('budget_requests_log')
+                            .select('*')
+                            .order('created_at', { ascending: false });
+                        if (error) throw error;
+
+                        // Resuelve nombre de proyecto y de proveedor contra lo ya cargado en
+                        // el dashboard, sin hacer más queries.
+                        const projectNameById = {};
+                        projects.value.forEach(p => { projectNameById[p.id] = p.coupleName; });
+                        if (providers.value.length === 0) await loadProviders();
+                        const providerNameById = {};
+                        providers.value.forEach(p => { providerNameById[p.id] = p.name; });
+
+                        budgetUsageLogEntries.value = (data || []).map(entry => ({
+                            ...entry,
+                            projectName: projectNameById[entry.project_id] || 'Casamiento eliminado',
+                            providerName: providerNameById[entry.provider_id] || null
+                        }));
+                    } catch (e) {
+                        console.error('Error cargando log de uso de presupuestos:', e);
+                        showToast('Error al cargar el log: ' + e.message, 'error');
+                    } finally {
+                        budgetUsageLogLoading.value = false;
+                    }
+                };
+
+                const closeBudgetUsageLogModal = () => {
+                    budgetUsageLogModalOpen.value = false;
                 };
 
                 const resetProviderForm = () => {
@@ -1693,7 +1822,9 @@
                     providerForm,
                     filteredProviders,
                     locationProviderNames,
-                    openProvidersModal,
+                    openProvidersModal, isSuperAdmin,
+                    budgetUsageLogModalOpen, budgetUsageLogLoading, budgetUsageLogEntries, budgetUsageSenders,
+                    budgetUsageSenderLabel, openBudgetUsageLogModal, closeBudgetUsageLogModal,
                     closeProvidersModal,
                     resetProviderForm,
                     saveProvider,

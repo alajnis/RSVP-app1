@@ -215,9 +215,11 @@
                             return;
                         }
 
-                        // Admin login (mismos permisos para 'admin' y 'usuario')
+                        // Admin login (mismos permisos para 'admin' y 'usuario'; se guarda
+                        // además con qué código se entró, solo para poder ocultar cosas
+                        // puntuales como el log de uso de Proveedores a 'usuario').
                         if (input === 'admin' || input === 'usuario') {
-                            localStorage.setItem('rsvp_session', JSON.stringify({ role: 'admin' }));
+                            localStorage.setItem('rsvp_session', JSON.stringify({ role: 'admin', loginKey: input }));
                             window.location.href = 'dashboard.html';
                             return;
                         }
