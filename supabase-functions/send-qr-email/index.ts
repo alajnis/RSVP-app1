@@ -119,16 +119,24 @@ function stripDataUrlPrefix(dataUrl: string): string {
 }
 
 // Arma el HTML del cuerpo del mail con el QR referenciado por Content-ID (cid:qr).
-function buildHtmlBody(guestName: string, eventName: string): string {
+// eventDateLabel y venue son opcionales: si el evento no tiene lugar cargado,
+// la línea de "te esperamos el [fecha] en [lugar]" se arma solo con lo que haya.
+function buildHtmlBody(guestName: string, eventName: string, eventDateLabel?: string, venue?: string): string {
   const safeName = escapeHtml(guestName || 'Invitado/a')
   const safeEvent = escapeHtml(eventName || 'el evento')
+
+  const parts: string[] = []
+  if (eventDateLabel) parts.push(`el ${escapeHtml(eventDateLabel)}`)
+  if (venue) parts.push(`en ${escapeHtml(venue)}`)
+  const whenWhere = parts.length > 0 ? `Te esperamos ${parts.join(' ')}.` : '¡Te esperamos!'
+
   return `<!DOCTYPE html><html><body style="font-family:Arial,Helvetica,sans-serif; font-size:14px; color:#1a1a1a; line-height:1.5;">
 <p style="margin:0 0 16px 0;">Hola ${safeName},</p>
 <p style="margin:0 0 16px 0;">Confirmamos tu asistencia a <strong>${safeEvent}</strong>. Este es tu código de acceso — mostralo al llegar al evento.</p>
 <div style="margin:24px 0; text-align:center;">
   <img src="cid:qr" alt="Código QR de acceso" style="width:220px; height:220px; display:inline-block;">
 </div>
-<p style="margin:0; color:#555;">¡Te esperamos!</p>
+<p style="margin:0; color:#555;">${whenWhere}</p>
 </body></html>`
 }
 
@@ -214,7 +222,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { senderKey, to, guestName, eventName, qrDataUrl } = await req.json()
+    const { senderKey, to, guestName, eventName, eventDateLabel, venue, qrDataUrl } = await req.json()
 
     if (!senderKey || !to || !qrDataUrl) {
       return new Response(JSON.stringify({ error: 'Faltan senderKey, to o qrDataUrl' }), {
@@ -233,7 +241,7 @@ serve(async (req: Request) => {
     const qrBase64 = stripDataUrlPrefix(qrDataUrl)
     const accessToken = await getAccessToken(senderKey)
     const subject = `Tu código de acceso — ${eventName || 'Evento'}`
-    const htmlBody = buildHtmlBody(guestName, eventName)
+    const htmlBody = buildHtmlBody(guestName, eventName, eventDateLabel, venue)
 
     const messageId = await sendGmailMessage(accessToken, to, subject, htmlBody, qrBase64)
 

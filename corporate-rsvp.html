@@ -235,7 +235,8 @@
                                 eventName: data.couple_name || 'Evento',
                                 eventDateLabel: data.wedding_date
                                     ? new Date(data.wedding_date + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
-                                    : ''
+                                    : '',
+                                venue: data.venue || ''
                             };
                         }
                     } catch (e) {
@@ -317,6 +318,8 @@
                                     to: form.email,
                                     guestName: `${form.firstName} ${form.lastName}`.trim(),
                                     eventName: project.value?.eventName || 'el evento',
+                                    eventDateLabel: project.value?.eventDateLabel || '',
+                                    venue: project.value?.venue || '',
                                     qrDataUrl: qrDataUrl.value
                                 })
                             });
