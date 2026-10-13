@@ -1060,7 +1060,9 @@
                     }
 
                     try {
-                        const coupleName = `${projectForm.brideName} & ${projectForm.groomName}`;
+                        const coupleName = isCorporate
+                            ? projectForm.brideName
+                            : `${projectForm.brideName} & ${projectForm.groomName}`;
 
                         // BUILD EVENTS CONFIG
                         const eventsConfig = {
