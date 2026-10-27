@@ -21,6 +21,12 @@ alter table projects add column if not exists event_type text not null default '
 --    hoy en el esquema de bodas.
 alter table guests add column if not exists company text;
 
+-- 1.1) dietary_detail: el código de wedding.html ya la usa hace tiempo (texto
+--      libre cuando dietary = 'Otro'), pero nunca se migró a la base real de
+--      producción. corporate-rsvp.html también la necesita; se agrega acá para
+--      no bloquear el RSVP corporativo con un error 42703 (columna inexistente).
+alter table guests add column if not exists dietary_detail text;
+
 -- 2) Token de QR. DECISIÓN: el contenido del QR que se genera en
 --    corporate-rsvp.html es directamente el `id` (uuid) del guest, no
 --    un token separado -- es suficientemente único y evita tener que
