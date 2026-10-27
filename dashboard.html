@@ -218,6 +218,10 @@
                                     class="text-[9px] font-bold uppercase tracking-widest text-slate-500 bg-slate-100 border border-slate-300 px-2 py-0.5">
                                     Corporativo
                                 </span>
+                                <span v-if="project.editLocked"
+                                    class="text-[9px] font-bold uppercase tracking-widest text-brand-crimson bg-brand-pink/20 border border-brand-crimson/30 px-2 py-0.5 flex items-center gap-1">
+                                    <i class="ph-bold ph-lock-simple"></i> Solo Lectura
+                                </span>
                             </div>
                         </div>
                         <div class="flex gap-2">
@@ -378,6 +382,24 @@
                             <p v-if="projectForm.eventType !== 'corporate'" class="text-[10px] text-slate-400 mt-2">
                                 Lo usamos para avisarles automáticamente si faltando 45 días o menos para la boda queda más del 10% de invitados sin responder.
                             </p>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-4 border-t border-brand-pink/30">
+                            <div>
+                                <label class="text-xs font-bold text-brand-dark uppercase tracking-widest flex items-center gap-1.5">
+                                    <i class="ph-bold ph-lock-simple"></i> Bloquear edición para novios
+                                </label>
+                                <p class="text-[10px] text-slate-400 mt-1 max-w-xs">
+                                    Al activarlo, los novios solo pueden ver (sin editar invitados, mesas ni asignaciones). Útil cerca de la fecha del evento.
+                                </p>
+                            </div>
+                            <button type="button" @click="projectForm.editLocked = !projectForm.editLocked"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-crimson focus:ring-offset-2 shrink-0 ml-4"
+                                :class="projectForm.editLocked ? 'bg-brand-crimson' : 'bg-slate-200'">
+                                <span class="sr-only">Bloquear edición para novios</span>
+                                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                                    :class="projectForm.editLocked ? 'translate-x-6' : 'translate-x-1'"></span>
+                            </button>
                         </div>
 
                         <div>
@@ -835,7 +857,8 @@
                     weddingDate: '',
                     venue: '',
                     hasTransfers: false,
-                    transfersPaidBy: 'couple'
+                    transfersPaidBy: 'couple',
+                    editLocked: false
                 });
                 const toast = reactive({ show: false, message: '', type: 'success' });
                 const session = ref(null);
@@ -957,6 +980,7 @@
                             weddingDate: p.wedding_date,
                             venue: p.venue,
                             eventType: p.event_type || 'wedding',
+                            editLocked: !!p.edit_locked,
                             eventsConfig: p.events_config, // NEW: Load multi-event config
                             loginCode: p.login_code || null,
                             created_at: p.created_at,
@@ -1082,6 +1106,7 @@
                     projectForm.groomEmail = '';
                     projectForm.weddingDate = '';
                     projectForm.venue = '';
+                    projectForm.editLocked = false;
                     // RESET MULTI-EVENT
                     projectForm.isMultiEvent = false;
                     projectForm.extraEvents = [];
@@ -1099,6 +1124,7 @@
                     projectForm.groomEmail = project.groomEmail || '';
                     projectForm.weddingDate = project.weddingDate;
                     projectForm.venue = project.venue || '';
+                    projectForm.editLocked = !!project.editLocked;
 
                     // LOAD MULTI-EVENT CONFIG
                     const config = project.eventsConfig || {};
@@ -1205,6 +1231,7 @@
                         const projectData = {
                             id: editingProject.value?.id || crypto.randomUUID(),
                             event_type: projectForm.eventType || 'wedding',
+                            edit_locked: !!projectForm.editLocked,
                             couple_name: coupleName,
                             wedding_date: projectForm.weddingDate,
                             bride_name: projectForm.brideName,

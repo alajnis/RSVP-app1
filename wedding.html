@@ -288,6 +288,13 @@
                 </div>
             </div>
 
+            <!-- Aviso de modo solo-lectura (activado por el admin desde el Dashboard) -->
+            <div v-if="editBlocked"
+                class="mt-4 flex items-center gap-3 bg-brand-dark text-white px-5 py-3 text-xs font-bold uppercase tracking-widest shadow-lg">
+                <i class="ph-bold ph-lock-simple text-lg"></i>
+                {{ t('avisoModoSoloLectura') }}
+            </div>
+
             <!-- Main Tabs -->
             <div
                 class="flex flex-col md:flex-row justify-between items-center bg-brand-beige p-1 border border-brand-pink mt-4 shadow-inner">
@@ -381,7 +388,7 @@
                             </button>
                         </div>
 
-                        <button @click="openTableModal()"
+                        <button v-if="!editBlocked" @click="openTableModal()"
                             class="bg-brand-crimson hover:bg-brand-dark text-white px-10 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all shadow-lg">
                             {{ t('nuevaMesa') }}
                         </button>
@@ -429,7 +436,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div v-if="!editBlocked" class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button @click="editTable(table)"
                                         class="w-10 h-10 flex items-center justify-center text-brand-dark/40 hover:text-brand-crimson hover:bg-brand-pink/20 transition-all">
                                         <i class="ph-bold ph-pencil-simple text-lg"></i>
@@ -512,7 +519,7 @@
                     <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-brand-beige/20 relative">
                         <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-brand-beige/20">
                             <div v-for="item in filteredAssignableItems" :key="item.id"
-                                draggable="true"
+                                :draggable="!editBlocked"
                                 @dragstart="onDragStart($event, item)"
                                 @dragend="onDragEnd"
                                 class="draggable-guest bg-white p-4 border shadow-sm transition-all group relative border-brand-pink hover:border-brand-crimson mb-4 flex flex-col">
@@ -640,7 +647,7 @@
 
 
                     <!-- Add Manually -->
-                    <button @click="openGuestModal()"
+                    <button v-if="!editBlocked" @click="openGuestModal()"
                         class="bg-brand-crimson hover:bg-brand-dark text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg flex items-center gap-2">
                         <i class="ph-bold ph-plus"></i> {{ t('nuevoInvitado') }}
                     </button>
@@ -815,16 +822,18 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-right space-x-2">
-                                <button @click="editGuest(guest)"
-                                    class="text-brand-dark/40 hover:text-brand-crimson p-2 hover:bg-brand-pink/20 transition-all"
-                                    :title="t('editar')">
-                                    <i class="ph-bold ph-pencil-simple text-xl"></i>
-                                </button>
-                                <button @click="deleteGuest(guest.id)"
-                                    class="text-brand-dark/40 hover:text-brand-crimson p-2 hover:bg-brand-pink/20 transition-all"
-                                    :title="t('eliminar')">
-                                    <i class="ph-bold ph-trash text-xl"></i>
-                                </button>
+                                <template v-if="!editBlocked">
+                                    <button @click="editGuest(guest)"
+                                        class="text-brand-dark/40 hover:text-brand-crimson p-2 hover:bg-brand-pink/20 transition-all"
+                                        :title="t('editar')">
+                                        <i class="ph-bold ph-pencil-simple text-xl"></i>
+                                    </button>
+                                    <button @click="deleteGuest(guest.id)"
+                                        class="text-brand-dark/40 hover:text-brand-crimson p-2 hover:bg-brand-pink/20 transition-all"
+                                        :title="t('eliminar')">
+                                        <i class="ph-bold ph-trash text-xl"></i>
+                                    </button>
+                                </template>
                             </td>
                         </tr>
                         <tr v-if="guests.length === 0">
@@ -2021,7 +2030,8 @@ Events Boutique`
                         groomName: proj.groom_name,
                         venue: proj.venue || '',
                         eventsConfig: proj.events_config,
-                        floorPlanUrl: proj.floor_plan_url // Load URL
+                        floorPlanUrl: proj.floor_plan_url, // Load URL
+                        editLocked: !!proj.edit_locked
                     };
                     currentProjectId.value = projectId;
 
@@ -2313,6 +2323,8 @@ Events Boutique`
                         toastErrorPrefix: 'Error: ',
                         toastMesaEliminada: 'Mesa eliminada',
                         toastErrorAlBorrar: 'Error al borrar',
+                        toastEdicionBloqueada: 'Modo visualización solamente por cercanía al evento',
+                        avisoModoSoloLectura: 'Modo visualización solamente por cercanía al evento',
                         toastMaximo10Integrantes: 'Máximo 10 integrantes',
                         toastEspecificaTalleCalzadoDe: 'Por favor especificá el talle de calzado de:',
                         toastInvitadoActualizado: 'Invitado actualizado',
@@ -2543,6 +2555,8 @@ Events Boutique`
                         toastErrorPrefix: 'Error: ',
                         toastMesaEliminada: 'Table deleted',
                         toastErrorAlBorrar: 'Error deleting',
+                        toastEdicionBloqueada: 'View-only mode due to the event being close',
+                        avisoModoSoloLectura: 'View-only mode due to the event being close',
                         toastMaximo10Integrantes: 'Maximum 10 members',
                         toastEspecificaTalleCalzadoDe: 'Please specify the shoe size for:',
                         toastInvitadoActualizado: 'Guest updated',
@@ -2594,6 +2608,13 @@ Events Boutique`
 
                 const tableModalTitle = computed(() => editingTable.value ? t('editarMesa') : t('nuevaMesa'));
                 const guestModalTitle = computed(() => editingGuest.value ? t('editarInvitado') : t('nuevoInvitado'));
+
+                // Modo "solo visualización" para los novios: lo activa el admin por
+                // proyecto (checkbox en dashboard.html) cuando se acerca el evento, para
+                // evitar cambios de último momento (invitados, mesas, asignaciones) que ya
+                // no se puedan coordinar con el venue/catering. Nunca afecta al admin ni al
+                // RSVP de los invitados (index2.html), solo al panel de los novios acá.
+                const editBlocked = computed(() => isCouple.value && !!(currentProject.value && currentProject.value.editLocked));
 
                 const isMarcelloGonzaWedding = computed(() => {
                     if (!currentProject.value) return false;
@@ -2820,10 +2841,17 @@ Events Boutique`
                 };
 
                 // METHODS - Table
-                const openTableModal = () => { editingTable.value = null; tableForm.name = ''; tableForm.capacity = 8; showTableModal.value = true; };
-                const editTable = (table) => { editingTable.value = table; tableForm.name = table.name; tableForm.capacity = table.capacity; showTableModal.value = true; };
+                const openTableModal = () => {
+                    if (editBlocked.value) { showToast(t('toastEdicionBloqueada'), 'error'); return; }
+                    editingTable.value = null; tableForm.name = ''; tableForm.capacity = 8; showTableModal.value = true;
+                };
+                const editTable = (table) => {
+                    if (editBlocked.value) { showToast(t('toastEdicionBloqueada'), 'error'); return; }
+                    editingTable.value = table; tableForm.name = table.name; tableForm.capacity = table.capacity; showTableModal.value = true;
+                };
 
                 const saveTable = async () => {
+                    if (editBlocked.value) { showToast(t('toastEdicionBloqueada'), 'error'); return; }
                     try {
                         if (editingTable.value) {
                             // VALIDACIÓN: No permitir reducir capacidad si excede asignaciones actuales
@@ -2864,6 +2892,7 @@ Events Boutique`
                 };
 
                 const deleteTable = async (id) => {
+                    if (editBlocked.value) { showToast(t('toastEdicionBloqueada'), 'error'); return; }
                     if (confirm('¿Borrar mesa?')) {
                         try {
                             const { error } = await supabase.from('tables').delete().eq('id', id);
@@ -2879,6 +2908,7 @@ Events Boutique`
                 const closeModal = () => { showTableModal.value = false; };
 
                 const openGuestModal = () => {
+                    if (editBlocked.value) { showToast(t('toastEdicionBloqueada'), 'error'); return; }
                     editingGuest.value = null;
                     Object.assign(guestForm, {
                         firstName: '',
@@ -2922,6 +2952,7 @@ Events Boutique`
                 };
 
                 const saveGuest = async () => {
+                    if (editBlocked.value) { showToast(t('toastEdicionBloqueada'), 'error'); return; }
                     // Final sync before saving
                     if (guestForm.sub_guests.length > 0) {
                         guestForm.sub_guests[0].firstName = guestForm.firstName;
@@ -2977,6 +3008,7 @@ Events Boutique`
                 };
 
                 const editGuest = (guest) => {
+                    if (editBlocked.value) { showToast(t('toastEdicionBloqueada'), 'error'); return; }
                     editingGuest.value = guest;
 
                     // Basic split for legacy data if needed
@@ -3095,6 +3127,7 @@ Events Boutique`
                 };
 
                 const deleteGuest = async (id) => {
+                    if (editBlocked.value) { showToast(t('toastEdicionBloqueada'), 'error'); return; }
                     if (confirm('¿Eliminar invitado?')) {
                         try {
                             const guestBeingDeleted = guests.value.find(g => g.id === id);
@@ -4158,6 +4191,7 @@ Events Boutique`
                 const isDraggingOverPending = ref(false);
 
                 const onDragStart = (event, guest) => {
+                    if (editBlocked.value) { event.preventDefault(); showToast(t('toastEdicionBloqueada'), 'error'); return; }
                     draggedItem = guest;
                     event.dataTransfer.effectAllowed = 'move';
                     setTimeout(() => { if (event.target) event.target.classList.add('is-dragging'); }, 0);
@@ -4184,7 +4218,7 @@ Events Boutique`
 
                 const onDropTable = (event, table) => {
                     table.isDragOver = false;
-                    if (!draggedItem) return;
+                    if (editBlocked.value || !draggedItem) return;
 
                     const capacity = table.capacity || 0;
                     const assigned = assignments.value.filter(a => a.table_id === table.id).length;
@@ -4207,7 +4241,7 @@ Events Boutique`
 
                 const onDropPending = (event) => {
                     isDraggingOverPending.value = false;
-                    if (!draggedItem || !draggedItem.assignment) return;
+                    if (editBlocked.value || !draggedItem || !draggedItem.assignment) return;
 
                     assignGuest(draggedItem.guestId, draggedItem.subGuestIdx, '');
                 };
@@ -4277,7 +4311,7 @@ Events Boutique`
                     searchQuery, guestSearchQuery, filter, guestFilter, showTableModal, editingTable, tableForm, showFloorPlanModal,
                     showGuestModal, editingGuest, guestForm, toast,
                     tableModalTitle, guestModalTitle,
-                    currentLanguage, t, isSvenYamiWedding,
+                    currentLanguage, t, isSvenYamiWedding, editBlocked,
                     openTableModal, editTable, saveTable, deleteTable, closeModal,
                     openGuestModal, editGuest, saveGuest, deleteGuest, deleteAllGuests, closeGuestModal,
                     activityLog, activityLabel, activityIcon, activityDescription, activityActorLabel, openActivityLog,
