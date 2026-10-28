@@ -3081,12 +3081,14 @@ Events Boutique`
                 const activityLabels = {
                     delete_guest: 'Invitado eliminado',
                     delete_all_guests: 'Lista completa eliminada',
-                    reset_project_data: 'Casamiento reseteado'
+                    reset_project_data: 'Casamiento reseteado',
+                    toggle_edit_lock: 'Modo solo lectura'
                 };
                 const activityIcons = {
                     delete_guest: 'ph-user-minus',
                     delete_all_guests: 'ph-users-three',
-                    reset_project_data: 'ph-arrow-counter-clockwise'
+                    reset_project_data: 'ph-arrow-counter-clockwise',
+                    toggle_edit_lock: 'ph-lock-simple'
                 };
                 const activityLabel = (action) => activityLabels[action] || action;
                 const activityIcon = (action) => activityIcons[action] || 'ph-warning-circle';
@@ -3106,6 +3108,10 @@ Events Boutique`
                             return `Se eliminó la lista completa: ${d.guests_deleted ?? '?'} invitado${d.guests_deleted === 1 ? '' : 's'}.`;
                         case 'reset_project_data':
                             return `Se resetearon los datos del casamiento: ${d.guests ?? '?'} invitado${d.guests === 1 ? '' : 's'} y ${d.tables ?? '?'} mesa${d.tables === 1 ? '' : 's'} eliminadas.`;
+                        case 'toggle_edit_lock':
+                            return d.locked
+                                ? 'Se activó el modo solo lectura para los novios.'
+                                : 'Se desactivó el modo solo lectura para los novios.';
                         default:
                             return '';
                     }

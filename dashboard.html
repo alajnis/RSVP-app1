@@ -1249,6 +1249,23 @@
 
                         if (error) throw error;
 
+                        // Registra en el log de Actividad (el mismo que ve wedding.html) solo
+                        // cuando el valor de edit_locked realmente cambió, para no ensuciar el
+                        // historial con un evento en cada guardado del formulario.
+                        const previousLocked = !!editingProject.value?.editLocked;
+                        if (previousLocked !== projectData.edit_locked) {
+                            try {
+                                await window.supabaseClient.from('activity_log').insert({
+                                    project_id: projectData.id,
+                                    action: 'toggle_edit_lock',
+                                    actor_role: 'admin',
+                                    detail: { locked: projectData.edit_locked }
+                                });
+                            } catch (logErr) {
+                                console.error('Error logging edit_locked change:', logErr);
+                            }
+                        }
+
                         await loadProjects(); // Reload from Supabase
                         closeProjectModal();
                         const isNew = !editingProject.value;
