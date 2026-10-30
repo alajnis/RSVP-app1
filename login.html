@@ -116,8 +116,12 @@
                 const projects = ref([]);
                 const showHelpModal = ref(false);
                 const helpSearch = ref('');
+                // Códigos administrativos (admin/usuario/maestro), cargados desde la
+                // tabla access_codes en vez de estar hardcodeados -- así se pueden
+                // cambiar desde el panel de Gestión de Accesos sin tocar código.
+                const accessCodes = ref([]);
 
-                // Cargar proyectos de Supabase al iniciar
+                // Cargar proyectos y códigos administrativos de Supabase al iniciar
                 onMounted(async () => {
                     try {
                         if (!window.supabase) {
@@ -146,6 +150,16 @@
                         console.log(`✅ ${projects.value.length} proyectos cargados`);
                     } catch (e) {
                         console.error('Error en onMounted:', e);
+                    }
+
+                    try {
+                        const { data: codes, error: codesErr } = await window.supabase
+                            .from('access_codes')
+                            .select('*');
+                        if (codesErr) throw codesErr;
+                        accessCodes.value = codes || [];
+                    } catch (e) {
+                        console.error('Error cargando access_codes:', e);
                     }
                 });
 
@@ -207,19 +221,26 @@
                             return;
                         }
 
-                        // Help command
-                        if (input === 'help') {
+                        // Help command (palabra clave cambiada a "help1" para que no sea
+                        // trivial de adivinar por cualquiera que vea la pantalla de login).
+                        if (input === 'help1') {
                             helpSearch.value = '';
                             showHelpModal.value = true;
                             password.value = '';
                             return;
                         }
 
-                        // Admin login (mismos permisos para 'admin' y 'usuario'; se guarda
-                        // además con qué código se entró, solo para poder ocultar cosas
-                        // puntuales como el log de uso de Proveedores a 'usuario').
-                        if (input === 'admin' || input === 'usuario') {
-                            localStorage.setItem('rsvp_session', JSON.stringify({ role: 'admin', loginKey: input }));
+                        // Admin / maestro login: se busca contra access_codes (DB) en vez
+                        // de comparar strings fijos, así las claves se pueden cambiar desde
+                        // el panel de Gestión de Accesos sin editar código. 'loginKey' guarda
+                        // qué código se usó (admin/usuario/maestro) para permisos puntuales
+                        // (ej. log de Proveedores oculto a 'usuario', Gestión de Accesos
+                        // visible solo a 'maestro'); 'role' en sí sigue siendo 'admin' para
+                        // todo lo que ya funcionaba así, salvo maestro que es su propio rol.
+                        const matchedCode = accessCodes.value.find(c => c.code_value.toLowerCase() === input);
+                        if (matchedCode) {
+                            const sessionRole = matchedCode.role === 'maestro' ? 'admin' : matchedCode.role;
+                            localStorage.setItem('rsvp_session', JSON.stringify({ role: sessionRole, loginKey: matchedCode.code_key }));
                             window.location.href = 'dashboard.html';
                             return;
                         }

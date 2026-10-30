@@ -128,6 +128,10 @@
                                 class="text-brand-dark border-b-2 border-slate-400 px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-slate-600 transition-all">
                                 Uso Presupuestos
                             </button>
+                            <button v-if="isMaestro" @click="openAccessCodesModal()"
+                                class="text-brand-dark border-b-2 border-slate-400 px-2 py-1 font-semibold uppercase tracking-widest text-[10px] md:text-xs hover:text-slate-600 transition-all flex items-center gap-1.5">
+                                <i class="ph-bold ph-key"></i> Gestión de Accesos
+                            </button>
                             <button @click="openProjectModal()"
                                 class="bg-brand-crimson hover:bg-brand-dark text-white px-4 md:px-8 py-2 md:py-3 rounded-none font-bold tracking-widest uppercase text-[10px] md:text-xs transition-all shadow-xl">
                                 Nuevo Casamiento
@@ -895,6 +899,82 @@
             </div>
         </div>
 
+        <!-- MODAL: GESTIÓN DE ACCESOS (solo código "maestro") -->
+        <div v-if="accessCodesModalOpen"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm">
+            <div
+                class="bg-white shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all animate-fade-in border border-brand-pink flex flex-col"
+                style="max-height: 85vh;">
+                <div
+                    class="px-8 py-6 border-b border-brand-pink/30 flex justify-between items-center bg-brand-beige/50 shrink-0">
+                    <div>
+                        <h3 class="text-2xl font-serif font-bold text-brand-dark">Gestión de Accesos</h3>
+                        <p class="text-xs text-slate-500 mt-1">Cambiá las claves de acceso administrativo cuando lo necesites (ej. alguien del equipo se va)</p>
+                    </div>
+                    <button @click="closeAccessCodesModal"
+                        class="text-brand-dark/40 hover:text-brand-crimson transition-colors">
+                        <i class="ph ph-x text-2xl"></i>
+                    </button>
+                </div>
+
+                <div class="p-8 overflow-y-auto flex-1 space-y-4" style="min-height: 0;">
+                    <div v-if="accessCodesLoading" class="text-center py-12 text-slate-400">
+                        <i class="ph-fill ph-spinner animate-spin text-4xl mb-4 block"></i>
+                        <p class="text-sm font-bold uppercase tracking-widest">Cargando...</p>
+                    </div>
+
+                    <div v-else v-for="code in accessCodesForm" :key="code.id"
+                        class="bg-brand-beige/30 border border-brand-pink/20 p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-sm font-bold text-brand-dark uppercase tracking-widest flex items-center gap-2">
+                                <i class="ph-bold ph-user-circle"></i> {{ code.code_key }}
+                                <span v-if="code.role === 'maestro'" class="text-[9px] font-bold uppercase tracking-widest text-brand-crimson bg-brand-pink/20 border border-brand-crimson/30 px-2 py-0.5">Maestro</span>
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="text" v-model="code.newValue" placeholder="Nueva clave"
+                                class="flex-1 px-4 py-3 border border-brand-pink bg-white focus:border-brand-crimson outline-none transition-all text-sm">
+                            <button @click="saveAccessCode(code)"
+                                :disabled="!code.newValue || !code.newValue.trim() || code.newValue.trim() === code.code_value"
+                                class="bg-brand-crimson hover:bg-brand-dark text-white px-5 py-3 font-bold text-[10px] uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0">
+                                Guardar
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-2">Clave actual: <span class="font-mono">{{ code.code_value }}</span></p>
+                    </div>
+
+                    <!-- Rotación masiva de emergencia: agrega un sufijo al código actual
+                         de CADA casamiento, invalidando de una sola vez cualquier código
+                         que haya quedado filtrado (ej. alguien del equipo se va). No toca
+                         los códigos admin/usuario/maestro de arriba. -->
+                    <div v-if="!accessCodesLoading" class="border-t-2 border-brand-crimson/20 pt-5 mt-2">
+                        <p class="text-sm font-bold text-brand-crimson uppercase tracking-widest flex items-center gap-2 mb-2">
+                            <i class="ph-bold ph-warning-circle"></i> Rotación de emergencia
+                        </p>
+                        <p class="text-xs text-slate-500 mb-4">
+                            Agrega un sufijo al código de acceso de TODOS los casamientos (pasados y futuros) de una sola vez, invalidando cualquier código viejo que pueda haber quedado filtrado. Ej: "pameylucho" → "pameylucho1".
+                        </p>
+                        <div class="flex items-center gap-3">
+                            <input type="text" v-model="bulkRotateSuffix" placeholder="Sufijo (ej: 1)"
+                                class="flex-1 px-4 py-3 border border-brand-crimson/40 bg-white focus:border-brand-crimson outline-none transition-all text-sm">
+                            <button @click="confirmBulkRotateCodes"
+                                :disabled="!bulkRotateSuffix || !bulkRotateSuffix.trim() || bulkRotating"
+                                class="bg-brand-crimson hover:bg-brand-dark text-white px-5 py-3 font-bold text-[10px] uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0">
+                                {{ bulkRotating ? 'Aplicando...' : 'Rotar todos' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-8 py-5 border-t border-brand-pink/30 bg-slate-50 flex justify-end shrink-0">
+                    <button @click="closeAccessCodesModal"
+                        class="px-6 py-3 bg-brand-dark hover:bg-brand-crimson text-white font-bold text-xs uppercase tracking-widest transition-all">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- TOAST -->
         <transition name="slide">
             <div v-if="toast.show"
@@ -1110,6 +1190,9 @@
                 // Solo true si se entró con la clave 'admin' (no 'usuario'), para ocultar
                 // cosas sensibles como el log de uso del módulo de Proveedores.
                 const isSuperAdmin = computed(() => isAdmin.value && session.value?.loginKey === 'admin');
+                // Solo true si se entró con el código 'maestro': único nivel con acceso al
+                // panel de Gestión de Accesos (cambiar las claves de admin/usuario).
+                const isMaestro = computed(() => isAdmin.value && session.value?.loginKey === 'maestro');
 
                 const filteredProjects = computed(() => {
                     let result = projects.value;
@@ -1505,6 +1588,104 @@
 
                 const closeBudgetUsageLogModal = () => {
                     budgetUsageLogModalOpen.value = false;
+                };
+
+                // GESTIÓN DE ACCESOS (solo código "maestro"): permite cambiar las claves
+                // de admin/usuario/maestro desde la propia app, sin pedirle a Claude que
+                // edite login.html cada vez (ej. alguien del equipo deja de trabajar acá).
+                const accessCodesModalOpen = ref(false);
+                const accessCodesLoading = ref(false);
+                const accessCodesForm = ref([]);
+
+                const openAccessCodesModal = async () => {
+                    accessCodesModalOpen.value = true;
+                    accessCodesLoading.value = true;
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+                        const { data, error } = await supabase
+                            .from('access_codes')
+                            .select('*')
+                            .order('code_key');
+                        if (error) throw error;
+                        accessCodesForm.value = (data || []).map(c => ({ ...c, newValue: '' }));
+                    } catch (e) {
+                        console.error('Error cargando access_codes:', e);
+                        showToast('Error al cargar los accesos: ' + e.message, 'error');
+                    } finally {
+                        accessCodesLoading.value = false;
+                    }
+                };
+
+                const closeAccessCodesModal = () => {
+                    accessCodesModalOpen.value = false;
+                };
+
+                // Rotación masiva de emergencia: agrega un sufijo al login_code actual de
+                // TODOS los proyectos. Deliberadamente NO se usa al crear este panel —
+                // existe como herramienta lista para usar ante un caso de seguridad real
+                // (ej. alguien del equipo se va y podría intentar usar un código viejo).
+                const bulkRotateSuffix = ref('');
+                const bulkRotating = ref(false);
+
+                const confirmBulkRotateCodes = async () => {
+                    const suffix = (bulkRotateSuffix.value || '').trim();
+                    if (!suffix) return;
+
+                    const sure = confirm(
+                        `¿Seguro que querés agregar "${suffix}" al código de acceso de TODOS los casamientos (pasados y futuros)?\n\n` +
+                        `Esto invalida cualquier código viejo que la gente ya tenga guardado/compartido — van a necesitar el código nuevo para volver a entrar a su casamiento.\n\n` +
+                        `Esta acción no se puede deshacer automáticamente.`
+                    );
+                    if (!sure) return;
+
+                    bulkRotating.value = true;
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+                        const { data: allProjects, error: fetchErr } = await supabase
+                            .from('projects')
+                            .select('id, login_code');
+                        if (fetchErr) throw fetchErr;
+
+                        let updated = 0;
+                        for (const p of (allProjects || [])) {
+                            if (!p.login_code) continue;
+                            const newCode = `${p.login_code}${suffix}`;
+                            const { error: updErr } = await supabase
+                                .from('projects')
+                                .update({ login_code: newCode })
+                                .eq('id', p.id);
+                            if (updErr) throw updErr;
+                            updated++;
+                        }
+
+                        bulkRotateSuffix.value = '';
+                        showToast(`Códigos actualizados en ${updated} casamiento${updated === 1 ? '' : 's'}`);
+                        await loadProjects();
+                    } catch (e) {
+                        console.error('Error en rotación masiva de códigos:', e);
+                        showToast('Error al rotar los códigos: ' + e.message, 'error');
+                    } finally {
+                        bulkRotating.value = false;
+                    }
+                };
+
+                const saveAccessCode = async (code) => {
+                    const newValue = (code.newValue || '').trim();
+                    if (!newValue || newValue === code.code_value) return;
+                    try {
+                        const supabase = window.supabase || window.supabaseClient;
+                        const { error } = await supabase
+                            .from('access_codes')
+                            .update({ code_value: newValue, updated_at: new Date().toISOString() })
+                            .eq('id', code.id);
+                        if (error) throw error;
+                        code.code_value = newValue;
+                        code.newValue = '';
+                        showToast(`Clave de "${code.code_key}" actualizada`);
+                    } catch (e) {
+                        console.error('Error actualizando access_code:', e);
+                        showToast('Error al guardar la clave: ' + e.message, 'error');
+                    }
                 };
 
                 const resetProviderForm = () => {
@@ -2036,9 +2217,12 @@
                     providerForm,
                     filteredProviders,
                     locationProviderNames,
-                    openProvidersModal, isSuperAdmin,
+                    openProvidersModal, isSuperAdmin, isMaestro,
                     budgetUsageLogModalOpen, budgetUsageLogLoading, budgetUsageLogEntries, budgetUsageSenders,
                     budgetUsageSenderLabel, openBudgetUsageLogModal, closeBudgetUsageLogModal,
+                    accessCodesModalOpen, accessCodesLoading, accessCodesForm,
+                    openAccessCodesModal, closeAccessCodesModal, saveAccessCode,
+                    bulkRotateSuffix, bulkRotating, confirmBulkRotateCodes,
                     closeProvidersModal,
                     resetProviderForm,
                     saveProvider,
