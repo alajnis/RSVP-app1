@@ -403,6 +403,35 @@
                                         class="w-full bg-brand-beige/30 border border-brand-pink px-4 py-3 text-sm outline-none focus:border-brand-crimson">
                                 </div>
 
+                                <!-- Preguntas Personalizadas (genérico, configurable por casamiento desde el dashboard) -->
+                                <div v-if="isSubGuestAttending(sg)">
+                                    <div v-for="question in customQuestions" :key="question.id" class="mt-4 custom-question-field">
+                                        <label
+                                            class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                            <i class="ph ph-question"></i> {{ question.question_text }}
+                                            <span v-if="question.required" class="text-red-500 normal-case font-normal">*</span>
+                                        </label>
+                                        <select v-if="question.question_type === 'select'"
+                                            v-model="sg.custom_answers[question.id]"
+                                            :class="[
+                                                'w-full px-4 py-3 text-sm outline-none transition-all border',
+                                                showValidationErrors && question.required && !String(sg.custom_answers[question.id] || '').trim()
+                                                    ? 'bg-red-50 border-red-400 focus:border-red-600'
+                                                    : 'bg-brand-beige/30 border-brand-pink focus:border-brand-crimson'
+                                            ]">
+                                            <option value="">{{ t('seleccionar') }}</option>
+                                            <option v-for="opt in (question.options || [])" :key="opt" :value="opt">{{ opt }}</option>
+                                        </select>
+                                        <input v-else type="text" v-model="sg.custom_answers[question.id]"
+                                            :class="[
+                                                'w-full px-4 py-3 text-sm outline-none transition-all border',
+                                                showValidationErrors && question.required && !String(sg.custom_answers[question.id] || '').trim()
+                                                    ? 'bg-red-50 border-red-400 focus:border-red-600'
+                                                    : 'bg-brand-beige/30 border-brand-pink focus:border-brand-crimson'
+                                            ]">
+                                    </div>
+                                </div>
+
                                 <!-- Transfers (Only if wedding has transfers and guest is attending) -->
                                 <div v-if="isSubGuestAttending(sg) && currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers" class="mt-4">
                                     <label
@@ -852,8 +881,18 @@
                 const guests = ref([]);
                 const guest = ref(null);
                 const error = ref('');
+                // Se activa recién cuando el usuario intenta confirmar y falta algo
+                // obligatorio: resalta en rojo los campos faltantes (no "todo en rojo"
+                // de entrada). guestId se usa para saber a qué sub_guest pertenece cada
+                // marca (distintos invitados pueden tener distintos campos faltantes).
+                const showValidationErrors = ref(false);
                 const currentProject = ref(null);
                 const projects = ref([]);
+                // Preguntas personalizadas del RSVP, configurables por casamiento desde
+                // el dashboard (tabla custom_questions). Genérico: aplica a cualquier
+                // proyecto que tenga preguntas cargadas, sin depender de nombres de
+                // casamientos. No reemplaza ni interfiere con isMarcelloGonzaWedding.
+                const customQuestions = ref([]);
 
                 // Fuzzy Logic State
                 const showFuzzyModal = ref(false);
@@ -920,6 +959,23 @@
                                     (brideLower.includes('yami') || groomLower.includes('yami'));
                                 if (isSvenYamiWedding) {
                                     currentLanguage.value = 'en';
+                                }
+
+                                // Carga de preguntas personalizadas del proyecto (sistema genérico,
+                                // configurable desde dashboard.html). No afecta a Marcello&Gonza.
+                                try {
+                                    const { data: cq, error: cqError } = await supabase
+                                        .from('custom_questions')
+                                        .select('*')
+                                        .eq('project_id', proj.id)
+                                        .order('sort_order');
+                                    if (cqError) {
+                                        console.error('❌ Error cargando preguntas personalizadas:', cqError);
+                                    } else {
+                                        customQuestions.value = cq || [];
+                                    }
+                                } catch (cqErr) {
+                                    console.error('❌ Error crítico cargando preguntas personalizadas:', cqErr);
                                 }
                             } else {
                                 console.error('❌ Proyecto no encontrado');
@@ -1122,6 +1178,7 @@
                             shoe_size: '',
                             arrival_day: '',
                             song_request: '',
+                            custom_answers: {},
                             needs_transfer: null,
                             phone: g.phone || '',
                             email: g.email || '',
@@ -1141,6 +1198,7 @@
                                 shoe_size: '',
                                 arrival_day: '',
                                 song_request: '',
+                                custom_answers: {},
                                 needs_transfer: null,
                                 phone: '',
                                 email: '',
@@ -1158,6 +1216,7 @@
                             if (!sg.shoe_size) sg.shoe_size = '';
                             if (!sg.arrival_day) sg.arrival_day = '';
                             if (!sg.song_request) sg.song_request = '';
+                            if (!sg.custom_answers) sg.custom_answers = {};
                             if (sg.needs_transfer === undefined) sg.needs_transfer = null;
                             // El invitado principal (índice 0) hereda el email ya guardado
                             // en la ficha si todavía no cargó uno propio en el RSVP.
@@ -1184,6 +1243,7 @@
                         if (!sg.shoe_size) sg.shoe_size = '';
                         if (!sg.arrival_day) sg.arrival_day = '';
                         if (!sg.song_request) sg.song_request = '';
+                        if (!sg.custom_answers) sg.custom_answers = {};
                         if (sg.needs_transfer === undefined) sg.needs_transfer = null;
                     });
 
@@ -1210,6 +1270,11 @@
 
                     // Estado efectivo de asistencia (ver isSubGuestAttending)
                     const isAttending = isSubGuestAttending;
+
+                    // A partir de acá, cualquier campo obligatorio faltante se resalta en rojo
+                    // (ver showValidationErrors en el template) en vez de solo mostrar texto
+                    // arriba — así la persona ve exactamente qué le falta completar.
+                    showValidationErrors.value = true;
 
                     // Validación: si algún invitado confirmado eligió "Otro" en restricción, debe especificar cuál
                     const missingDietary = guest.value.sub_guests.filter(sg =>
@@ -1270,6 +1335,27 @@
                             error.value = `Por favor indicá un tema que te gustaría escuchar: ${nombres}. Este campo es obligatorio.`;
                             setTimeout(() => {
                                 const el = document.querySelector('input[placeholder*="Bailando"]');
+                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 100);
+                            return;
+                        }
+                    }
+
+                    // Validación: preguntas personalizadas (genérico, cualquier proyecto que tenga
+                    // customQuestions cargadas). No depende de nombres de casamientos.
+                    for (const question of customQuestions.value) {
+                        if (!question.required) continue;
+                        const missingCustom = guest.value.sub_guests.filter(sg =>
+                            isAttending(sg) &&
+                            (sg.custom_answers[question.id] === undefined ||
+                                sg.custom_answers[question.id] === null ||
+                                !String(sg.custom_answers[question.id]).trim())
+                        );
+                        if (missingCustom.length > 0) {
+                            const nombres = missingCustom.map(sg => getFullName(sg) || 'Invitado').join(', ');
+                            error.value = `Por favor completá "${question.question_text}" para: ${nombres}. Este campo es obligatorio.`;
+                            setTimeout(() => {
+                                const el = document.querySelector('.border-red-400');
                                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }, 100);
                             return;
@@ -1591,6 +1677,7 @@
                     getFullName,
                     loading, lastNameSearch, searchResults, selectedGuest,
                     isMarcelloGonzaWedding, isSubGuestAttending,
+                    customQuestions, showValidationErrors,
                     // Mural
                     showMuralForm, muralMessageText, muralSenderName,
                     muralSending, muralSent, muralError, sendMuralMessage,

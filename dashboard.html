@@ -508,6 +508,79 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- CUSTOM QUESTIONS CONFIGURATION -->
+                        <div class="pt-4 border-t border-brand-pink/30">
+                            <div class="flex items-center justify-between mb-4">
+                                <label class="text-xs font-bold text-brand-dark uppercase tracking-widest">
+                                    <i class="ph-bold ph-question mr-1"></i> Preguntas Personalizadas del RSVP
+                                </label>
+                            </div>
+
+                            <div v-if="!projectForm.id" class="bg-brand-beige/20 p-4 rounded border border-brand-pink/30">
+                                <p class="text-[10px] text-slate-500 italic">Guardá el casamiento primero para poder agregar preguntas personalizadas.</p>
+                            </div>
+
+                            <div v-else class="space-y-3">
+                                <p class="text-[10px] text-slate-500 italic mb-2">Estas preguntas se muestran a cada invitado confirmado en el RSVP público, además de los campos de siempre.</p>
+
+                                <div v-for="(q, qIdx) in customQuestionsForm" :key="q._key"
+                                    class="bg-brand-beige/20 p-4 rounded border border-brand-pink/30 space-y-3 animate-fade-in">
+
+                                    <div class="flex items-start gap-2">
+                                        <div class="w-8 h-10 flex items-center justify-center bg-brand-dark text-white text-xs font-bold rounded flex-shrink-0">
+                                            {{ qIdx + 1 }}
+                                        </div>
+                                        <input type="text" v-model="q.question_text" placeholder="Texto de la pregunta (ej: Tu género musical preferido)"
+                                            class="w-full px-3 py-2 bg-white text-brand-dark text-xs border border-brand-pink focus:border-brand-crimson outline-none rounded">
+                                        <button type="button" @click="removeCustomQuestion(qIdx)"
+                                            class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-brand-crimson transition-colors flex-shrink-0">
+                                            <i class="ph-bold ph-trash"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="flex flex-wrap items-center gap-4 pl-10">
+                                        <label class="flex items-center gap-2 text-[10px] font-bold text-brand-dark uppercase tracking-widest">
+                                            Tipo:
+                                            <select v-model="q.question_type"
+                                                class="px-2 py-1 bg-white text-brand-dark text-xs border border-brand-pink focus:border-brand-crimson outline-none rounded">
+                                                <option value="select">Opción Múltiple</option>
+                                                <option value="text">Texto Libre</option>
+                                            </select>
+                                        </label>
+
+                                        <label class="flex items-center gap-2 cursor-pointer text-[10px] font-bold text-brand-dark uppercase tracking-widest">
+                                            <input type="checkbox" v-model="q.required" class="w-4 h-4 cursor-pointer">
+                                            Obligatoria
+                                        </label>
+
+                                        <div class="flex items-center gap-1">
+                                            <button type="button" @click="moveCustomQuestion(qIdx, -1)" :disabled="qIdx === 0"
+                                                class="w-7 h-7 flex items-center justify-center border border-brand-pink text-brand-dark text-xs rounded disabled:opacity-30 disabled:cursor-not-allowed hover:bg-brand-beige">
+                                                <i class="ph-bold ph-arrow-up"></i>
+                                            </button>
+                                            <button type="button" @click="moveCustomQuestion(qIdx, 1)" :disabled="qIdx === customQuestionsForm.length - 1"
+                                                class="w-7 h-7 flex items-center justify-center border border-brand-pink text-brand-dark text-xs rounded disabled:opacity-30 disabled:cursor-not-allowed hover:bg-brand-beige">
+                                                <i class="ph-bold ph-arrow-down"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div v-if="q.question_type === 'select'" class="pl-10">
+                                        <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                                            Opciones (separadas por coma)
+                                        </label>
+                                        <textarea v-model="q.optionsText" rows="2" placeholder="Ej: 90s, Cumbia, Rock, Electrónica, Lentos, Cachengue"
+                                            class="w-full px-3 py-2 bg-white text-brand-dark text-xs border border-brand-pink focus:border-brand-crimson outline-none rounded"></textarea>
+                                    </div>
+                                </div>
+
+                                <button type="button" @click="addCustomQuestion"
+                                    class="text-[10px] font-bold text-brand-crimson uppercase tracking-widest hover:text-brand-dark transition-colors flex items-center mt-2">
+                                    <i class="ph-bold ph-plus-circle mr-1"></i> Agregar pregunta
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="px-8 py-4 border-t border-brand-pink/30 bg-white flex gap-4 shrink-0">
@@ -860,6 +933,11 @@
                     transfersPaidBy: 'couple',
                     editLocked: false
                 });
+                // PREGUNTAS PERSONALIZADAS DEL RSVP (genérico, por proyecto, tabla custom_questions).
+                // No reemplaza el flag isMarcelloGonzaWedding hardcodeado en index2.html/wedding.html,
+                // que queda intacto por fuera de este sistema.
+                const customQuestionsForm = ref([]);
+                let customQuestionKeySeq = 0;
                 const toast = reactive({ show: false, message: '', type: 'success' });
                 const session = ref(null);
                 const minDate = new Date().toISOString().split('T')[0];
@@ -1110,8 +1188,83 @@
                     // RESET MULTI-EVENT
                     projectForm.isMultiEvent = false;
                     projectForm.extraEvents = [];
+                    // Proyecto nuevo: todavía no tiene id, no se pueden cargar preguntas
+                    customQuestionsForm.value = [];
                     showProjectModal.value = true;
                     if (providers.value.length === 0) loadProviders();
+                };
+
+                // Trae las preguntas personalizadas ya guardadas para este proyecto y las
+                // adapta al shape que usa el formulario (options -> optionsText editable).
+                const loadCustomQuestions = async (projectId) => {
+                    try {
+                        const { data, error } = await window.supabaseClient
+                            .from('custom_questions')
+                            .select('*')
+                            .eq('project_id', projectId)
+                            .order('sort_order', { ascending: true });
+                        if (error) throw error;
+
+                        customQuestionsForm.value = (data || []).map(q => ({
+                            id: q.id,
+                            _key: customQuestionKeySeq++,
+                            question_text: q.question_text,
+                            question_type: q.question_type,
+                            optionsText: Array.isArray(q.options) ? q.options.join(', ') : '',
+                            required: !!q.required
+                        }));
+                    } catch (e) {
+                        console.error('Error loading custom questions:', e);
+                        customQuestionsForm.value = [];
+                    }
+                };
+
+                const addCustomQuestion = () => {
+                    customQuestionsForm.value.push({
+                        id: null,
+                        _key: customQuestionKeySeq++,
+                        question_text: '',
+                        question_type: 'select',
+                        optionsText: '',
+                        required: true
+                    });
+                };
+
+                const removeCustomQuestion = (idx) => {
+                    customQuestionsForm.value.splice(idx, 1);
+                };
+
+                const moveCustomQuestion = (idx, delta) => {
+                    const newIdx = idx + delta;
+                    if (newIdx < 0 || newIdx >= customQuestionsForm.value.length) return;
+                    const arr = [...customQuestionsForm.value];
+                    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+                    customQuestionsForm.value = arr;
+                };
+
+                // Borra todas las custom_questions del proyecto y reinserta el estado
+                // actual del formulario con el sort_order correcto. Patrón simple sin
+                // diffing, igual de válido acá porque son pocas filas por proyecto.
+                const saveCustomQuestions = async (projectId) => {
+                    await window.supabaseClient.from('custom_questions').delete().eq('project_id', projectId);
+
+                    const rows = customQuestionsForm.value
+                        .filter(q => q.question_text && q.question_text.trim())
+                        .map((q, idx) => ({
+                            project_id: projectId,
+                            question_text: q.question_text.trim(),
+                            question_type: q.question_type,
+                            options: q.question_type === 'select'
+                                ? (q.optionsText || '').split(',').map(o => o.trim()).filter(Boolean)
+                                : null,
+                            required: !!q.required,
+                            sort_order: idx
+                        }));
+
+                    if (rows.length > 0) {
+                        const { error } = await window.supabaseClient.from('custom_questions').insert(rows);
+                        if (error) throw error;
+                    }
                 };
 
                 const editProject = (project) => {
@@ -1143,6 +1296,7 @@
 
                     showProjectModal.value = true;
                     if (providers.value.length === 0) loadProviders();
+                    loadCustomQuestions(project.id);
                 };
 
                 const saveProject = async () => {
@@ -1248,6 +1402,16 @@
                             .upsert(projectData);
 
                         if (error) throw error;
+
+                        // Guardar preguntas personalizadas del RSVP (solo si el proyecto ya
+                        // tenía id o se acaba de crear uno -- siempre es el caso acá, porque
+                        // projectData.id ya está resuelto arriba, nuevo o existente).
+                        try {
+                            await saveCustomQuestions(projectData.id);
+                        } catch (cqErr) {
+                            console.error('Error saving custom questions:', cqErr);
+                            showToast('Casamiento guardado, pero hubo un error con las preguntas personalizadas: ' + cqErr.message, 'error');
+                        }
 
                         // Registra en el log de Actividad (el mismo que ve wedding.html) solo
                         // cuando el valor de edit_locked realmente cambió, para no ensuciar el
@@ -1510,6 +1674,7 @@
 
                 const closeProjectModal = () => {
                     showProjectModal.value = false;
+                    customQuestionsForm.value = [];
                 };
 
                 const openProject = (id) => {
@@ -1831,6 +1996,11 @@
                     saveProject,
                     deleteProject,
                     closeProjectModal,
+                    // Custom Questions (preguntas personalizadas del RSVP)
+                    customQuestionsForm,
+                    addCustomQuestion,
+                    removeCustomQuestion,
+                    moveCustomQuestion,
                     openProject, copyCorporateRsvpLink, copyCorporateScanLink,
                     getDaysUntil,
                     formatDate,

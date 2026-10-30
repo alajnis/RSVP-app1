@@ -1471,6 +1471,19 @@
                                                    :placeholder="t('temaMusicalEj')"
                                                    class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
                                         </div>
+                                        <!-- Preguntas Personalizadas (genérico, configurable por casamiento desde el dashboard) -->
+                                        <div v-for="question in customQuestions" :key="question.id" class="col-span-2">
+                                            <label
+                                                class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">{{ question.question_text }}</label>
+                                            <select v-if="question.question_type === 'select'"
+                                                v-model="sg.custom_answers[question.id]"
+                                                class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson">
+                                                <option value="">{{ t('seleccionarDots') }}</option>
+                                                <option v-for="opt in (question.options || [])" :key="opt" :value="opt">{{ opt }}</option>
+                                            </select>
+                                            <input v-else type="text" v-model="sg.custom_answers[question.id]"
+                                                class="w-full px-3 py-2 text-xs border border-brand-pink bg-white outline-none focus:border-brand-crimson transition-all">
+                                        </div>
                                         <div v-if="currentProject && currentProject.eventsConfig && currentProject.eventsConfig.has_transfers" class="col-span-2">
                                             <label
                                                 class="block text-[8px] font-bold text-brand-dark/40 uppercase tracking-widest mb-1">{{ t('necesitaTraslado') }}</label>
@@ -1524,6 +1537,10 @@
                 const currentProjectId = ref(null);
                 const currentProject = ref(null);
                 const isCouple = ref(false);
+                // Preguntas personalizadas del RSVP (genérico, configurable por casamiento
+                // desde dashboard.html, tabla custom_questions). No reemplaza ni interfiere
+                // con isMarcelloGonzaWedding / shoe_size / arrival_day / song_request.
+                const customQuestions = ref([]);
 
                 // LANGUAGE STATE — por defecto español para todas las bodas excepto Sven & Yamila
                 const currentLanguage = ref('es');
@@ -2037,6 +2054,22 @@ Events Boutique`
 
                     if (isSvenYamiWedding.value) {
                         currentLanguage.value = 'en';
+                    }
+
+                    // Carga de preguntas personalizadas del proyecto (sistema genérico).
+                    try {
+                        const { data: cq, error: cqError } = await supabase
+                            .from('custom_questions')
+                            .select('*')
+                            .eq('project_id', projectId)
+                            .order('sort_order');
+                        if (cqError) {
+                            console.error('Error cargando preguntas personalizadas:', cqError);
+                        } else {
+                            customQuestions.value = cq || [];
+                        }
+                    } catch (cqErr) {
+                        console.error('Error crítico cargando preguntas personalizadas:', cqErr);
                     }
 
                     // 2. Tables
@@ -2918,7 +2951,7 @@ Events Boutique`
                         phone: '',
                         dietary: 'None',
                         rsvp_status: 'Pending',
-                        sub_guests: [{ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '', shoe_size: '', arrival_day: '', song_request: '', needs_transfer: null }]
+                        sub_guests: [{ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '', shoe_size: '', arrival_day: '', song_request: '', custom_answers: {}, needs_transfer: null }]
                     });
                     showGuestModal.value = true;
                 };
@@ -2940,7 +2973,7 @@ Events Boutique`
                         showToast(t('toastMaximo10Integrantes'), 'error');
                         return;
                     }
-                    guestForm.sub_guests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '', shoe_size: '', arrival_day: '', song_request: '', needs_transfer: null });
+                    guestForm.sub_guests.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', ageCategory: '', shoe_size: '', arrival_day: '', song_request: '', custom_answers: {}, needs_transfer: null });
                     guestForm.guests_confirmed = guestForm.sub_guests.length;
                 };
 
@@ -3046,14 +3079,15 @@ Events Boutique`
                                     if (!item.shoe_size) item.shoe_size = '';
                                     if (!item.arrival_day) item.arrival_day = '';
                                     if (!item.song_request) item.song_request = '';
+                                    if (!item.custom_answers) item.custom_answers = {};
                                     if (item.needs_transfer === undefined) item.needs_transfer = null;
                                 });
                             } else {
-                                sg = [{ firstName: fName, lastName: lName, status: guest.rsvp_status || 'Pending', dietary: guest.dietary || 'None', dietary_detail: guest.dietary_detail || '', ageCategory: 'Adulto', shoe_size: '', arrival_day: '', song_request: '', needs_transfer: null }];
+                                sg = [{ firstName: fName, lastName: lName, status: guest.rsvp_status || 'Pending', dietary: guest.dietary || 'None', dietary_detail: guest.dietary_detail || '', ageCategory: 'Adulto', shoe_size: '', arrival_day: '', song_request: '', custom_answers: {}, needs_transfer: null }];
                             }
 
                             while (sg.length < (guest.guests_confirmed || 1)) {
-                                sg.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', dietary_detail: '', ageCategory: '', shoe_size: '', arrival_day: '', song_request: '', needs_transfer: null });
+                                sg.push({ firstName: '', lastName: '', status: 'Pending', dietary: 'None', dietary_detail: '', ageCategory: '', shoe_size: '', arrival_day: '', song_request: '', custom_answers: {}, needs_transfer: null });
                             }
                             return sg;
                         })()
@@ -3320,6 +3354,10 @@ Events Boutique`
                                         baseRow['Día de Llegada a Mendoza'] = sg.arrival_day || '-';
                                         baseRow['Tema Musical Sugerido'] = sg.song_request || '-';
                                     }
+                                    // Add one column per custom question (genérico, configurable por proyecto)
+                                    customQuestions.value.forEach(q => {
+                                        baseRow[q.question_text] = (sg.custom_answers && sg.custom_answers[q.id]) || '-';
+                                    });
                                     // Add transfers column if transfers are enabled
                                     if (eventsConfig && eventsConfig.has_transfers) {
                                         const transferStatus = sg.needs_transfer === true ? 'SÍ' : (sg.needs_transfer === false ? 'NO' : 'SIN RESPUESTA');
@@ -3351,6 +3389,10 @@ Events Boutique`
                                     baseRow['Día de Llegada a Mendoza'] = '-';
                                     baseRow['Tema Musical Sugerido'] = '-';
                                 }
+                                // Add one column per custom question (fallback legacy: no sub_guests, so no answers)
+                                customQuestions.value.forEach(q => {
+                                    baseRow[q.question_text] = '-';
+                                });
                                 // Add transfers column if transfers are enabled
                                 if (eventsConfig && eventsConfig.has_transfers) {
                                     baseRow['Necesita Traslado'] = 'SIN RESPUESTA';
@@ -4318,6 +4360,7 @@ Events Boutique`
                     showGuestModal, editingGuest, guestForm, toast,
                     tableModalTitle, guestModalTitle,
                     currentLanguage, t, isSvenYamiWedding, editBlocked,
+                    customQuestions,
                     openTableModal, editTable, saveTable, deleteTable, closeModal,
                     openGuestModal, editGuest, saveGuest, deleteGuest, deleteAllGuests, closeGuestModal,
                     activityLog, activityLabel, activityIcon, activityDescription, activityActorLabel, openActivityLog,
