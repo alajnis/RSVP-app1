@@ -342,7 +342,7 @@
                 <p class="text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">{{ t('asignadosAMesa') }}</p>
                 <div class="flex items-baseline gap-2">
                     <p class="text-3xl font-serif font-bold text-brand-dark">{{ assignedGuestsCount }}</p>
-                    <p class="text-xs text-brand-dark/40 font-bold">/ {{ totalGuestsInvited }}</p>
+                    <p class="text-xs text-brand-dark/40 font-bold">/ {{ assignableGuestsCount }}</p>
                 </div>
             </div>
             <div class="bg-white border-b-4 border-brand-crimson p-6 shadow-sm">
@@ -2865,6 +2865,9 @@ Events Boutique`
 
                 const totalCapacity = computed(() => tables.value.reduce((acc, t) => acc + t.capacity, 0));
                 const totalGuestsInvited = computed(() => guests.value.reduce((acc, g) => acc + (g.guests_confirmed || 0), 0));
+                // Total a efectos de "Asignados a Mesa": confirmados + pendientes, sin contar
+                // a quienes rechazaron el RSVP (no tiene sentido sentarlos en una mesa).
+                const assignableGuestsCount = computed(() => totalGuestsInvited.value - declinedGuestsCount.value);
 
                 const getIndividualConfirmedCount = (guest) => {
                     if (guest.sub_guests && guest.sub_guests.length > 0) {
@@ -4355,7 +4358,7 @@ Events Boutique`
                     currentView,
                     duplicateNames,
                     tables, guests, assignments, tablesWithStats, filteredAssignableItems, assignableItems, guestsWithAssignments, filteredGuestList,
-                    totalCapacity, totalGuestsInvited, assignedGuestsCount, notRespondedCount, confirmedGuestsCount, declinedGuestsCount,
+                    totalCapacity, totalGuestsInvited, assignableGuestsCount, assignedGuestsCount, notRespondedCount, confirmedGuestsCount, declinedGuestsCount,
                     searchQuery, guestSearchQuery, filter, guestFilter, showTableModal, editingTable, tableForm, showFloorPlanModal,
                     showGuestModal, editingGuest, guestForm, toast,
                     tableModalTitle, guestModalTitle,
