@@ -460,6 +460,11 @@
                                             {{ t('infoTransfersGuest') }}
                                         </p>
                                     </div>
+
+                                    <!-- Transfer meeting point (Sven & Yamila only) -->
+                                    <div v-if="sg.needs_transfer === true && isSvenYamiWedding" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                                        <p class="text-[9px] text-blue-700 font-bold">{{ t('infoTransferMeetingPoint') }}</p>
+                                    </div>
                                 </div>
 
                                 <!-- Phone Number (Only if attending) -->
@@ -705,6 +710,7 @@
                         emailEj: 'nombre@ejemplo.com',
                         infoTransfersGuest: '⚠️ Recorda que los gastos de traslado correrán por cuenta tuya. Mas cercano al evento vamos a brindar información sobre costos y recorridos.',
                         infoTransfersCouple: '💙 Los gastos de traslado serán costeados por los novios. Mas cercano al evento vamos a brindar información sobre recorridos.',
+                        infoTransferMeetingPoint: '📍 El traslado sale desde Plaza Italia, CABA.',
                         desarrolladoPor: 'Desarrollado por',
                         para: 'para'
                     },
@@ -786,6 +792,7 @@
                         emailEj: 'nome@exemplo.com',
                         infoTransfersGuest: '⚠️ Lembre-se que as despesas de traslado ficarão por sua conta. Mais perto do evento vamos fornecer informações sobre custos e trajetos.',
                         infoTransfersCouple: '💙 As despesas de traslado serão custeadas pelos noivos. Mais perto do evento vamos fornecer informações sobre os trajetos.',
+                        infoTransferMeetingPoint: '📍 O traslado sai da Plaza Italia, CABA.',
                         desarrolladoPor: 'Desenvolvido por',
                         para: 'para'
                     },
@@ -867,6 +874,7 @@
                         emailEj: 'name@example.com',
                         infoTransfersGuest: '⚠️ Remember that transportation costs are your responsibility. Closer to the event we will provide information about costs and routes.',
                         infoTransfersCouple: '💙 The bride and groom will cover transportation costs. Closer to the event we will provide information about routes.',
+                        infoTransferMeetingPoint: '📍 The transfer departs from Plaza Italia, CABA.',
                         desarrolladoPor: 'Developed by',
                         para: 'for'
                     }
@@ -949,15 +957,7 @@
 
                                 // Idioma por defecto en inglés solo para Sven & Yamila (20/02/2027),
                                 // a pedido explícito — el resto de las bodas sigue arrancando en español.
-                                // Los nombres de "novia"/"novio" en la DB quedaron invertidos para este
-                                // proyecto (bride_name="Sven", groom_name="Yamila"), así que se busca
-                                // "sven" y "yami" en cualquiera de los dos campos, sin asumir el orden.
-                                const brideLower = (proj.bride_name || '').toLowerCase();
-                                const groomLower = (proj.groom_name || '').toLowerCase();
-                                const isSvenYamiWedding =
-                                    (brideLower.includes('sven') || groomLower.includes('sven')) &&
-                                    (brideLower.includes('yami') || groomLower.includes('yami'));
-                                if (isSvenYamiWedding) {
+                                if (isSvenYamiWedding.value) {
                                     currentLanguage.value = 'en';
                                 }
 
@@ -1670,13 +1670,24 @@
                     return hasCoupleNames && hasDate;
                 });
 
+                // Los nombres de "novia"/"novio" en la DB quedaron invertidos para este
+                // proyecto (bride_name="Sven", groom_name="Yamila"), así que se busca
+                // "sven" y "yami" en cualquiera de los dos campos, sin asumir el orden.
+                const isSvenYamiWedding = computed(() => {
+                    if (!currentProject.value) return false;
+                    const brideLower = (currentProject.value.brideName || '').toLowerCase();
+                    const groomLower = (currentProject.value.groomName || '').toLowerCase();
+                    return (brideLower.includes('sven') || groomLower.includes('sven')) &&
+                           (brideLower.includes('yami') || groomLower.includes('yami'));
+                });
+
                 return {
                     step, form, error, guest, guests,
                     findInvitation, confirmAttendance, currentProject, formatDate,
                     showFuzzyModal, fuzzyCandidate, acceptFuzzyMatch, rejectFuzzyMatch,
                     getFullName,
                     loading, lastNameSearch, searchResults, selectedGuest,
-                    isMarcelloGonzaWedding, isSubGuestAttending,
+                    isMarcelloGonzaWedding, isSvenYamiWedding, isSubGuestAttending,
                     customQuestions, showValidationErrors,
                     // Mural
                     showMuralForm, muralMessageText, muralSenderName,
