@@ -768,7 +768,7 @@
         </div>
 
         <!-- MODAL: LOGS -->
-        <div v-if="showLogModal"
+        <div v-if="logModalOpen"
             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark/20 backdrop-blur-sm">
             <div
                 class="bg-white shadow-2xl w-full max-w-lg overflow-hidden transform transition-all animate-fade-in border border-brand-pink flex flex-col max-h-[80vh]">
@@ -2153,8 +2153,15 @@
 
                             if (sheetData.length > 0) {
                                 const ws = XLSX.utils.json_to_sheet(sheetData);
-                                // Truncate sheet name to 31 chars (Excel limit)
-                                const sheetName = project.coupleName.substring(0, 31);
+                                // Excel prohíbe : \ / ? * [ ] en nombres de hoja y no permite
+                                // nombres duplicados; se sanitiza y, si ya existe, se agrega un sufijo.
+                                const safeName = (project.coupleName || 'Proyecto').replace(/[:\\/?*\[\]]/g, ' ').trim().substring(0, 31) || 'Proyecto';
+                                let sheetName = safeName;
+                                let suffix = 2;
+                                while (wb.SheetNames.includes(sheetName)) {
+                                    sheetName = `${safeName.substring(0, 28)} ${suffix}`;
+                                    suffix++;
+                                }
                                 XLSX.utils.book_append_sheet(wb, ws, sheetName);
                             }
                         }
