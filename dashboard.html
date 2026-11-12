@@ -442,6 +442,24 @@
                             </button>
                         </div>
 
+                        <div v-if="projectForm.eventType === 'corporate'" class="flex items-center justify-between pt-4 border-t border-brand-pink/30">
+                            <div>
+                                <label class="text-xs font-bold text-brand-dark uppercase tracking-widest flex items-center gap-1.5">
+                                    <i class="ph-bold ph-link-break"></i> Cerrar RSVP
+                                </label>
+                                <p class="text-[10px] text-slate-400 mt-1 max-w-xs">
+                                    Al activarlo, el link de RSVP deja de aceptar nuevas altas. El link de escaneo para la entrada del evento sigue funcionando siempre.
+                                </p>
+                            </div>
+                            <button type="button" @click="projectForm.rsvpClosed = !projectForm.rsvpClosed"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-crimson focus:ring-offset-2 shrink-0 ml-4"
+                                :class="projectForm.rsvpClosed ? 'bg-brand-crimson' : 'bg-slate-200'">
+                                <span class="sr-only">Cerrar RSVP</span>
+                                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                                    :class="projectForm.rsvpClosed ? 'translate-x-6' : 'translate-x-1'"></span>
+                            </button>
+                        </div>
+
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
                                 {{ projectForm.eventType === 'corporate' ? 'Fecha del Evento' : 'Fecha del Casamiento' }}
@@ -1047,7 +1065,8 @@
                     venue: '',
                     hasTransfers: false,
                     transfersPaidBy: 'couple',
-                    editLocked: false
+                    editLocked: false,
+                    rsvpClosed: false
                 });
                 // PREGUNTAS PERSONALIZADAS DEL RSVP (genérico, por proyecto, tabla custom_questions).
                 // No reemplaza el flag isMarcelloGonzaWedding hardcodeado en index2.html/wedding.html,
@@ -1175,6 +1194,7 @@
                             venue: p.venue,
                             eventType: p.event_type || 'wedding',
                             editLocked: !!p.edit_locked,
+                            rsvpClosed: !!p.rsvp_closed,
                             eventsConfig: p.events_config, // NEW: Load multi-event config
                             loginCode: p.login_code || null,
                             created_at: p.created_at,
@@ -1304,6 +1324,7 @@
                     projectForm.weddingDate = '';
                     projectForm.venue = '';
                     projectForm.editLocked = false;
+                    projectForm.rsvpClosed = false;
                     // RESET MULTI-EVENT
                     projectForm.isMultiEvent = false;
                     projectForm.extraEvents = [];
@@ -1397,6 +1418,7 @@
                     projectForm.weddingDate = project.weddingDate;
                     projectForm.venue = project.venue || '';
                     projectForm.editLocked = !!project.editLocked;
+                    projectForm.rsvpClosed = !!project.rsvpClosed;
 
                     // LOAD MULTI-EVENT CONFIG
                     const config = project.eventsConfig || {};
@@ -1505,6 +1527,7 @@
                             id: editingProject.value?.id || crypto.randomUUID(),
                             event_type: projectForm.eventType || 'wedding',
                             edit_locked: !!projectForm.editLocked,
+                            rsvp_closed: !!projectForm.rsvpClosed,
                             couple_name: coupleName,
                             wedding_date: projectForm.weddingDate,
                             bride_name: projectForm.brideName,

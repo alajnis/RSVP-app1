@@ -66,6 +66,12 @@
                 <p class="text-sm text-slate-500">Revisá el link que te compartieron e intentá de nuevo.</p>
             </div>
 
+            <!-- RSVP closed by admin -->
+            <div v-else-if="project.rsvpClosed" class="bg-white border border-brand-pink shadow-xl p-10 text-center">
+                <h1 class="font-serif text-2xl font-bold mb-2">{{ project.eventName }}</h1>
+                <p class="text-sm text-slate-500">La confirmación de asistencia para este evento ya está cerrada.</p>
+            </div>
+
             <template v-else>
                 <!-- Header -->
                 <div class="text-center mb-8">
@@ -254,7 +260,8 @@
                                 eventDateLabel: data.wedding_date
                                     ? new Date(data.wedding_date + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
                                     : '',
-                                venue: data.venue || ''
+                                venue: data.venue || '',
+                                rsvpClosed: !!data.rsvp_closed
                             };
                         }
                     } catch (e) {
@@ -267,6 +274,11 @@
 
                 const submitRsvp = async () => {
                     error.value = '';
+
+                    if (project.value && project.value.rsvpClosed) {
+                        error.value = 'La confirmación de asistencia para este evento ya está cerrada.';
+                        return;
+                    }
 
                     if (!form.firstName || !form.lastName || !form.email) {
                         error.value = 'Completá nombre, apellido y email';
