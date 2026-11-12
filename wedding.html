@@ -2734,7 +2734,7 @@ Events Boutique`
                         } else {
                             // Fallback for legacy guests without sub_guests structure (rare due to loadTestData logic, but possible)
                             // Treat as single person
-                            const assignment = assignments.value.find(a => a.guest_id === g.id && a.sub_guest_idx === undefined); // FIX: rsvp_id → guest_id
+                            const assignment = assignments.value.find(a => a.guest_id === g.id && (a.sub_guest_idx === null || a.sub_guest_idx === undefined)); // FIX: rsvp_id → guest_id
                             items.push({
                                 id: `${g.id}_main`,
                                 guestId: g.id,
