@@ -3437,179 +3437,142 @@ Events Boutique`
                         const weddingDate = proj.weddingDate || '';
                         const venue = proj.venue || '';
 
-                        // Collect only confirmed sub-guests
+                        const buildClarification = (ageRaw, rawDiet, dietDetail) => {
+                            const ageCat = (ageRaw && ageRaw !== 'Adulto' && ageRaw.toLowerCase() !== 'none') ? ageRaw : '';
+                            let dietLabel = '';
+                            const dietLower = (rawDiet || '').toLowerCase().trim();
+                            if (dietLower && dietLower !== 'sin restricción' && dietLower !== 'sin restriccion' && dietLower !== 'normal' && dietLower !== 'ninguna' && dietLower !== 'none' && dietLower !== '') {
+                                dietLabel = (rawDiet === 'Otro' && dietDetail && dietDetail.trim()) ? dietDetail.trim() : rawDiet;
+                            }
+                            return [ageCat, dietLabel].filter(Boolean).join(' - ');
+                        };
+
+                        const getTableName = (tableId) => {
+                            const table = tables.value.find(t => t.id === tableId);
+                            return table ? table.name : '';
+                        };
+
+                        // Collect only confirmed guests/sub-guests, with their assigned table
                         const confirmedRows = [];
                         guests.value.forEach(g => {
                             if (g.sub_guests && g.sub_guests.length > 0) {
-                                g.sub_guests.forEach((sg) => {
+                                g.sub_guests.forEach((sg, idx) => {
                                     if (sg.status !== 'Confirmed') return;
-                                    const lastName = sg.lastName || '';
-                                    const firstName = sg.firstName || '';
-                                    // Build clarification: only non-default values
-                                    const ageRaw = sg.ageCategory || '';
-                                    const ageCat = (ageRaw && ageRaw !== 'Adulto' && ageRaw.toLowerCase() !== 'none') ? ageRaw : '';
-                                    let dietLabel = '';
-                                    const rawDiet = sg.dietary || '';
-                                    const dietLower = rawDiet.toLowerCase().trim();
-                                    if (dietLower && dietLower !== 'sin restricción' && dietLower !== 'sin restriccion' && dietLower !== 'normal' && dietLower !== 'ninguna' && dietLower !== 'none' && dietLower !== '') {
-                                        if (rawDiet === 'Otro' && sg.dietary_detail && sg.dietary_detail.trim()) {
-                                            dietLabel = sg.dietary_detail.trim();
-                                        } else {
-                                            dietLabel = rawDiet;
-                                        }
-                                    }
-                                    const parts = [ageCat, dietLabel].filter(Boolean);
-                                    const clarification = parts.join(' - ');
+                                    const assignment = assignments.value.find(a => a.guest_id === g.id && a.sub_guest_idx === idx);
                                     confirmedRows.push({
-                                        'Apellido': lastName,
-                                        'Nombre': firstName,
-                                        'Aclaraciones': clarification
+                                        'Apellido': sg.lastName || g.lastName || '',
+                                        'Nombre': sg.firstName || '',
+                                        'Aclaraciones': buildClarification(sg.ageCategory, sg.dietary, sg.dietary_detail),
+                                        'Mesa': assignment ? getTableName(assignment.table_id) : 'Sin Mesa'
                                     });
                                 });
                             } else {
                                 // Legacy guest without sub_guests
                                 if (g.rsvp_status !== 'Confirmed') return;
-                                const lastName = g.lastName || '';
-                                const firstName = g.firstName || '';
-                                const ageCat = '';
-                                let dietLabel = '';
-                                const rawDiet = g.dietary || '';
-                                const dietLower = rawDiet.toLowerCase().trim();
-                                if (dietLower && dietLower !== 'sin restricción' && dietLower !== 'sin restriccion' && dietLower !== 'normal' && dietLower !== 'ninguna' && dietLower !== 'none' && dietLower !== '') {
-                                    if (rawDiet === 'Otro' && g.dietary_detail && g.dietary_detail.trim()) {
-                                        dietLabel = g.dietary_detail.trim();
-                                    } else {
-                                        dietLabel = rawDiet;
-                                    }
-                                }
-                                const parts = [ageCat, dietLabel].filter(Boolean);
-                                const clarification = parts.join(' - ');
+                                const assignment = assignments.value.find(a => a.guest_id === g.id && (a.sub_guest_idx === null || a.sub_guest_idx === undefined));
                                 confirmedRows.push({
-                                    'Apellido': lastName,
-                                    'Nombre': firstName,
-                                    'Aclaraciones': clarification
+                                    'Apellido': g.lastName || '',
+                                    'Nombre': g.firstName || '',
+                                    'Aclaraciones': buildClarification('', g.dietary, g.dietary_detail),
+                                    'Mesa': assignment ? getTableName(assignment.table_id) : 'Sin Mesa'
                                 });
                             }
                         });
 
-                        // Sort alphabetically by last name, then first name
-                        confirmedRows.sort((a, b) =>
-                            (a['Apellido'] || '').localeCompare(b['Apellido'] || '') ||
-                            (a['Nombre'] || '').localeCompare(b['Nombre'] || '')
-                        );
-
-                        // Build header rows with event info
-                        const headerRows = [
-                            [coupleName],
-                            [weddingDate ? weddingDate : ''],
-                            [venue ? venue : ''],
-                            [],
-                            [`Total confirmados: ${confirmedRows.length}`],
-                            [],
-                            ['Apellido', 'Nombre', 'Aclaraciones']
-                        ];
-
-                        // Create sheet from array of arrays
-                        const wsData = headerRows.map(r => r);
-                        confirmedRows.forEach(row => {
-                            wsData.push([row['Apellido'], row['Nombre'], row['Aclaraciones']]);
-                        });
-
-                        const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-                        // Set column widths
-                        ws['!cols'] = [
-                            { wch: 25 }, // Apellido
-                            { wch: 25 }, // Nombre
-                            { wch: 35 }  // Aclaraciones
-                        ];
-
-                        // Merge header cells across 3 columns for title rows
-                        ws['!merges'] = [
-                            { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }, // Couple name
-                            { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } }, // Date
-                            { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } }, // Venue
-                            { s: { r: 4, c: 0 }, e: { r: 4, c: 2 } }  // Total
-                        ];
-
-                        // Apply styles using cell-level styling (s property)
-                        // Brand colors from the palette
+                        // Brand colors / styles reused across sheets
                         const brandCrimson = { rgb: 'C42745' };
                         const brandPink = { rgb: 'F6D8D9' };
                         const brandBeige = { rgb: 'F4ECE8' };
                         const brandDark = { rgb: '1A1A1A' };
                         const white = { rgb: 'FFFFFF' };
 
-                        // Style: Couple Name (row 0)
-                        const coupleCell = ws['A1'];
-                        if (coupleCell) {
-                            coupleCell.s = {
-                                font: { bold: true, sz: 18, color: white },
-                                fill: { fgColor: brandCrimson },
-                                alignment: { horizontal: 'center', vertical: 'center' }
-                            };
-                        }
-
-                        // Style: Date (row 1)
-                        const dateCell = ws['A2'];
-                        if (dateCell) {
-                            dateCell.s = {
-                                font: { bold: true, sz: 12, color: brandDark },
-                                fill: { fgColor: brandPink },
-                                alignment: { horizontal: 'center', vertical: 'center' }
-                            };
-                        }
-
-                        // Style: Venue (row 2)
-                        const venueCell = ws['A3'];
-                        if (venueCell) {
-                            venueCell.s = {
-                                font: { italic: true, sz: 11, color: brandDark },
-                                fill: { fgColor: brandBeige },
-                                alignment: { horizontal: 'center', vertical: 'center' }
-                            };
-                        }
-
-                        // Style: Total row (row 4)
-                        const totalCell = ws['A5'];
-                        if (totalCell) {
-                            totalCell.s = {
-                                font: { bold: true, sz: 11, color: brandCrimson },
-                                alignment: { horizontal: 'center' }
-                            };
-                        }
-
-                        // Style: Column headers (row 6)
-                        ['A7', 'B7', 'C7'].forEach(ref => {
-                            if (ws[ref]) {
-                                ws[ref].s = {
-                                    font: { bold: true, sz: 10, color: white },
-                                    fill: { fgColor: brandDark },
-                                    alignment: { horizontal: 'center' },
-                                    border: {
-                                        bottom: { style: 'thin', color: brandCrimson }
-                                    }
-                                };
-                            }
-                        });
-
-                        // Style: Data rows - alternate row colors
-                        for (let i = 0; i < confirmedRows.length; i++) {
-                            const rowIdx = i + 8; // Excel row (1-indexed), data starts at row 8
-                            const fillColor = (i % 2 === 0) ? { rgb: 'FFFFFF' } : brandBeige;
-                            ['A', 'B', 'C'].forEach(col => {
-                                const cellRef = col + rowIdx;
-                                if (ws[cellRef]) {
-                                    ws[cellRef].s = {
-                                        font: { sz: 10, color: brandDark },
-                                        fill: { fgColor: fillColor },
-                                        alignment: { vertical: 'center' }
-                                    };
+                        const styleHeaderBlock = (ws, colCount) => {
+                            const lastCol = String.fromCharCode(65 + colCount - 1);
+                            ws['!merges'] = [
+                                { s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } },
+                                { s: { r: 1, c: 0 }, e: { r: 1, c: colCount - 1 } },
+                                { s: { r: 2, c: 0 }, e: { r: 2, c: colCount - 1 } },
+                                { s: { r: 4, c: 0 }, e: { r: 4, c: colCount - 1 } }
+                            ];
+                            if (ws['A1']) ws['A1'].s = { font: { bold: true, sz: 18, color: white }, fill: { fgColor: brandCrimson }, alignment: { horizontal: 'center', vertical: 'center' } };
+                            if (ws['A2']) ws['A2'].s = { font: { bold: true, sz: 12, color: brandDark }, fill: { fgColor: brandPink }, alignment: { horizontal: 'center', vertical: 'center' } };
+                            if (ws['A3']) ws['A3'].s = { font: { italic: true, sz: 11, color: brandDark }, fill: { fgColor: brandBeige }, alignment: { horizontal: 'center', vertical: 'center' } };
+                            if (ws['A5']) ws['A5'].s = { font: { bold: true, sz: 11, color: brandCrimson }, alignment: { horizontal: 'center' } };
+                            for (let c = 0; c < colCount; c++) {
+                                const ref = String.fromCharCode(65 + c) + '7';
+                                if (ws[ref]) {
+                                    ws[ref].s = { font: { bold: true, sz: 10, color: white }, fill: { fgColor: brandDark }, alignment: { horizontal: 'center' }, border: { bottom: { style: 'thin', color: brandCrimson } } };
                                 }
-                            });
-                        }
+                            }
+                        };
 
-                        XLSX.utils.book_append_sheet(wb, ws, 'Lista Definitiva');
+                        const styleDataRows = (ws, colCount, rowCount) => {
+                            for (let i = 0; i < rowCount; i++) {
+                                const rowIdx = i + 8;
+                                const fillColor = (i % 2 === 0) ? { rgb: 'FFFFFF' } : brandBeige;
+                                for (let c = 0; c < colCount; c++) {
+                                    const cellRef = String.fromCharCode(65 + c) + rowIdx;
+                                    if (ws[cellRef]) {
+                                        ws[cellRef].s = { font: { sz: 10, color: brandDark }, fill: { fgColor: fillColor }, alignment: { vertical: 'center' } };
+                                    }
+                                }
+                            }
+                        };
+
+                        // ---- Hoja 1: Resumen por Mesa ----
+                        const tableSummaryRows = tables.value.map(table => {
+                            const count = confirmedRows.filter(r => r['Mesa'] === table.name).length;
+                            return { 'Mesa': table.name, 'Capacidad': table.capacity, 'Asignados': count };
+                        }).sort((a, b) => a['Mesa'].localeCompare(b['Mesa'], undefined, { numeric: true }));
+                        const sinMesaCount = confirmedRows.filter(r => r['Mesa'] === 'Sin Mesa').length;
+                        if (sinMesaCount > 0) tableSummaryRows.push({ 'Mesa': 'Sin Mesa', 'Capacidad': '-', 'Asignados': sinMesaCount });
+
+                        const summaryHeader = [
+                            [coupleName], [weddingDate || ''], [venue || ''], [],
+                            [`Total confirmados: ${confirmedRows.length}`], [],
+                            ['Mesa', 'Capacidad', 'Asignados']
+                        ];
+                        const summaryData = summaryHeader.concat(tableSummaryRows.map(r => [r['Mesa'], r['Capacidad'], r['Asignados']]));
+                        const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+                        wsSummary['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }];
+                        styleHeaderBlock(wsSummary, 3);
+                        styleDataRows(wsSummary, 3, tableSummaryRows.length);
+                        XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumen por Mesa');
+
+                        // ---- Hoja 2: Detalle por Mesa ----
+                        const byTableRows = confirmedRows.slice().sort((a, b) =>
+                            a['Mesa'].localeCompare(b['Mesa'], undefined, { numeric: true }) ||
+                            (a['Apellido'] || '').localeCompare(b['Apellido'] || '') ||
+                            (a['Nombre'] || '').localeCompare(b['Nombre'] || '')
+                        );
+                        const byTableHeader = [
+                            [coupleName], [weddingDate || ''], [venue || ''], [],
+                            [`Total confirmados: ${confirmedRows.length}`], [],
+                            ['Mesa', 'Apellido', 'Nombre', 'Aclaraciones']
+                        ];
+                        const byTableData = byTableHeader.concat(byTableRows.map(r => [r['Mesa'], r['Apellido'], r['Nombre'], r['Aclaraciones']]));
+                        const wsByTable = XLSX.utils.aoa_to_sheet(byTableData);
+                        wsByTable['!cols'] = [{ wch: 18 }, { wch: 25 }, { wch: 25 }, { wch: 35 }];
+                        styleHeaderBlock(wsByTable, 4);
+                        styleDataRows(wsByTable, 4, byTableRows.length);
+                        XLSX.utils.book_append_sheet(wb, wsByTable, 'Detalle por Mesa');
+
+                        // ---- Hoja 3: Detalle Total (alfabético) ----
+                        const alphaRows = confirmedRows.slice().sort((a, b) =>
+                            (a['Apellido'] || '').localeCompare(b['Apellido'] || '') ||
+                            (a['Nombre'] || '').localeCompare(b['Nombre'] || '')
+                        );
+                        const alphaHeader = [
+                            [coupleName], [weddingDate || ''], [venue || ''], [],
+                            [`Total confirmados: ${confirmedRows.length}`], [],
+                            ['Apellido', 'Nombre', 'Aclaraciones', 'Mesa']
+                        ];
+                        const alphaData = alphaHeader.concat(alphaRows.map(r => [r['Apellido'], r['Nombre'], r['Aclaraciones'], r['Mesa']]));
+                        const wsAlpha = XLSX.utils.aoa_to_sheet(alphaData);
+                        wsAlpha['!cols'] = [{ wch: 25 }, { wch: 25 }, { wch: 35 }, { wch: 18 }];
+                        styleHeaderBlock(wsAlpha, 4);
+                        styleDataRows(wsAlpha, 4, alphaRows.length);
+                        XLSX.utils.book_append_sheet(wb, wsAlpha, 'Detalle Total');
 
                         const safeName = coupleName.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ ]/g, '').replace(/\s+/g, '_');
                         XLSX.writeFile(wb, `Lista_Definitiva_${safeName}.xlsx`);
