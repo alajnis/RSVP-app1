@@ -52,7 +52,10 @@
         <!-- Header -->
         <div class="bg-brand-crimson px-4 py-3 flex items-center justify-between shrink-0">
             <h1 class="font-serif text-lg font-bold">Control de acceso</h1>
-            <span v-if="project" class="text-[11px] uppercase tracking-widest opacity-90">{{ project.eventName }}</span>
+            <div class="text-right">
+                <span v-if="project" class="block text-[11px] uppercase tracking-widest opacity-90">{{ project.eventName }}</span>
+                <span v-if="totalGuests > 0" class="block text-sm font-bold tabular-nums">{{ checkedInCount }}/{{ totalGuests }}</span>
+            </div>
         </div>
 
         <!-- No project -->
@@ -75,8 +78,9 @@
 
                     <!-- Valid guest -->
                     <div v-if="result.type === 'ok'" class="bg-white text-brand-dark border border-brand-pink shadow-2xl p-8 relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-3 bg-green-600"></div>
-                        <p class="text-xs font-bold uppercase tracking-widest text-green-600 mb-4 mt-2">Acceso confirmado</p>
+                        <div class="absolute top-0 left-0 w-full h-3" :class="result.guest.alreadyCheckedIn ? 'bg-amber-500' : 'bg-green-600'"></div>
+                        <p v-if="result.guest.alreadyCheckedIn" class="text-xs font-bold uppercase tracking-widest text-amber-500 mb-4 mt-2">Ya había ingresado</p>
+                        <p v-else class="text-xs font-bold uppercase tracking-widest text-green-600 mb-4 mt-2">Acceso confirmado</p>
                         <h2 class="font-serif text-3xl font-bold mb-3 leading-tight">{{ result.guest.fullName }}</h2>
                         <p v-if="result.guest.company" class="text-base text-slate-500 mb-4">{{ result.guest.company }}</p>
                         <div class="border-t border-brand-pink pt-4 mt-4">
@@ -111,6 +115,8 @@
                 const project = ref(null);
                 const result = ref(null);
                 const countdown = ref(5);
+                const totalGuests = ref(0);
+                const checkedInCount = ref(0);
 
                 let html5QrCode = null;
                 let autoResumeTimer = null;
@@ -205,13 +211,26 @@
                         }
 
                         const fullName = `${guest.first_name || ''} ${guest.last_name || ''}`.trim() || 'Invitado';
+                        const alreadyCheckedIn = !!guest.checked_in_at;
+
+                        // Solo marcamos (y sumamos al contador) la primera vez que se escanea
+                        // a este invitado -- un segundo escaneo del mismo QR no debe duplicar
+                        // el conteo de recepción.
+                        if (!alreadyCheckedIn) {
+                            const { error: updateErr } = await supabase
+                                .from('guests')
+                                .update({ checked_in_at: new Date().toISOString() })
+                                .eq('id', guest.id);
+                            if (!updateErr) checkedInCount.value += 1;
+                        }
 
                         result.value = {
                             type: 'ok',
                             guest: {
                                 fullName,
                                 company: guest.company || '',
-                                tableName
+                                tableName,
+                                alreadyCheckedIn
                             }
                         };
                         startAutoResume();
@@ -259,6 +278,17 @@
                         if (data) {
                             project.value = { eventName: data.couple_name || 'Evento' };
                         }
+
+                        // Eventos corporativos: 1 invitado = 1 fila en guests (sin sub_guests),
+                        // así que alcanza con contar filas de ese proyecto.
+                        const { data: guestRows } = await supabase
+                            .from('guests')
+                            .select('checked_in_at')
+                            .eq('project_id', pid);
+                        if (guestRows) {
+                            totalGuests.value = guestRows.length;
+                            checkedInCount.value = guestRows.filter(g => !!g.checked_in_at).length;
+                        }
                     } catch (e) {
                         console.error('Error cargando proyecto:', e);
                     }
@@ -271,7 +301,7 @@
                     await stopScanner();
                 });
 
-                return { projectId, project, result, countdown, scanNext };
+                return { projectId, project, result, countdown, scanNext, totalGuests, checkedInCount };
             }
         }).mount('#app');
     </script>

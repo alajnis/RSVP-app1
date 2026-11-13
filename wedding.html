@@ -693,6 +693,9 @@
                             <th
                                 class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans bg-brand-beige/50">
                                 {{ t('colEstadoMesa') }}</th>
+                            <th v-if="isCorporateEvent"
+                                class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans bg-brand-beige/50">
+                                {{ t('colRecepcion') }}</th>
                             <th
                                 class="px-6 py-5 text-[10px] font-bold text-brand-dark uppercase tracking-[0.3em] border-b border-brand-pink font-sans text-right bg-brand-beige/50">
                                 {{ t('colAcciones') }}</th>
@@ -819,6 +822,16 @@
                                 <span v-else
                                     class="bg-brand-beige text-brand-dark px-2 py-1 rounded-sm font-bold text-[10px] uppercase tracking-wider border border-brand-pink">
                                     {{ t('sinMesaBadge') }}
+                                </span>
+                            </td>
+                            <td v-if="isCorporateEvent" class="px-6 py-4">
+                                <span v-if="guest.checked_in_at"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-bold text-xs bg-green-100 text-green-700">
+                                    <i class="ph-fill ph-check-circle"></i> {{ t('recepcionado') }}
+                                </span>
+                                <span v-else
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-bold text-xs bg-slate-100 text-slate-400">
+                                    {{ t('noRecepcionado') }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-right space-x-2">
@@ -2048,7 +2061,8 @@ Events Boutique`
                         venue: proj.venue || '',
                         eventsConfig: proj.events_config,
                         floorPlanUrl: proj.floor_plan_url, // Load URL
-                        editLocked: !!proj.edit_locked
+                        editLocked: !!proj.edit_locked,
+                        eventType: proj.event_type || 'wedding'
                     };
                     currentProjectId.value = projectId;
 
@@ -2219,6 +2233,9 @@ Events Boutique`
                         colDieta: 'Dieta',
                         colConfirmados: 'Confirmados',
                         colEstadoMesa: 'Estado Mesa',
+                        colRecepcion: 'Recepción',
+                        recepcionado: 'Recepcionado',
+                        noRecepcionado: 'Pendiente',
                         colAcciones: 'Acciones',
                         sinInfoContacto: 'No contact info',
                         rechazoMesa: 'RECHAZÓ MESA',
@@ -2460,6 +2477,9 @@ Events Boutique`
                         colDieta: 'Diet',
                         colConfirmados: 'Confirmed',
                         colEstadoMesa: 'Table Status',
+                        colRecepcion: 'Check-in',
+                        recepcionado: 'Checked in',
+                        noRecepcionado: 'Pending',
                         colAcciones: 'Actions',
                         sinInfoContacto: 'No contact info',
                         rechazoMesa: 'DECLINED TABLE',
@@ -2673,6 +2693,8 @@ Events Boutique`
                     return (brideLower.includes('sven') || groomLower.includes('sven')) &&
                            (brideLower.includes('yami') || groomLower.includes('yami'));
                 });
+
+                const isCorporateEvent = computed(() => currentProject.value?.eventType === 'corporate');
 
                 const assignmentsByTable = computed(() => {
                     const map = {};
@@ -4325,7 +4347,7 @@ Events Boutique`
                     searchQuery, guestSearchQuery, filter, guestFilter, showTableModal, editingTable, tableForm, showFloorPlanModal,
                     showGuestModal, editingGuest, guestForm, toast,
                     tableModalTitle, guestModalTitle,
-                    currentLanguage, t, isSvenYamiWedding, editBlocked,
+                    currentLanguage, t, isSvenYamiWedding, isCorporateEvent, editBlocked,
                     customQuestions,
                     openTableModal, editTable, saveTable, deleteTable, closeModal,
                     openGuestModal, editGuest, saveGuest, deleteGuest, deleteAllGuests, closeGuestModal,
